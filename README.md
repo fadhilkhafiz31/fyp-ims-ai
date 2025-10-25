@@ -28,7 +28,6 @@
 ---
 ## 🧩 Project Structure
 
-```txt
 fyp-ims-ai/
 ├── public/                    # Static assets (favicon, manifest, etc.)
 ├── src/                       # Main React app source
