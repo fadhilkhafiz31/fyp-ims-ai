@@ -27,13 +27,6 @@
 
 ---
 ## 🧩 Project Structure
-You're right, that project structure is hard to read. It's a common issue where Markdown collapses all the lines into one long paragraph.
-
-To fix this and make it render as a clean tree, you just need to wrap the entire structure in a Markdown code block (using triple backticks ````).
-
-Here is the corrected ## 🧩 Project Structure section. I've also taken a moment to align all the comments neatly, which makes it even more readable.
-
-🧩 Project Structure
 fyp-ims-ai/
 ├── public/            # Static assets (favicon, manifest, etc.)
 ├── src/               # Main React app source
@@ -55,44 +48,6 @@ fyp-ims-ai/
 ├── tailwind.config.js # Tailwind CSS design setup
 ├── vite.config.js     # Vite build and dev server configuration
 └── README.md          # Project documentation (this file)
-Complete README File (Ready to Copy-Paste)
-For your convenience, here is the entire README.md file with the fix applied. You can copy and paste this directly into the GitHub editor.
-
-Markdown
-
-# fyp-ims-ai
-[![Firebase Hosting](https://img.shields.io/badge/Live%20Demo-https%3A%2F%2Fims--ai--821f0.web.app-blue?style=flat&logo=firebase&logoColor=white)](https://ims-ai-821f0.web.app)
-
-> **Inventory Management System with AI Chatbot for SMEs**
-> A web-based platform built with **React (Vite)**, **Firebase**, and **Dialogflow ES** to help small businesses manage stock levels, track low-inventory items in real time, and interact with an integrated AI chatbot for stock inquiries.
-
----
-
-## 🚀 Features
-- 🔐 **Role-based Authentication** (Admin / Staff / Customer)
-- 📦 **Real-time Inventory CRUD** with Firestore
-- 🤖 **AI Chatbot Integration** via Dialogflow
-- ⚡ **Live KPIs & Low-Stock Dashboard** using onSnapshot
-- 💬 Optional **Push Notifications** (Firebase FCM)
-
----
-
-## 🛠️ Tech Stack
-| Layer | Technology |
-|-------|-------------|
-| Frontend | React (Vite) + Tailwind CSS |
-| Backend / API | Firebase Cloud Functions (Node.js) |
-| Database | Cloud Firestore |
-| AI Module | Dialogflow ES |
-| Hosting | Firebase Hosting |
-| Dev Tools | VS Code · GitHub · Postman · Trello |
-
----
-## 🧩 Project Structure
-
-fyp-ims-ai/ ├── public/ # Static assets (favicon, manifest, etc.) ├── src/ # Main React app source │ ├── assets/ # Images, logos, and icons │ ├── components/ # Reusable UI components (Navbar, Modal, etc.) │ ├── contexts/ # Auth & role context providers │ ├── hooks/ # Custom React hooks (e.g., useRole) │ ├── lib/ # Firebase configuration & helper functions │ ├── pages/ # Application pages (Login, Dashboard, Inventory) │ ├── App.jsx # Root React component │ └── main.jsx # Entry point that renders App.jsx │ ├── .firebaserc # Firebase project alias configuration ├── firebase.json # Firebase hosting and rewrite rules ├── .gitignore # Files ignored by Git (node_modules, dist, etc.) ├── index.html # Main HTML entry point for Vite build ├── package.json # Dependencies and scripts ├── postcss.config.js # PostCSS + Tailwind configuration ├── tailwind.config.js # Tailwind CSS design setup ├── vite.config.js # Vite build and dev server configuration └── README.md # Project documentation (this file)
-
----
 
 ## 📅 7-Week Development Timeline
 
