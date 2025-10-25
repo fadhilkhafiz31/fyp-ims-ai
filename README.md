@@ -26,29 +26,6 @@
 | Dev Tools | VS Code · GitHub · Postman · Trello |
 
 ---
-## 🧩 Project Structure
-
-fyp-ims-ai/
-├── public/
-├── src/
-│   ├── assets/
-│   ├── components/
-│   ├── contexts/
-│   ├── hooks/
-│   ├── lib/
-│   ├── pages/
-│   ├── App.jsx
-│   └── main.jsx
-├── .firebaserc
-├── firebase.json
-├── .gitignore
-├── index.html
-├── package.json
-├── postcss.config.js
-├── tailwind.config.js
-├── vite.config.js
-└── README.md
-
 
 ## 📅 7-Week Development Timeline
 
