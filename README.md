@@ -28,7 +28,7 @@
 ---
 
 ## 🧩 Project Structure
-fyp-ims-ai/
+
 ├── public/ # Static assets (favicon, manifest, etc.)
 ├── src/ # Main React app source
 │ ├── assets/ # Images, logos, and icons
@@ -49,7 +49,7 @@ fyp-ims-ai/
 ├── tailwind.config.js # Tailwind CSS design setup
 ├── vite.config.js # Vite build and dev server configuration
 └── README.md # Project documentation (this file)
----
+
 
 ## 📅 7-Week Development Timeline
 
