@@ -26,8 +26,6 @@
 | Dev Tools | VS Code · GitHub · Postman · Trello |
 
 ---
-
-```markdown
 ## 🧩 Project Structure
 
 fyp-ims-ai/
