@@ -27,28 +27,36 @@
 
 ---
 
+```markdown
 ## 🧩 Project Structure
 
-├── public/ # Static assets (favicon, manifest, etc.)
-├── src/ # Main React app source
-│ ├── assets/ # Images, logos, and icons
-│ ├── components/ # Reusable UI components (Navbar, Modal, etc.)
-│ ├── contexts/ # Auth & role context providers
-│ ├── hooks/ # Custom React hooks (e.g., useRole)
-│ ├── lib/ # Firebase configuration & helper functions
-│ ├── pages/ # Application pages (Login, Dashboard, Inventory)
-│ ├── App.jsx # Root React component
-│ └── main.jsx # Entry point that renders App.jsx
-│
-├── .firebaserc # Firebase project alias configuration
-├── firebase.json # Firebase hosting and rewrite rules
-├── .gitignore # Files ignored by Git (node_modules, dist, etc.)
-├── index.html # Main HTML entry point for Vite build
-├── package.json # Dependencies and scripts
-├── postcss.config.js # PostCSS + Tailwind configuration
-├── tailwind.config.js # Tailwind CSS design setup
-├── vite.config.js # Vite build and dev server configuration
-└── README.md # Project documentation (this file)
+<details>
+<summary><b>Click to expand</b></summary>
+
+<pre>
+fyp-ims-ai/
+├── public/
+├── src/
+│   ├── assets/
+│   ├── components/
+│   ├── contexts/
+│   ├── hooks/
+│   ├── lib/
+│   ├── pages/
+│   ├── App.jsx
+│   └── main.jsx
+├── .firebaserc
+├── firebase.json
+├── .gitignore
+├── index.html
+├── package.json
+├── postcss.config.js
+├── tailwind.config.js
+├── vite.config.js
+└── README.md
+</pre>
+
+</details>
 
 
 ## 📅 7-Week Development Timeline
