@@ -30,10 +30,6 @@
 ```markdown
 ## 🧩 Project Structure
 
-<details>
-<summary><b>Click to expand</b></summary>
-
-<pre>
 fyp-ims-ai/
 ├── public/
 ├── src/
@@ -54,9 +50,6 @@ fyp-ims-ai/
 ├── tailwind.config.js
 ├── vite.config.js
 └── README.md
-</pre>
-
-</details>
 
 
 ## 📅 7-Week Development Timeline
