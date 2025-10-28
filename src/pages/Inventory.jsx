@@ -26,10 +26,17 @@ export default function Inventory() {
 
   useEffect(() => {
     const q = query(collection(db, "inventory"), orderBy("updatedAt", "desc"));
-    const unsub = onSnapshot(q, (snap) => {
-      setItems(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setLoading(false);
-    });
+    const unsub = onSnapshot(
+  q,
+  (snap) => {
+    setItems(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    setLoading(false);
+  },
+  (err) => {
+    console.error("onSnapshot error:", err);
+    setLoading(false);
+  }
+);
     return unsub;
   }, []);
 
