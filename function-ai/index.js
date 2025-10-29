@@ -1,8 +1,16 @@
 // --- SmartStockAI Dialogflow webhook (Firebase Functions v2) ---
 const { onRequest } = require("firebase-functions/v2/https");
+const { setGlobalOptions } = require("firebase-functions/v2");
 const admin = require("firebase-admin");
 const express = require("express");
 const cors = require("cors");
+
+// If you really need Dialogflow SDK later:
+// const dialogflow = require('@google-cloud/dialogflow');
+// const sessionClient = new dialogflow.SessionsClient(); // uses default creds on Functions
+
+// Global defaults (optional but recommended)
+setGlobalOptions({ region: "asia-southeast1", timeoutSeconds: 10, memory: "256MiB" });
 
 // Init Admin SDK once
 if (!admin.apps.length) admin.initializeApp();
@@ -13,8 +21,8 @@ app.use(cors({ origin: true }));
 app.use(express.json());
 
 // ---------- helpers ----------
-function norm(s){ return (s || "").toString().trim().toLowerCase(); }
-function tokens(s){ return norm(s).split(/[^a-z0-9]+/).filter(Boolean); }
+const norm = (s) => (s || "").toString().trim().toLowerCase();
+const tokens = (s) => norm(s).split(/[^a-z0-9]+/).filter(Boolean);
 
 async function searchInventory({ term, storeId }) {
   const snap = await db.collection("inventory").get();
@@ -25,37 +33,19 @@ async function searchInventory({ term, storeId }) {
 
   let filtered = items.filter(x => {
     const fields = [x.name, x.sku, x.category].map(norm);
-
-    // symmetric contains (“do you have spritzer 550ml” vs “spritzer 550ml”)
     const sym = fields.some(f => f.includes(q) || q.includes(f));
-
-    // token-based match: all query tokens appear in any field
-    const tok = qTokens.length
-      ? fields.some(f => qTokens.every(tk => f.includes(tk)))
-      : false;
-
+    const tok = qTokens.length ? fields.some(f => qTokens.every(tk => f.includes(tk))) : false;
     return sym || tok;
   });
 
-  if (storeId) {
-    filtered = filtered.filter(x => norm(x.storeId) === norm(storeId));
-  }
+  if (storeId) filtered = filtered.filter(x => norm(x.storeId) === norm(storeId));
   return filtered;
 }
 
 const reply = (text) => ({ fulfillmentText: text });
 
-// ---------- routes ----------
-app.get("/", (_req, res) => res.status(200).send("SmartStockAI webhook is running."));
-app.get("/df", (_req, res) =>
-  res.status(405).send("This endpoint expects POST from Dialogflow. Try a POST request.")
-);
-
-// Accept POST at / and /webhook too (so either URL works)
-app.post("/", (req, res) => app._router.handle({ ...req, url: "/df" }, res));
-app.post("/webhook", (req, res) => app._router.handle({ ...req, url: "/df" }, res));
-
-app.post("/df", async (req, res) => {
+// ---------- one handler for Dialogflow ----------
+async function dfHandler(req, res) {
   try {
     const qr = req.body?.queryResult || {};
     console.log("DF payload:", JSON.stringify(qr, null, 2));
@@ -97,7 +87,13 @@ app.post("/df", async (req, res) => {
     console.error(e);
     return res.json(reply("Something went wrong while checking stock."));
   }
-});
+}
 
-// ---------- EXPORT THE FUNCTION (required) ----------
-exports.webhook = onRequest({ region: "asia-southeast1" }, app);
+// ---------- routes ----------
+app.get("/", (_req, res) => res.status(200).send("SmartStockAI webhook is running."));
+app.post("/", dfHandler);
+app.post("/webhook", dfHandler);
+app.post("/df", dfHandler);
+
+// ---------- export ----------
+exports.webhook = onRequest(app);
