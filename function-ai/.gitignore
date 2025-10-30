@@ -2,3 +2,4 @@ node_modules/
 service-account-key.json
 .env
 .firebase/
+npm-debug.log*
