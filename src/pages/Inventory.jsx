@@ -2,37 +2,40 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query,
-  serverTimestamp, updateDoc,
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { PageReady } from "../components/NProgressBar";
 
 const INVENTORY_COL = "inventory";
 
-// helper: tokenize for simple search keywords
-const norm = (s) => (s || "").toString().trim().toLowerCase();
-const tokens = (s) => norm(s).split(/[^a-z0-9]+/).filter(Boolean);
-const uniq = (arr) => Array.from(new Set(arr.filter(Boolean)));
-
 export default function Inventory() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ---- form state (now includes storeId, storeName, keywords) ----
+  // ---- form state (ONLY the 5 fields requested) ----
   const [form, setForm] = useState({
     name: "",
     sku: "",
     qty: "",
     reorderPoint: "5",
     category: "",
-    storeId: "",
-    storeName: "",
-    keywords: "", // comma-separated in UI; saved as array
+    StoreId: "",
+    StoreName: "",
+    Keywords: "",
   });
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
+  // ---- realtime subscription ----
   useEffect(() => {
     const qRef = query(collection(db, INVENTORY_COL), orderBy("updatedAt", "desc"));
     const unsub = onSnapshot(
@@ -49,6 +52,7 @@ export default function Inventory() {
     return unsub;
   }, []);
 
+  // ---- derived totals (for quick context) ----
   const totals = useMemo(() => {
     const totalQty = items.reduce((s, it) => s + Number(it.qty ?? 0), 0);
     const totalItems = items.length;
@@ -58,14 +62,13 @@ export default function Inventory() {
     return { totalQty, totalItems, totalCategories };
   }, [items]);
 
+  // ---- helpers ----
   const resetForm = () =>
-    setForm({
-      name: "", sku: "", qty: "", reorderPoint: "5", category: "",
-      storeId: "", storeName: "", keywords: ""
-    });
+    setForm({ name: "", sku: "", qty: "", reorderPoint: "5", category: "", StoreId: "", StoreName: "", Keywords: "" });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    // keep only integers in qty/reorderPoint (but allow empty string for UX)
     if (name === "qty" || name === "reorderPoint") {
       if (value === "" || /^[0-9]+$/.test(value)) {
         setForm((f) => ({ ...f, [name]: value }));
@@ -83,29 +86,10 @@ export default function Inventory() {
     if (form.reorderPoint === "" || isNaN(Number(form.reorderPoint)))
       errors.push("Reorder point must be a number.");
     if (!form.category.trim()) errors.push("Category is required.");
-    if (!form.storeId.trim()) errors.push("Store ID is required.");
-    if (!form.storeName.trim()) errors.push("Store Name is required.");
     return errors;
   };
 
-  // build keywords array from user input + derived tokens
-  const buildKeywords = () => {
-    const userKeywords = form.keywords
-      .split(",")
-      .map((k) => norm(k))
-      .filter(Boolean);
-
-    const derived = uniq([
-      ...tokens(form.name),
-      ...tokens(form.sku),
-      ...tokens(form.category),
-      // optional: split store name words for better matches
-      ...tokens(form.storeName),
-    ]);
-
-    return uniq([...userKeywords, ...derived]);
-  };
-
+  // ---- create or update ----
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validate();
@@ -120,18 +104,20 @@ export default function Inventory() {
       qty: Number(form.qty),
       reorderPoint: Number(form.reorderPoint),
       category: form.category.trim(),
-      storeId: form.storeId.trim(),
-      storeName: form.storeName.trim(),
-      keywords: buildKeywords(),           // <-- array saved to Firestore
+      StoreId: (form.StoreId || "").trim(),
+      StoreName: (form.StoreName || "").trim(),
+      Keywords: (form.Keywords || "").trim(),
       updatedAt: serverTimestamp(),
     };
 
     setSaving(true);
     try {
       if (editingId) {
+        // update existing doc
         await updateDoc(doc(db, INVENTORY_COL, editingId), payload);
         setEditingId(null);
       } else {
+        // create new doc
         await addDoc(collection(db, INVENTORY_COL), {
           ...payload,
           createdAt: serverTimestamp(),
@@ -154,9 +140,9 @@ export default function Inventory() {
       qty: String(Number(it.qty ?? 0)),
       reorderPoint: String(Number(it.reorderPoint ?? 5)),
       category: it.category || "",
-      storeId: it.storeId || "",
-      storeName: it.storeName || "",
-      keywords: Array.isArray(it.keywords) ? it.keywords.join(", ") : (it.keywords || ""),
+      StoreId: it.StoreId || "",
+      StoreName: it.StoreName || "",
+      Keywords: it.Keywords || "",
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -179,7 +165,7 @@ export default function Inventory() {
       <header className="space-y-1">
         <h1 className="text-3xl font-bold">Inventory</h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Manage items (Name, SKU, Qty, Reorder Point, Category, Store, Keywords)
+          Manage items (Name, SKU, Qty, Reorder Point, Category)
         </p>
       </header>
 
@@ -197,16 +183,100 @@ export default function Inventory() {
         </h2>
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <TextInput label="Name" name="name" value={form.name} onChange={handleChange} placeholder="e.g., Spritzer 550ml" required />
-          <TextInput label="SKU" name="sku" value={form.sku} onChange={handleChange} placeholder="e.g., SPZ-0550" required />
-          <TextInput label="Qty" name="qty" value={form.qty} onChange={handleChange} inputMode="numeric" placeholder="0" required />
-          <TextInput label="Reorder Point" name="reorderPoint" value={form.reorderPoint} onChange={handleChange} inputMode="numeric" placeholder="5" required />
-          <TextInput label="Category" name="category" value={form.category} onChange={handleChange} placeholder="e.g., Beverages" required />
+          <div>
+            <label className="block text-sm mb-1">Name</label>
+            <input
+              name="name"
+              value={form.name}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2"
+              placeholder="e.g., Spritzer 550ml"
+              required
+            />
+          </div>
 
-          {/* NEW fields */}
-          <TextInput label="Store ID" name="storeId" value={form.storeId} onChange={handleChange} placeholder="e.g., store-01" required />
-          <TextInput label="Store Name" name="storeName" value={form.storeName} onChange={handleChange} placeholder="e.g., SmartMart Taman Jaya" required />
-          <TextInput label="Keywords (comma-separated)" name="keywords" value={form.keywords} onChange={handleChange} placeholder="e.g., spritzer, mineral, 550ml" />
+          <div>
+            <label className="block text-sm mb-1">SKU</label>
+            <input
+              name="sku"
+              value={form.sku}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2"
+              placeholder="e.g., SPZ-0550"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1">Qty</label>
+            <input
+              name="qty"
+              value={form.qty}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2"
+              inputMode="numeric"
+              placeholder="0"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1">Reorder Point</label>
+            <input
+              name="reorderPoint"
+              value={form.reorderPoint}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2"
+              inputMode="numeric"
+              placeholder="5"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1">Category</label>
+            <input
+              name="category"
+              value={form.category}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2"
+              placeholder="e.g., Beverages"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1">Store Name</label>
+            <input
+              name="StoreName"
+              value={form.StoreName}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2"
+              placeholder="e.g., Main Outlet"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1">Store ID</label>
+            <input
+              name="StoreId"
+              value={form.StoreId}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2"
+              placeholder="e.g., ST-001"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1">Keywords</label>
+            <input
+              name="Keywords"
+              value={form.Keywords}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2"
+              placeholder="e.g., water,bottle,drinks"
+            />
+          </div>
 
           <div className="flex items-end gap-3">
             <button
@@ -216,10 +286,14 @@ export default function Inventory() {
             >
               {saving ? (editingId ? "Saving..." : "Adding...") : editingId ? "Save" : "Add"}
             </button>
+
             {editingId && (
               <button
                 type="button"
-                onClick={() => { setEditingId(null); resetForm(); }}
+                onClick={() => {
+                  setEditingId(null);
+                  resetForm();
+                }}
                 className="border border-gray-400 px-4 py-2 rounded hover:bg-gray-700 hover:text-white"
               >
                 Cancel
@@ -260,16 +334,21 @@ export default function Inventory() {
                 <div>{Number(it.qty ?? 0)}</div>
                 <div>{Number(it.reorderPoint ?? 0)}</div>
                 <div className="truncate">{it.category || "—"}</div>
-                <div className="truncate">{it.storeName || it.storeId || "—"}</div>
-                <div className="truncate">
-                  {Array.isArray(it.keywords) ? it.keywords.join(", ") : (it.keywords || "—")}
-                </div>
+                <div className="truncate">{it.StoreName || it.StoreId || "—"}</div>
+                <div className="truncate">{it.Keywords || "—"}</div>
 
+                {/* actions */}
                 <div className="col-span-7 flex gap-2 pt-2">
-                  <button onClick={() => handleEdit(it)} className="px-3 py-1 border rounded hover:bg-gray-100 dark:hover:bg-gray-800">
+                  <button
+                    onClick={() => handleEdit(it)}
+                    className="px-3 py-1 border rounded hover:bg-gray-100 dark:hover:bg-gray-800"
+                  >
                     Edit
                   </button>
-                  <button onClick={() => handleDelete(it.id)} className="px-3 py-1 border rounded hover:bg-red-600 hover:text-white">
+                  <button
+                    onClick={() => handleDelete(it.id)}
+                    className="px-3 py-1 border rounded hover:bg-red-600 hover:text-white"
+                  >
                     Delete
                   </button>
                 </div>
@@ -279,6 +358,7 @@ export default function Inventory() {
         )}
       </section>
 
+      {/* back to dashboard quick link */}
       <div>
         <Link to="/dashboard" className="text-blue-600 hover:underline">
           ← Back to Dashboard
@@ -288,15 +368,7 @@ export default function Inventory() {
   );
 }
 
-function TextInput({ label, ...rest }) {
-  return (
-    <div>
-      <label className="block text-sm mb-1">{label}</label>
-      <input className="w-full border rounded px-3 py-2" {...rest} />
-    </div>
-  );
-}
-
+// Tiny KPI card component (matches your style)
 function KPI({ label, value }) {
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-white dark:bg-gray-900">
