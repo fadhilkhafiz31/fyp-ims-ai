@@ -5,9 +5,9 @@ const admin = require("firebase-admin");
 const express = require("express");
 const cors = require("cors");
 
-// If you really need Dialogflow SDK later:
-// const dialogflow = require('@google-cloud/dialogflow');
-// const sessionClient = new dialogflow.SessionsClient(); // uses default creds on Functions
+// Dialogflow detectIntent client (uses default creds in Functions)
+const dialogflow = require('@google-cloud/dialogflow');
+const sessionClient = new dialogflow.SessionsClient();
 
 // Global defaults (optional but recommended)
 setGlobalOptions({ region: "asia-southeast1", timeoutSeconds: 10, memory: "256MiB" });
@@ -82,6 +82,22 @@ async function dfHandler(req, res) {
       return res.json(reply(`Low stock items:\n${lines.join("\n")}`));
     }
 
+    // Fallback: allow direct free-text stock queries without Dialogflow
+    const rawText = (qr.queryText || req.body?.text || req.body?.message || "").toString().trim();
+    if (rawText) {
+      const results = await searchInventory({ term: rawText, storeId: p.store || "" });
+      if (!results.length) {
+        return res.json(reply(`I couldn't find "${rawText}". Want me to check similar items?`));
+      }
+      const it = results[0];
+      const qty = Number(it.qty ?? 0);
+      const where = it.storeName ? ` at ${it.storeName}` : "";
+      if (qty > 0) {
+        return res.json(reply(`Yes, ${it.name} (SKU: ${it.sku || "—"}) — ${qty} in stock${where}.`));
+      }
+      return res.json(reply(`Currently out of stock for ${it.name}${where}.`));
+    }
+
     return res.json(reply("Sorry, I didn't get that. Which item should I check?"));
   } catch (e) {
     console.error(e);
@@ -94,6 +110,33 @@ app.get("/", (_req, res) => res.status(200).send("SmartStockAI webhook is runnin
 app.post("/", dfHandler);
 app.post("/webhook", dfHandler);
 app.post("/df", dfHandler);
+
+// ---------- Dialogflow detectIntent passthrough ----------
+app.post("/detect-intent", async (req, res) => {
+  try {
+    const projectId = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT || admin.app().options.projectId;
+    const sessionId = `${Date.now()}`;
+    const sessionPath = sessionClient.projectAgentSessionPath(projectId, sessionId);
+
+    const text = (req.body?.text || req.body?.message || req.body?.query || "").toString();
+    const languageCode = req.body?.languageCode || "en";
+    if (!text.trim()) return res.status(400).json({ fulfillmentText: "What should I check?" });
+
+    const request = {
+      session: sessionPath,
+      queryInput: {
+        text: { text, languageCode },
+      },
+    };
+
+    const [response] = await sessionClient.detectIntent(request);
+    const fulfillmentText = response.queryResult?.fulfillmentText || "Sorry, I didn't get that.";
+    return res.json({ fulfillmentText, raw: response.queryResult });
+  } catch (e) {
+    console.error("detect-intent error", e);
+    return res.status(500).json({ fulfillmentText: "Error calling Dialogflow." });
+  }
+});
 
 // ---------- export ----------
 exports.webhook = onRequest(app);

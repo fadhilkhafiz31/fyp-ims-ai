@@ -87,6 +87,50 @@
 
 ---
 
+## 🔧 Configuration: Chatbot + Dialogflow
+
+### 1) Environment variable (frontend)
+
+- Create `.env.local` at project root:
+
+  ```bash
+  VITE_AI_WEBHOOK_URL=https://asia-southeast1-<project-id>.cloudfunctions.net/webhook
+  ```
+
+- Restart dev server: `npm run dev`.
+- One‑off production build with URL baked in:
+
+  ```bash
+  VITE_AI_WEBHOOK_URL="https://asia-southeast1-<project-id>.cloudfunctions.net/webhook" npm run build
+  ```
+
+### 2) Backend (Firebase Functions)
+
+- Codebase lives in `function-ai/`.
+- Deploy only the webhook:
+
+  ```bash
+  firebase deploy --only functions:function-ai:webhook
+  ```
+
+### 3) Dialogflow Integration
+
+- The frontend sends user text to `POST {WEBHOOK_URL}/detect-intent`.
+- The function calls Dialogflow `detectIntent` and returns `fulfillmentText`.
+- If Dialogflow is not configured, the function falls back to a simple Firestore keyword search.
+- To change language, set `languageCode` in the body (default `en`).
+
+### 4) GitHub Actions (optional)
+
+Inject the env var during build:
+
+```yaml
+- run: echo "VITE_AI_WEBHOOK_URL=${{ secrets.AI_WEBHOOK_URL }}" >> .env
+- run: npm run build
+```
+
+---
+
 ## 🎯 Impact Summary
 
 - **Operational Efficiency:** AI chat reduces manual stock checks.

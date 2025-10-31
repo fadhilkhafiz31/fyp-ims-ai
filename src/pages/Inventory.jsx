@@ -186,6 +186,11 @@ export default function Inventory() {
 
       {/* Header */}
       <header className="space-y-1">
+        <div>
+          <Link to="/dashboard" className="text-blue-600 hover:underline">
+            ← Back to Dashboard
+          </Link>
+        </div>
         <h1 className="text-3xl font-bold">Inventory</h1>
         <p className="text-gray-600 dark:text-gray-400">
           Manage items (Name, SKU, Qty, Reorder Point, Category, Store Name, Store ID, Keywords)
@@ -422,12 +427,7 @@ export default function Inventory() {
         )}
       </section>
 
-      {/* back to dashboard quick link */}
-      <div>
-        <Link to="/dashboard" className="text-blue-600 hover:underline">
-          ← Back to Dashboard
-        </Link>
-      </div>
+      
     </div>
   );
 }

@@ -34,6 +34,15 @@ export default function Transactions() {
     );
   }, []);
 
+  // resolve display name with unit if available
+  const displayNameById = (id, fallbackName) => {
+    const it = catalog.find((x) => x.id === id);
+    if (!it) return fallbackName || id || "unknown";
+    const base = it.name || fallbackName || id;
+    const unit = it.unit || it.Unit || it.package || it.size || it.measure || it.UOM || it.uom;
+    return unit ? `${base} ${unit}` : base;
+  };
+
   // --- Last 7 Days summary ---
   const last7 = useMemo(() => {
     const since = new Date();
@@ -50,11 +59,13 @@ export default function Transactions() {
     const outQty = outTx.reduce((s, t) => s + Number(t.qty ?? 0), 0);
     const net = inQty - outQty;
 
-    // per-item breakdown
+    // per-item breakdown (carry id and name)
     const byItemMap = new Map();
     for (const t of within7) {
       const key = t.itemId || t.itemName || "unknown";
-      const prev = byItemMap.get(key) || { name: t.itemName || key, inQty: 0, outQty: 0 };
+      const prev = byItemMap.get(key) || { id: t.itemId || null, name: t.itemName || key, inQty: 0, outQty: 0 };
+      if (t.itemId && !prev.id) prev.id = t.itemId;
+      if (t.itemName && !prev.name) prev.name = t.itemName;
       if (t.type === "IN") prev.inQty += Number(t.qty ?? 0);
       else if (t.type === "OUT") prev.outQty += Number(t.qty ?? 0);
       byItemMap.set(key, prev);
@@ -65,6 +76,13 @@ export default function Transactions() {
 
     return { inTx, outTx, inQty, outQty, net, byItem };
   }, [items]);
+
+  const currentQtyByIdOrName = (id, name) => {
+    let it = null;
+    if (id) it = catalog.find((x) => x.id === id);
+    if (!it && name) it = catalog.find((x) => (x.name || "").trim() === (name || "").trim());
+    return Number(it?.qty ?? 0);
+  };
 
   // transaction handler
   async function handleAdd(e) {
@@ -150,10 +168,13 @@ export default function Transactions() {
             </div>
             {last7.byItem.map((it) => (
               <div
-                key={it.name}
+                key={it.id || it.name}
                 className="grid grid-cols-3 text-sm border-b border-gray-800 py-1"
               >
-                <div className="truncate">{it.name}</div>
+                <div className="truncate">
+                  {displayNameById(it.id || it.name, it.name)}
+                  <span className="ml-2 text-xs text-gray-400">(current: {currentQtyByIdOrName(it.id, it.name)})</span>
+                </div>
                 <div className="text-green-400">
                   ➕ {it.inQty} <span className="text-xs text-gray-500">IN</span>
                 </div>
@@ -185,7 +206,7 @@ export default function Transactions() {
           <option value="">Select item…</option>
           {catalog.map((it) => (
             <option key={it.id} value={it.id}>
-              {it.name || it.title || it.id}
+              {displayNameById(it.id, it.name || it.title || it.id)}
             </option>
           ))}
         </select>
@@ -244,7 +265,7 @@ export default function Transactions() {
                 {t.type}
               </div>
               <div>
-                {t.itemName || t.itemId}{" "}
+                {displayNameById(t.itemId, t.itemName)}{" "}
                 {typeof t.balanceAfter === "number"
                   ? `(stock after: ${t.balanceAfter})`
                   : ""}
