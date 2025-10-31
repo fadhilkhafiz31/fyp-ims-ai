@@ -1,6 +1,7 @@
 import { Suspense, lazy } from "react";
 import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
+import RoleGuard from "./components/RoleGuard";
 import { RouteProgress, PageReady } from "./components/NProgressBar";
 
 const Login = lazy(() => import("./pages/Login"));
@@ -39,8 +40,10 @@ export default function App() {
             path="/inventory"
             element={
               <ProtectedRoute>
-                <PageReady />
-                <Inventory />
+                <RoleGuard allow={["admin", "staff"]}>
+                  <PageReady />
+                  <Inventory />
+                </RoleGuard>
               </ProtectedRoute>
             }
           />

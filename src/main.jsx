@@ -46,8 +46,10 @@ ReactDOM.createRoot(document.getElementById("root")).render(
               path="/inventory"
               element={
                 <ProtectedRoute>
-                  <PageReady />
-                  <Inventory />
+                  <RoleGuard allow={["admin", "staff"]}>
+                    <PageReady />
+                    <Inventory />
+                  </RoleGuard>
                 </ProtectedRoute>
               }
             />
