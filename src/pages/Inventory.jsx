@@ -1,9 +1,8 @@
- (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
 diff --git a/src/pages/Inventory.jsx b/src/pages/Inventory.jsx
-index 326e547c01221558893caa7b6da8a058e2356e12..3b8105bf8a32c2d0fd2947c5f029a3902921f99e 100644
+index 326e547c01221558893caa7b6da8a058e2356e12..ec1b6395c6845e9a7819cbe098541be0b1f00712 100644
 --- a/src/pages/Inventory.jsx
 +++ b/src/pages/Inventory.jsx
-@@ -1,193 +1,222 @@
+@@ -1,193 +1,211 @@
  // src/pages/Inventory.jsx
  import { useEffect, useMemo, useState } from "react";
  import { Link } from "react-router-dom";
@@ -21,6 +20,15 @@ index 326e547c01221558893caa7b6da8a058e2356e12..3b8105bf8a32c2d0fd2947c5f029a390
  import { db } from "../lib/firebase";
  import { PageReady } from "../components/NProgressBar";
  
++function KPI({ label, value }) {
++  return (
++    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
++      <div className="text-sm text-gray-500">{label}</div>
++      <div className="text-2xl font-bold">{value}</div>
++    </div>
++  );
++}
++
  const INVENTORY_COL = "inventory";
  
  export default function Inventory() {
@@ -77,25 +85,6 @@ index 326e547c01221558893caa7b6da8a058e2356e12..3b8105bf8a32c2d0fd2947c5f029a390
 -  const resetForm = () =>
 -    setForm({ name: "", sku: "", qty: "", reorderPoint: "5", category: "", StoreId: "", StoreName: "", Keywords: "" });
 +  const resetForm = () => setForm({ ...defaultFormState });
-+
-+  const buildKeywords = (item) => {
-+    const manualKeywords = (item.Keywords || "")
-+      .split(",")
-+      .map((kw) => kw.trim().toLowerCase())
-+      .filter(Boolean);
-+
-+    const autoKeywords = [
-+      item.name,
-+      item.sku,
-+      item.category,
-+      item.StoreId,
-+      item.StoreName,
-+    ]
-+      .map((value) => (value || "").toString().toLowerCase())
-+      .flatMap((value) => value.split(/\s+/).filter(Boolean));
-+
-+    return Array.from(new Set([...manualKeywords, ...autoKeywords])).filter(Boolean);
-+  };
  
    const handleChange = (e) => {
      const { name, value } = e.target;
@@ -146,7 +135,6 @@ index 326e547c01221558893caa7b6da8a058e2356e12..3b8105bf8a32c2d0fd2947c5f029a390
 +
 +    const payload = {
 +      ...trimmed,
-+      Keywords: buildKeywords(trimmed),
        updatedAt: serverTimestamp(),
      };
  
@@ -183,14 +171,14 @@ index 326e547c01221558893caa7b6da8a058e2356e12..3b8105bf8a32c2d0fd2947c5f029a390
        category: it.category || "",
        StoreId: it.StoreId || "",
        StoreName: it.StoreName || "",
--      Keywords: it.Keywords || "",
-+      Keywords: Array.isArray(it.Keywords) ? it.Keywords.join(", ") : it.Keywords || "",
+       Keywords: it.Keywords || "",
      });
      window.scrollTo({ top: 0, behavior: "smooth" });
    };
  
    const handleDelete = async (id) => {
-     if (!confirm("Delete this item?")) return;
+-    if (!confirm("Delete this item?")) return;
++    if (!window.confirm("Delete this item?")) return;
      try {
        await deleteDoc(doc(db, INVENTORY_COL, id));
      } catch (err) {
@@ -234,7 +222,7 @@ index 326e547c01221558893caa7b6da8a058e2356e12..3b8105bf8a32c2d0fd2947c5f029a390
                onChange={handleChange}
                className="w-full border rounded px-3 py-2"
                placeholder="e.g., Spritzer 550ml"
-@@ -231,136 +260,144 @@ export default function Inventory() {
+@@ -231,149 +249,147 @@ export default function Inventory() {
                placeholder="5"
                required
              />
@@ -385,6 +373,16 @@ index 326e547c01221558893caa7b6da8a058e2356e12..3b8105bf8a32c2d0fd2947c5f029a390
            ← Back to Dashboard
          </Link>
        </div>
- 
-EOF
-)
+     </div>
+   );
+ }
+-
+-// Tiny KPI card component (matches your style)
+-function KPI({ label, value }) {
+-  return (
+-    <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-white dark:bg-gray-900">
+-      <div className="text-sm text-gray-500 dark:text-gray-400">{label}</div>
+-      <div className="text-2xl font-semibold mt-2">{value}</div>
+-    </div>
+-  );
+-}
