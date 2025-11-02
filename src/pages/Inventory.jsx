@@ -434,11 +434,61 @@ export default function Inventory() {
             </>
           )}
           {storeId && (
-            <div className="col-span-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <div className="text-sm text-blue-900 dark:text-blue-100">
-                Using selected store: <span className="font-semibold">{storeName}</span> ({storeId})
+            <>
+              <div>
+                <label htmlFor="StoreId" className="block text-sm mb-1">
+                  Store ID
+                </label>
+                {storeLoadError && (
+                  <p className="text-xs text-red-600 dark:text-red-400 mb-1">
+                    Stores error: {storeLoadError}
+                  </p>
+                )}
+                <select
+                  id="StoreId"
+                  name="StoreId"
+                  value={form.StoreId || storeId}
+                  onChange={(e) => handleSelectStore(e.target.value)}
+                  className="w-full border rounded px-3 py-2"
+                  required
+                >
+                  {storeOptions.length === 0 ? (
+                    <option value="" disabled>
+                      No stores found
+                    </option>
+                  ) : (
+                    <>
+                      <option value={storeId}>
+                        {storeId} (Default)
+                      </option>
+                      {storeOptions
+                        .filter((s) => s.id !== storeId)
+                        .map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.id}
+                          </option>
+                        ))}
+                    </>
+                  )}
+                </select>
               </div>
-            </div>
+
+              <div>
+                <label htmlFor="StoreName" className="block text-sm mb-1">
+                  Store Name
+                </label>
+                <input
+                  id="StoreName"
+                  name="StoreName"
+                  value={form.StoreName || storeName}
+                  onChange={handleChange}
+                  className="w-full border rounded px-3 py-2 bg-gray-50 dark:bg-gray-800"
+                  placeholder="Auto-filled"
+                  autoComplete="off"
+                  readOnly
+                />
+              </div>
+            </>
           )}
 
           <div>
