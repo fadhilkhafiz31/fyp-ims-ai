@@ -11,10 +11,12 @@ import {
   query,
   serverTimestamp,
   updateDoc,
+  where,
 } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { PageReady } from "../components/NProgressBar";
 import { useRole } from "../hooks/useRole";
+import { useStore } from "../contexts/StoreContext";
 
 const INVENTORY_COL = "inventory";
 
@@ -29,6 +31,7 @@ function KPI({ label, value }) {
 
 export default function Inventory() {
   const { role } = useRole();
+  const { storeId, storeName } = useStore();
 
   const defaultFormState = {
     name: "",
@@ -49,7 +52,17 @@ export default function Inventory() {
 
   // ---- realtime subscription ----
   useEffect(() => {
-    const qRef = query(collection(db, INVENTORY_COL), orderBy("updatedAt", "desc"));
+    if (!storeId) {
+      setItems([]);
+      setLoading(false);
+      return;
+    }
+
+    const qRef = query(
+      collection(db, INVENTORY_COL),
+      where("storeId", "==", storeId),
+      orderBy("updatedAt", "desc")
+    );
     const unsub = onSnapshot(
       qRef,
       (snap) => {
@@ -63,7 +76,7 @@ export default function Inventory() {
       }
     );
     return unsub;
-  }, []);
+  }, [storeId]);
 
   // ---- derived totals (for quick context) ----
   const totals = useMemo(() => {
@@ -100,9 +113,8 @@ export default function Inventory() {
     if (form.reorderPoint === "" || Number.isNaN(Number(form.reorderPoint)))
       errors.push("Reorder point must be a number.");
     if (!form.category.trim()) errors.push("Category is required.");
-    if (!form.StoreName.trim()) errors.push("Store Name is required.");
-    if (!form.StoreId.trim()) errors.push("Store ID is required.");
     if (!form.Keywords.trim()) errors.push("Keywords are required.");
+    if (!storeId && !form.StoreId.trim()) errors.push("Store ID is required.");
     return errors;
   };
 
@@ -116,19 +128,23 @@ export default function Inventory() {
       return;
     }
 
-    const trimmed = {
+    // Use selected store if available, otherwise fall back to form values
+    const finalStoreId = storeId || (form.StoreId || "").trim();
+    const finalStoreName = storeName || (form.StoreName || "").trim();
+
+    const payload = {
       name: form.name.trim(),
       sku: form.sku.trim(),
       qty: Number(form.qty),
       reorderPoint: Number(form.reorderPoint),
       category: form.category.trim(),
-      StoreId: (form.StoreId || "").trim(),
-      StoreName: (form.StoreName || "").trim(),
+      // canonical fields (lowercase)
+      storeId: finalStoreId,
+      storeName: finalStoreName,
+      // legacy compatibility
+      StoreId: finalStoreId,
+      StoreName: finalStoreName,
       Keywords: (form.Keywords || "").trim(),
-    };
-
-    const payload = {
-      ...trimmed,
       updatedAt: serverTimestamp(),
     };
 
@@ -163,8 +179,8 @@ export default function Inventory() {
       qty: String(Number(it.qty ?? 0)),
       reorderPoint: String(Number(it.reorderPoint ?? 5)),
       category: it.category || "",
-      StoreId: it.StoreId || "",
-      StoreName: it.StoreName || "",
+      StoreId: it.storeId || it.StoreId || "",
+      StoreName: it.storeName || it.StoreName || "",
       Keywords: Array.isArray(it.Keywords) ? it.Keywords.join(", ") : it.Keywords || "",
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -215,7 +231,14 @@ export default function Inventory() {
 
       {/* Add / Edit form */}
       <section className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-white dark:bg-gray-900">
-        <h2 className="font-semibold text-lg mb-4">{editingId ? "Edit Item" : "Add New Item"}</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-lg">{editingId ? "Edit Item" : "Add New Item"}</h2>
+          {storeName && (
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              Store: <span className="font-medium">{storeName}</span>
+            </span>
+          )}
+        </div>
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
@@ -300,37 +323,48 @@ export default function Inventory() {
             />
           </div>
 
-          <div>
-            <label htmlFor="StoreName" className="block text-sm mb-1">
-              Store Name
-            </label>
-            <input
-              id="StoreName"
-              name="StoreName"
-              value={form.StoreName}
-              onChange={handleChange}
-              className="w-full border rounded px-3 py-2"
-              placeholder="e.g., Main Outlet"
-              autoComplete="off"
-              required
-            />
-          </div>
+          {!storeId && (
+            <>
+              <div>
+                <label htmlFor="StoreName" className="block text-sm mb-1">
+                  Store Name
+                </label>
+                <input
+                  id="StoreName"
+                  name="StoreName"
+                  value={form.StoreName}
+                  onChange={handleChange}
+                  className="w-full border rounded px-3 py-2"
+                  placeholder="e.g., Main Outlet"
+                  autoComplete="off"
+                  required
+                />
+              </div>
 
-          <div>
-            <label htmlFor="StoreId" className="block text-sm mb-1">
-              Store ID
-            </label>
-            <input
-              id="StoreId"
-              name="StoreId"
-              value={form.StoreId}
-              onChange={handleChange}
-              className="w-full border rounded px-3 py-2"
-              placeholder="e.g., ST-001"
-              autoComplete="off"
-              required
-            />
-          </div>
+              <div>
+                <label htmlFor="StoreId" className="block text-sm mb-1">
+                  Store ID
+                </label>
+                <input
+                  id="StoreId"
+                  name="StoreId"
+                  value={form.StoreId}
+                  onChange={handleChange}
+                  className="w-full border rounded px-3 py-2"
+                  placeholder="e.g., ST-001"
+                  autoComplete="off"
+                  required
+                />
+              </div>
+            </>
+          )}
+          {storeId && (
+            <div className="col-span-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <div className="text-sm text-blue-900 dark:text-blue-100">
+                Using selected store: <span className="font-semibold">{storeName}</span> ({storeId})
+              </div>
+            </div>
+          )}
 
           <div>
             <label htmlFor="Keywords" className="block text-sm mb-1">

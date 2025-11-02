@@ -1,10 +1,12 @@
 // src/pages/StockNotification.jsx
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { useAuth } from "../contexts/AuthContext";
+import { useStore } from "../contexts/StoreContext";
 import { PageReady } from "../components/NProgressBar";
+import LocationSelector from "../components/LocationSelector";
 
 // ============================================
 // Constants
@@ -170,11 +172,11 @@ function TopNavigation() {
   );
 }
 
-function SideNavigation() {
+function SideNavigation({ activeItemCount }) {
   const menuItems = [
     { icon: "grid", label: "Dashboard", path: "/dashboard" },
     { icon: "location", label: "Location", path: "/location" },
-    { icon: "bell", label: "Stock Notification", path: "/stock-notification", active: true, badge: 1 },
+    { icon: "bell", label: "Stock Notification", path: "/stock-notification", active: true, badge: activeItemCount || 0 },
     { icon: "envelope", label: "Message", path: "/messages" },
     { icon: "user", label: "My Profile", path: "/profile" },
     { icon: "gear", label: "Settings", path: "/settings" },
@@ -313,16 +315,22 @@ function OutOfStockCard({ item }) {
 // ============================================
 export default function StockNotification() {
   const { user } = useAuth();
+  const { storeId } = useStore();
   const [inventory, setInventory] = useState([]);
-  const [selectedLocation, setSelectedLocation] = useState(
-    "99 Speedmart Acacia, Nilai"
-  );
 
   // ============================================
   // Effects
   // ============================================
   useEffect(() => {
-    const invRef = collection(db, "inventory");
+    if (!storeId) {
+      setInventory([]);
+      return;
+    }
+
+    const invRef = query(
+      collection(db, "inventory"),
+      where("storeId", "==", storeId)
+    );
     const unsubscribe = onSnapshot(invRef, (snapshot) => {
       const items = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -332,7 +340,7 @@ export default function StockNotification() {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [storeId]);
 
   // ============================================
   // Computed Values
@@ -358,61 +366,13 @@ export default function StockNotification() {
       {/* Sidebar + Main Content */}
       <div className="flex">
         {/* Side Navigation */}
-        <SideNavigation />
+        <SideNavigation activeItemCount={outOfStockItems.length} />
 
         {/* Main Content Area */}
         <main className="flex-1 ml-64 p-6">
-          {/* Location and Branding Section */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <svg
-                className="w-6 h-6 text-red-600 dark:text-red-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-              <div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">Choose Location:</div>
-                <div className="text-base font-medium text-gray-900 dark:text-gray-100">
-                  {selectedLocation}
-                </div>
-              </div>
-            </div>
-
-            {/* SmartStockAI Branding */}
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center">
-                <svg
-                  className="w-5 h-5 text-purple-600 dark:text-purple-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                  />
-                </svg>
-              </div>
-              <span className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                SmartStockAI 1.5
-              </span>
-            </div>
+          {/* Location Selector */}
+          <div className="mb-6">
+            <LocationSelector />
           </div>
 
           {/* Out of Stock Items Grid */}

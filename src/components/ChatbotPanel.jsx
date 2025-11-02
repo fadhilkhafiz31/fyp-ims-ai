@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useStore } from "../contexts/StoreContext";
 
 export default function ChatbotPanel() {
   const webhookUrl = useMemo(() => import.meta.env.VITE_AI_WEBHOOK_URL || "", []);
+  const { storeId } = useStore();
   const [messages, setMessages] = useState([
     { role: "assistant", text: "Hi! I can help check item availability and stock levels." },
   ]);
@@ -35,7 +37,11 @@ export default function ChatbotPanel() {
       let res = await fetch(detectUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, languageCode: "en" }),
+        body: JSON.stringify({ 
+          text, 
+          languageCode: "en",
+          storeId: storeId || "", // Include selected store
+        }),
       });
       if (!res.ok) {
         // Fallback to existing DF-like payload endpoint
@@ -45,7 +51,7 @@ export default function ChatbotPanel() {
           body: JSON.stringify({
             queryResult: {
               queryText: text,
-              parameters: { any: text },
+              parameters: { any: text, store: storeId || "" }, // Include store in parameters
             },
           }),
         });

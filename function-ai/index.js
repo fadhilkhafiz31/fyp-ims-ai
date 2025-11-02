@@ -24,22 +24,44 @@ app.use(express.json());
 const norm = (s) => (s || "").toString().trim().toLowerCase();
 const tokens = (s) => norm(s).split(/[^a-z0-9]+/).filter(Boolean);
 
-async function searchInventory({ term, storeId }) {
-  const snap = await db.collection("inventory").get();
-  const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-  const q = norm(term);
+async function queryInventoryByStoreAndTerm({ term, storeId }) {
+  const qNorm = norm(term);
   const qTokens = tokens(term);
 
-  let filtered = items.filter(x => {
+  // First try strict match within selected store
+  if (storeId) {
+    const snap = await db.collection("inventory")
+      .where("storeId", "==", storeId)
+      .get();
+    
+    let items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    items = items.filter(x => {
+      const fields = [x.name, x.sku, x.category].map(norm);
+      const sym = fields.some(f => f.includes(qNorm) || qNorm.includes(f));
+      const tok = qTokens.length ? fields.some(f => qTokens.every(tk => f.includes(tk))) : false;
+      return sym || tok;
+    });
+    
+    if (items.length) return { items, scope: "selected" };
+  }
+
+  // Fallback: search all stores
+  const snap = await db.collection("inventory").get();
+  let all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  all = all.filter(x => {
     const fields = [x.name, x.sku, x.category].map(norm);
-    const sym = fields.some(f => f.includes(q) || q.includes(f));
+    const sym = fields.some(f => f.includes(qNorm) || qNorm.includes(f));
     const tok = qTokens.length ? fields.some(f => qTokens.every(tk => f.includes(tk))) : false;
     return sym || tok;
   });
 
-  if (storeId) filtered = filtered.filter(x => norm(x.storeId) === norm(storeId));
-  return filtered;
+  return { items: all, scope: "any" };
+}
+
+// Legacy function for backward compatibility
+async function searchInventory({ term, storeId }) {
+  const { items } = await queryInventoryByStoreAndTerm({ term, storeId });
+  return items;
 }
 
 const reply = (text) => ({ fulfillmentText: text });
@@ -58,17 +80,35 @@ async function dfHandler(req, res) {
       const store = p.store || "";
       if (!term) return res.json(reply("What item are you looking for?"));
 
-      const results = await searchInventory({ term, storeId: store });
-      if (!results.length) {
-        return res.json(reply(`I couldn't find "${term}". Want me to check similar items?`));
+      const { items, scope } = await queryInventoryByStoreAndTerm({ term, storeId: store });
+      if (!items.length) {
+        return res.json(reply(`I couldn't find "${term}" in any store right now.`));
       }
-      const it = results[0];
+      
+      const it = items[0];
       const qty = Number(it.qty ?? 0);
       const where = it.storeName ? ` at ${it.storeName}` : "";
+      
+      // If found in selected store
+      if (scope === "selected") {
+        if (qty > 0) {
+          return res.json(reply(`Yes, ${it.name} (SKU: ${it.sku || "—"}) — ${qty} in stock${where}.`));
+        }
+        return res.json(reply(`Currently out of stock for ${it.name}${where}.`));
+      }
+      
+      // If found in different store
+      if (scope === "any" && store) {
+        return res.json(reply(
+          `There is no ${term} in your selected store. You can go to ${it.storeName || it.storeId}; they have it there.`
+        ));
+      }
+      
+      // Generic response if no store selected
       if (qty > 0) {
         return res.json(reply(`Yes, ${it.name} (SKU: ${it.sku || "—"}) — ${qty} in stock${where}.`));
       }
-      return res.json(reply(`Currently out of stock for ${it.name}${where}. I can notify the supplier for restock.`));
+      return res.json(reply(`Currently out of stock for ${it.name}${where}.`));
     }
 
     if (intent === "LowStockList") {
@@ -120,6 +160,7 @@ app.post("/detect-intent", async (req, res) => {
 
     const text = (req.body?.text || req.body?.message || req.body?.query || "").toString();
     const languageCode = req.body?.languageCode || "en";
+    const storeId = req.body?.storeId || "";
     if (!text.trim()) return res.status(400).json({ fulfillmentText: "What should I check?" });
 
     const request = {
@@ -127,9 +168,51 @@ app.post("/detect-intent", async (req, res) => {
       queryInput: {
         text: { text, languageCode },
       },
+      // Pass storeId as query parameter so it flows through to fulfillment
+      queryParams: {
+        parameters: storeId ? { store: storeId } : {},
+      },
     };
 
     const [response] = await sessionClient.detectIntent(request);
+    
+    // Check if fulfillment needs webhook processing
+    if (response.queryResult?.intent?.displayName === "CheckStock") {
+      // Process with our custom logic
+      const p = response.queryResult.parameters || {};
+      const term = p.product || p.any || text;
+      const store = p.store || storeId;
+      
+      if (term) {
+        const { items, scope } = await queryInventoryByStoreAndTerm({ term, storeId: store });
+        if (!items.length) {
+          return res.json({ 
+            fulfillmentText: `I couldn't find "${term}" in any store right now.`,
+            raw: response.queryResult 
+          });
+        }
+        
+        const it = items[0];
+        const qty = Number(it.qty ?? 0);
+        const where = it.storeName ? ` at ${it.storeName}` : "";
+        
+        let fulfillmentText;
+        if (scope === "selected") {
+          fulfillmentText = qty > 0
+            ? `Yes, ${it.name} (SKU: ${it.sku || "—"}) — ${qty} in stock${where}.`
+            : `Currently out of stock for ${it.name}${where}.`;
+        } else if (scope === "any" && store) {
+          fulfillmentText = `There is no ${term} in your selected store. You can go to ${it.storeName || it.storeId}; they have it there.`;
+        } else {
+          fulfillmentText = qty > 0
+            ? `Yes, ${it.name} (SKU: ${it.sku || "—"}) — ${qty} in stock${where}.`
+            : `Currently out of stock for ${it.name}${where}.`;
+        }
+        
+        return res.json({ fulfillmentText, raw: response.queryResult });
+      }
+    }
+
     const fulfillmentText = response.queryResult?.fulfillmentText || "Sorry, I didn't get that.";
     return res.json({ fulfillmentText, raw: response.queryResult });
   } catch (e) {
