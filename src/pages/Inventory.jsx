@@ -14,6 +14,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { PageReady } from "../components/NProgressBar";
+import { useRole } from "../hooks/useRole";
 
 const INVENTORY_COL = "inventory";
 
@@ -27,6 +28,8 @@ function KPI({ label, value }) {
 }
 
 export default function Inventory() {
+  const { role } = useRole();
+
   const defaultFormState = {
     name: "",
     sku: "",
@@ -193,6 +196,12 @@ export default function Inventory() {
         </div>
         <h1 className="text-3xl font-bold">Inventory</h1>
         <p className="text-gray-600 dark:text-gray-400">
+          Welcome,{" "}
+          <span className="font-medium text-gray-900 dark:text-gray-200">
+            {role ? role.charAt(0).toUpperCase() + role.slice(1) : "User"}
+          </span>
+        </p>
+        <p className="text-gray-600 dark:text-gray-400 text-sm">
           Manage items (Name, SKU, Qty, Reorder Point, Category, Store Name, Store ID, Keywords)
         </p>
       </header>

@@ -10,8 +10,10 @@ import {
   runTransaction,
 } from "firebase/firestore";
 import { db } from "../lib/firebase";
+import { useRole } from "../hooks/useRole";
 
 export default function Transactions() {
+  const { role } = useRole();
   const [items, setItems] = useState([]);
   const [catalog, setCatalog] = useState([]);
   const [form, setForm] = useState({ type: "IN", itemId: "", qty: 1, note: "" });
@@ -129,10 +131,18 @@ export default function Transactions() {
 
   return (
     <div className="p-6 space-y-8">
-      <h1 className="text-2xl font-bold">Transactions</h1>
-      <p className="text-sm text-gray-500">
-        Log stock in/out and view recent activity.
-      </p>
+      <header className="space-y-1">
+        <h1 className="text-2xl font-bold">Transactions</h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          Welcome,{" "}
+          <span className="font-medium text-gray-900 dark:text-gray-200">
+            {role ? role.charAt(0).toUpperCase() + role.slice(1) : "User"}
+          </span>
+        </p>
+        <p className="text-sm text-gray-500">
+          Log stock in/out and view recent activity.
+        </p>
+      </header>
 
       {/* Last 7 Days Visual Summary */}
       <div className="border rounded-lg p-4 bg-gray-900/30 space-y-3">
