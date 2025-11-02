@@ -6,6 +6,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDocs,
   onSnapshot,
   orderBy,
   query,
@@ -50,6 +51,7 @@ export default function Inventory() {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [storeOptions, setStoreOptions] = useState([]);
+  const [storeLoadError, setStoreLoadError] = useState("");
 
   // ---- realtime subscription ----
   useEffect(() => {
@@ -81,16 +83,46 @@ export default function Inventory() {
 
   // ---- load store options ----
   useEffect(() => {
+    const ref = collection(db, "storeId");
+    
+    // Log Firebase project for verification
+    // eslint-disable-next-line no-console
+    console.log("Firebase projectId:", db.app.options.projectId);
+    
+    // Live listener with error callback
     const unsub = onSnapshot(
-      collection(db, "storeId"),
+      ref,
       (snap) => {
+        // eslint-disable-next-line no-console
+        console.log("[storeId] onSnapshot size:", snap.size);
         const opts = snap.docs.map((d) => ({
           id: d.id,
           name: d.data()?.storeName || d.id,
         }));
+        // eslint-disable-next-line no-console
+        console.log("[storeId] options:", opts);
         setStoreOptions(opts);
+        setStoreLoadError("");
+      },
+      (err) => {
+        // eslint-disable-next-line no-console
+        console.error("[storeId] onSnapshot error:", err);
+        setStoreLoadError(err.message || "Failed to load stores");
       }
     );
+    
+    // One-shot fallback for diagnostics
+    (async () => {
+      try {
+        const s = await getDocs(ref);
+        // eslint-disable-next-line no-console
+        console.log("[storeId] getDocs size:", s.size, "ids:", s.docs.map((d) => d.id));
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error("[storeId] getDocs error:", e);
+      }
+    })();
+    
     return () => unsub();
   }, []);
 
@@ -354,6 +386,11 @@ export default function Inventory() {
                 <label htmlFor="StoreId" className="block text-sm mb-1">
                   Store ID
                 </label>
+                {storeLoadError && (
+                  <p className="text-xs text-red-600 dark:text-red-400 mb-1">
+                    Stores error: {storeLoadError}
+                  </p>
+                )}
                 <select
                   id="StoreId"
                   name="StoreId"
@@ -362,12 +399,20 @@ export default function Inventory() {
                   className="w-full border rounded px-3 py-2"
                   required
                 >
-                  <option value="">Select a store…</option>
-                  {storeOptions.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.id}
+                  {storeOptions.length === 0 ? (
+                    <option value="" disabled>
+                      No stores found
                     </option>
-                  ))}
+                  ) : (
+                    <>
+                      <option value="">Select a store…</option>
+                      {storeOptions.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.id}
+                        </option>
+                      ))}
+                    </>
+                  )}
                 </select>
               </div>
 
