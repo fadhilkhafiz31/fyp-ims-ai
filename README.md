@@ -98,10 +98,14 @@
   ```
 
 - Restart dev server: `npm run dev`.
+- **Production build and deploy** (recommended):
+  - Windows: `.\deploy.ps1`
+  - Linux/Mac: `./deploy.sh`
 - One‑off production build with URL baked in:
 
   ```bash
   VITE_AI_WEBHOOK_URL="https://asia-southeast1-<project-id>.cloudfunctions.net/webhook" npm run build
+  firebase deploy --only hosting
   ```
 
 ### 2) Backend (Firebase Functions)
