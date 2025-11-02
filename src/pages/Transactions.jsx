@@ -145,20 +145,20 @@ export default function Transactions() {
       </header>
 
       {/* Last 7 Days Visual Summary */}
-      <div className="border rounded-lg p-4 bg-gray-900/30 space-y-3">
-        <h2 className="font-semibold text-lg mb-2">📦 Last 7 Days Summary</h2>
+      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-900 space-y-3">
+        <h2 className="font-semibold text-lg text-gray-900 dark:text-gray-100">📦 Last 7 Days Summary</h2>
 
         <div className="text-sm leading-relaxed">
-          <p className="text-green-400">
+          <p className="text-green-700 dark:text-green-400">
             + IN: <b>{last7.inQty}</b> units ({last7.inTx.length} transactions)
           </p>
-          <p className="text-red-400">
+          <p className="text-red-700 dark:text-red-400">
             – OUT: <b>{last7.outQty}</b> units ({last7.outTx.length} transactions)
           </p>
-          <hr className="my-2 border-gray-700" />
+          <hr className="my-2 border-gray-300 dark:border-gray-700" />
           <p
             className={`font-medium ${
-              last7.net >= 0 ? "text-green-400" : "text-red-400"
+              last7.net >= 0 ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"
             }`}
           >
             {last7.net >= 0 ? "▲ Net Gain" : "▼ Net Loss"}:{" "}
@@ -169,27 +169,27 @@ export default function Transactions() {
 
         {/* Per-item breakdown */}
         {last7.byItem.length > 0 && (
-          <div className="mt-3 border-t border-gray-700 pt-3">
-            <div className="text-sm font-semibold mb-1 text-gray-300">Per Item</div>
-            <div className="grid grid-cols-3 text-sm font-semibold text-gray-400 border-b border-gray-700 pb-1">
+          <div className="mt-3 border-t border-gray-300 dark:border-gray-700 pt-3">
+            <div className="text-sm font-semibold mb-1 text-gray-900 dark:text-gray-100">Per Item</div>
+            <div className="grid grid-cols-3 text-sm font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-300 dark:border-gray-700 pb-1">
               <div>Item</div>
-              <div className="text-green-500">IN Qty</div>
-              <div className="text-red-500">OUT Qty</div>
+              <div className="text-green-700 dark:text-green-400">IN Qty</div>
+              <div className="text-red-700 dark:text-red-400">OUT Qty</div>
             </div>
             {last7.byItem.map((it) => (
               <div
                 key={it.id || it.name}
-                className="grid grid-cols-3 text-sm border-b border-gray-800 py-1"
+                className="grid grid-cols-3 text-sm border-b border-gray-200 dark:border-gray-800 py-1"
               >
-                <div className="truncate">
+                <div className="truncate text-gray-900 dark:text-gray-100">
                   {displayNameById(it.id || it.name, it.name)}
-                  <span className="ml-2 text-xs text-gray-400">(current: {currentQtyByIdOrName(it.id, it.name)})</span>
+                  <span className="ml-2 text-xs text-gray-600 dark:text-gray-400">(current: {currentQtyByIdOrName(it.id, it.name)})</span>
                 </div>
-                <div className="text-green-400">
-                  ➕ {it.inQty} <span className="text-xs text-gray-500">IN</span>
+                <div className="text-green-700 dark:text-green-400">
+                  ➕ {it.inQty} <span className="text-xs text-gray-600 dark:text-gray-400">IN</span>
                 </div>
-                <div className="text-red-400">
-                  ➖ {it.outQty} <span className="text-xs text-gray-500">OUT</span>
+                <div className="text-red-700 dark:text-red-400">
+                  ➖ {it.outQty} <span className="text-xs text-gray-600 dark:text-gray-400">OUT</span>
                 </div>
               </div>
             ))}
