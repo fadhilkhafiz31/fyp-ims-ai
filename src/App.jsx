@@ -9,6 +9,7 @@ const Register = lazy(() => import("./pages/Register"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Inventory = lazy(() => import("./pages/Inventory"));
 const Transactions = lazy(() => import("./pages/Transactions"));
+const StockNotification = lazy(() => import("./pages/StockNotification"));
 
 export default function App() {
   return (
@@ -55,6 +56,18 @@ export default function App() {
                 <RoleGuard allow={["admin", "staff"]}>
                   <PageReady />
                   <Transactions />
+                </RoleGuard>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/stock-notification"
+            element={
+              <ProtectedRoute>
+                <RoleGuard allow={["admin", "staff"]}>
+                  <PageReady />
+                  <StockNotification />
                 </RoleGuard>
               </ProtectedRoute>
             }

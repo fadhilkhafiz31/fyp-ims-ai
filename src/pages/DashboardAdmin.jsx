@@ -82,7 +82,7 @@ function LowStockTable({ lowStock }) {
   );
 }
 
-function QuickActions() {
+function QuickActions({ lowStockCount }) {
   return (
     <section className="flex flex-wrap gap-4 mt-6">
       <Link
@@ -90,6 +90,17 @@ function QuickActions() {
         className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg shadow-sm transition"
       >
         Manage Inventory
+      </Link>
+      <Link
+        to="/stock-notification"
+        className="relative bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 rounded-lg shadow-sm transition"
+      >
+        Stock Notifications
+        {lowStockCount > 0 && (
+          <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+            {lowStockCount}
+          </span>
+        )}
       </Link>
       <Link
         to="/transactions"
@@ -168,7 +179,7 @@ export default function DashboardAdmin() {
       </header>
 
       {/* Quick Actions */}
-      <QuickActions />
+      <QuickActions lowStockCount={lowStock.length} />
 
       {/* KPI Cards */}
       <section className="grid grid-cols-1 sm:grid-cols-4 gap-6">

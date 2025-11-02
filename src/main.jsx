@@ -13,6 +13,7 @@ const Register = lazy(() => import("./pages/Register"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Inventory = lazy(() => import("./pages/Inventory"));
 const Transactions = lazy(() => import("./pages/Transactions"));
+const StockNotification = lazy(() => import("./pages/StockNotification"));
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -60,6 +61,19 @@ ReactDOM.createRoot(document.getElementById("root")).render(
                   <RoleGuard allow={["admin", "staff"]}>
                     <PageReady />
                     <Transactions />
+                  </RoleGuard>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* ✅ Stock Notification — only admin & staff can access */}
+            <Route
+              path="/stock-notification"
+              element={
+                <ProtectedRoute>
+                  <RoleGuard allow={["admin", "staff"]}>
+                    <PageReady />
+                    <StockNotification />
                   </RoleGuard>
                 </ProtectedRoute>
               }
