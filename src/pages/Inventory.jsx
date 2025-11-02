@@ -49,6 +49,7 @@ export default function Inventory() {
   const [form, setForm] = useState(() => ({ ...defaultFormState }));
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [storeOptions, setStoreOptions] = useState([]);
 
   // ---- realtime subscription ----
   useEffect(() => {
@@ -78,6 +79,21 @@ export default function Inventory() {
     return unsub;
   }, [storeId]);
 
+  // ---- load store options ----
+  useEffect(() => {
+    const unsub = onSnapshot(
+      collection(db, "storeId"),
+      (snap) => {
+        const opts = snap.docs.map((d) => ({
+          id: d.id,
+          name: d.data()?.storeName || d.id,
+        }));
+        setStoreOptions(opts);
+      }
+    );
+    return () => unsub();
+  }, []);
+
   // ---- derived totals (for quick context) ----
   const totals = useMemo(() => {
     const totalQty = items.reduce((s, it) => s + Number(it.qty ?? 0), 0);
@@ -90,6 +106,15 @@ export default function Inventory() {
 
   // ---- helpers ----
   const resetForm = () => setForm({ ...defaultFormState });
+
+  const handleSelectStore = (id) => {
+    const found = storeOptions.find((s) => s.id === id);
+    setForm((f) => ({
+      ...f,
+      StoreId: found?.id || "",
+      StoreName: found?.name || "",
+    }));
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -326,6 +351,27 @@ export default function Inventory() {
           {!storeId && (
             <>
               <div>
+                <label htmlFor="StoreId" className="block text-sm mb-1">
+                  Store ID
+                </label>
+                <select
+                  id="StoreId"
+                  name="StoreId"
+                  value={form.StoreId}
+                  onChange={(e) => handleSelectStore(e.target.value)}
+                  className="w-full border rounded px-3 py-2"
+                  required
+                >
+                  <option value="">Select a store…</option>
+                  {storeOptions.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.id}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
                 <label htmlFor="StoreName" className="block text-sm mb-1">
                   Store Name
                 </label>
@@ -334,26 +380,10 @@ export default function Inventory() {
                   name="StoreName"
                   value={form.StoreName}
                   onChange={handleChange}
-                  className="w-full border rounded px-3 py-2"
-                  placeholder="e.g., Main Outlet"
+                  className="w-full border rounded px-3 py-2 bg-gray-50 dark:bg-gray-800"
+                  placeholder="Auto-filled"
                   autoComplete="off"
-                  required
-                />
-              </div>
-
-              <div>
-                <label htmlFor="StoreId" className="block text-sm mb-1">
-                  Store ID
-                </label>
-                <input
-                  id="StoreId"
-                  name="StoreId"
-                  value={form.StoreId}
-                  onChange={handleChange}
-                  className="w-full border rounded px-3 py-2"
-                  placeholder="e.g., ST-001"
-                  autoComplete="off"
-                  required
+                  readOnly
                 />
               </div>
             </>
