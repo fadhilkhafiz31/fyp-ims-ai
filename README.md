@@ -71,7 +71,7 @@
 ## 🤖 AI Integration Flow
 
 1. **User Query (Frontend)**
-   Customer asks: “Is *Blue Lemonade* available?”
+   Customer asks: "Is *Blue Lemonade* available?"
 
 2. **Dialogflow ES Agent (NLP Layer)**
    Detects `CheckStock` intent → forwards to webhook.
@@ -83,7 +83,45 @@
    Shows: *In stock / Low stock / Out of stock* + suggested item.
 
 5. **Inventory Sync (Realtime)**
-   Staff/Admin updates `qty` → `onSnapshot()` refreshes dashboard and feeds the chatbot’s next answer.
+   Staff/Admin updates `qty` → `onSnapshot()` refreshes dashboard and feeds the chatbot's next answer.
+
+---
+
+## 🎯 Intelligent Matching Algorithm
+
+The chatbot uses a **multi-dimensional scoring algorithm** to accurately match user queries with inventory items, preventing false positives and handling natural language variations.
+
+### How It Works
+
+**Product Matching** (0-100 points):
+- **100**: Exact name/SKU match
+- **50**: All tokens match (e.g., "faiza rice 5kg" → "Faiza Rice 5KG Premium")
+- **30**: Partial name match
+- **20**: SKU match
+- **10**: Category match
+
+**Location Matching** (0-100 points):
+- **100**: Exact store name/ID match
+- **50**: Store name starts with query
+- **30**: All location tokens present
+- **10**: Substring match
+
+**Combined Scoring**:
+```
+Total Score = (Product Score × 1000) + Location Score
+```
+This weighting ensures product accuracy is prioritized over location, preventing incorrect product matches even when location is ambiguous.
+
+### Example
+
+**Query:** "Do you have Faiza Rice 5KG at 99 Speedmart Acacia?"
+
+| Item | Product Score | Location Score | Total | Result |
+|------|--------------|----------------|-------|--------|
+| Faiza Rice 5KG at 99 Speedmart Acacia | 100 | 100 | **101,100** | ✅ **Best Match** |
+| Oil Packet 1KG at 99 Speedmart Acacia | 0 | 100 | **0** | ❌ Filtered out |
+
+📖 **Full Documentation:** See [`function-ai/SCORING_ALGORITHM.md`](function-ai/SCORING_ALGORITHM.md) for complete algorithm details, examples, and performance analysis.
 
 ---
 
