@@ -24,6 +24,42 @@ app.use(express.json());
 const norm = (s) => (s || "").toString().trim().toLowerCase();
 const tokens = (s) => norm(s).split(/[^a-z0-9]+/).filter(Boolean);
 
+// Calculate location match score for ranking matches
+// Returns score: 100 (exact) > 50 (starts-with) > 30 (token match) > 10 (contains/substring)
+function calculateLocationScore(item, locationName, locationTokens) {
+  const storeNameNorm = norm(item.storeName || "");
+  const storeIdNorm = norm(item.storeId || "");
+  const locationNorm = norm(locationName);
+  
+  // Exact match gets highest score
+  if (storeNameNorm === locationNorm || storeIdNorm === locationNorm) {
+    return 100;
+  }
+  
+  // Starts with gets medium score
+  if (storeNameNorm.startsWith(locationNorm) || storeIdNorm.startsWith(locationNorm)) {
+    return 50;
+  }
+  
+  // Token match (all tokens present) gets good score
+  if (locationTokens.length > 0 && locationTokens.every(tk => 
+    storeNameNorm.includes(tk) || storeIdNorm.includes(tk)
+  )) {
+    return 30;
+  }
+  
+  // Fallback substring match gets lower score
+  if (storeNameNorm.includes(locationNorm) || 
+      locationNorm.includes(storeNameNorm) ||
+      storeIdNorm.includes(locationNorm) ||
+      locationNorm.includes(storeIdNorm)) {
+    return 10;
+  }
+  
+  // No match
+  return 0;
+}
+
 async function queryInventoryByStoreAndTerm({ term, storeId }) {
   const qNorm = norm(term);
   const qTokens = tokens(term);
@@ -61,30 +97,16 @@ async function queryInventoryByStoreAndTerm({ term, storeId }) {
 // Query inventory by product and location names
 async function queryInventoryByProductAndLocation({ productName, locationName }) {
   const productNorm = norm(productName);
-  const locationNorm = norm(locationName);
   const productTokens = tokens(productName);
+  const locationTokens = tokens(locationName);
+  const locationNorm = norm(locationName);
   
   // Get all inventory items
   const snap = await db.collection("inventory").get();
   let items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   
-  // Filter by location (storeName) - case-insensitive match
+  // Filter by product FIRST (more selective, reduces dataset)
   items = items.filter(item => {
-    const storeNameNorm = norm(item.storeName || "");
-    const storeIdNorm = norm(item.storeId || "");
-    // Check if location matches storeName or storeId
-    return storeNameNorm.includes(locationNorm) || 
-           locationNorm.includes(storeNameNorm) ||
-           storeIdNorm.includes(locationNorm) ||
-           locationNorm.includes(storeIdNorm);
-  });
-  
-  if (items.length === 0) {
-    return { items: [], scope: "location_not_found" };
-  }
-  
-  // Filter by product name - case-insensitive match
-  const matched = items.filter(item => {
     const fields = [item.name, item.sku, item.category].map(norm);
     // Check for substring match or token match
     const sym = fields.some(f => f.includes(productNorm) || productNorm.includes(f));
@@ -92,7 +114,37 @@ async function queryInventoryByProductAndLocation({ productName, locationName })
     return sym || tok;
   });
   
-  return { items: matched, scope: matched.length > 0 ? "found" : "product_not_found" };
+  if (items.length === 0) {
+    return { items: [], scope: "product_not_found" };
+  }
+  
+  // Score all items by location match quality (replaces includes() filtering with scoring)
+  // Priority: exact match > starts-with > token match > contains/substring
+  const scoredMatches = items.map(item => ({
+    item,
+    score: calculateLocationScore(item, locationName, locationTokens)
+  }));
+  
+  // Filter out items with score 0 (no match)
+  const matchedItems = scoredMatches.filter(sm => sm.score > 0);
+  
+  if (matchedItems.length === 0) {
+    return { items: [], scope: "location_not_found" };
+  }
+  
+  // Sort by score (highest first), then by storeName for consistency
+  matchedItems.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    const nameA = norm(a.item.storeName || "");
+    const nameB = norm(b.item.storeName || "");
+    return nameA.localeCompare(nameB);
+  });
+  
+  // Return items in best-match order (highest-scoring match first)
+  return { 
+    items: matchedItems.map(sm => sm.item), 
+    scope: "found" 
+  };
 }
 
 // Legacy function for backward compatibility
@@ -112,96 +164,54 @@ async function dfHandler(req, res) {
     const intent = qr.intent?.displayName || "";
     const p = qr.parameters || {};
 
-    if (intent === "CheckStock") {
-      const term = p.product || p.any || qr.queryText || "";
-      const store = p.store || "";
-      if (!term) return res.json(reply("What item are you looking for?"));
-
-      const { items, scope } = await queryInventoryByStoreAndTerm({ term, storeId: store });
-      if (!items.length) {
-        return res.json(reply(`I couldn't find "${term}" in any store right now.`));
-      }
-      
-      const it = items[0];
-      const qty = Number(it.qty ?? 0);
-      const where = it.storeName ? ` at ${it.storeName}` : "";
-      
-      // If found in selected store
-      if (scope === "selected") {
-        if (qty > 0) {
-          return res.json(reply(`Yes, ${it.name} (SKU: ${it.sku || "—"}) — ${qty} in stock${where}.`));
-        }
-        return res.json(reply(`Currently out of stock for ${it.name}${where}.`));
-      }
-      
-      // If found in different store
-      if (scope === "any" && store) {
-        return res.json(reply(
-          `There is no ${term} in your selected store. You can go to ${it.storeName || it.storeId}; they have it there.`
-        ));
-      }
-      
-      // Generic response if no store selected
-      if (qty > 0) {
-        return res.json(reply(`Yes, ${it.name} (SKU: ${it.sku || "—"}) — ${qty} in stock${where}.`));
-      }
-      return res.json(reply(`Currently out of stock for ${it.name}${where}.`));
-    }
-
-    // Handle location-specific product queries (e.g., "Is Oil Packet 1KG available at 99 Speedmart Acacia?")
-    // Check if both product and location parameters are present
+    // Handle check_stock_at_location intent (primary handler for all stock queries)
     if (intent === "CheckStockAtLocation" || (p.product && p.location)) {
-      const productName = p.product || "";
-      const locationName = p.location || "";
+      // Extract parameters from Dialogflow queryResult.parameters
+      // Dialogflow may pass parameters as arrays, so handle both string and array formats
+      // Use queryText as fallback for product if parameter is not provided
+      const productParam = Array.isArray(p.product) ? p.product[0] : p.product;
+      const productName = productParam || qr.queryText || "";
+      const locationName = (Array.isArray(p.location) ? p.location[0] : p.location) || "";
       
-      if (!productName && !locationName) {
-        // Fall through to generic CheckStock if no specific params
+      // Log parameters for debugging
+      console.log("Product parameter (raw):", p.product);
+      console.log("Location parameter (raw):", p.location);
+      console.log("Query text:", qr.queryText);
+      console.log("Detected product:", productName);
+      console.log("Detected location:", locationName);
+      
+      // Validate if both product and location are provided
+      if (!productName || !locationName) {
+        return res.json(reply("Please specify both product and location."));
+      }
+      
+      // Query Firestore for the correct stock info
+      const { items, scope } = await queryInventoryByProductAndLocation({ 
+        productName, 
+        locationName 
+      });
+      
+      // Handle the response depending on what is found
+      if (scope === "location_not_found") {
+        return res.json(reply(`Sorry, I couldn't find the location "${locationName}". Please check the store name and try again.`));
+      }
+      
+      if (scope === "product_not_found" || items.length === 0) {
+        return res.json(reply(`I couldn't find "${productName}" at ${locationName}. It might be out of stock or not available at that location.`));
+      }
+      
+      // If product found, return the stock info
+      const it = items[0]; // Highest-scoring match (first item after sorting)
+      const qty = Number(it.qty ?? 0);
+      
+      if (qty > 0) {
+        return res.json(reply(
+          `Yes, ${it.name} is available at ${locationName}. There are ${qty} units in stock${it.sku ? ` (SKU: ${it.sku})` : ""}.`
+        ));
       } else {
-        if (!productName) {
-          return res.json(reply("Which product are you looking for?"));
-        }
-        if (!locationName) {
-          // If product but no location, use the generic CheckStock logic
-          const { items, scope } = await queryInventoryByStoreAndTerm({ term: productName, storeId: "" });
-          if (!items.length) {
-            return res.json(reply(`I couldn't find "${productName}" in any store right now.`));
-          }
-          const it = items[0];
-          const qty = Number(it.qty ?? 0);
-          const where = it.storeName ? ` at ${it.storeName}` : "";
-          if (qty > 0) {
-            return res.json(reply(`Yes, ${it.name} (SKU: ${it.sku || "—"}) — ${qty} in stock${where}.`));
-          }
-          return res.json(reply(`Currently out of stock for ${it.name}${where}.`));
-        }
-        
-        // Both product and location provided
-        const { items, scope } = await queryInventoryByProductAndLocation({ 
-          productName, 
-          locationName 
-        });
-        
-        if (scope === "location_not_found") {
-          return res.json(reply(`I couldn't find the location "${locationName}". Please check the store name and try again.`));
-        }
-        
-        if (scope === "product_not_found" || items.length === 0) {
-          return res.json(reply(`I couldn't find "${productName}" at ${locationName}. It might be out of stock or not available at that location.`));
-        }
-        
-        // Found the product at the location
-        const it = items[0];
-        const qty = Number(it.qty ?? 0);
-        
-        if (qty > 0) {
-          return res.json(reply(
-            `Yes, ${it.name} is available at ${locationName}. There are ${qty} units in stock${it.sku ? ` (SKU: ${it.sku})` : ""}.`
-          ));
-        } else {
-          return res.json(reply(
-            `Sorry, ${it.name} is currently out of stock at ${locationName}.`
-          ));
-        }
+        return res.json(reply(
+          `Sorry, ${it.name} is currently out of stock at ${locationName}.`
+        ));
       }
     }
 
@@ -216,23 +226,9 @@ async function dfHandler(req, res) {
       return res.json(reply(`Low stock items:\n${lines.join("\n")}`));
     }
 
-    // Fallback: allow direct free-text stock queries without Dialogflow
-    const rawText = (qr.queryText || req.body?.text || req.body?.message || "").toString().trim();
-    if (rawText) {
-      const results = await searchInventory({ term: rawText, storeId: p.store || "" });
-      if (!results.length) {
-        return res.json(reply(`I couldn't find "${rawText}". Want me to check similar items?`));
-      }
-      const it = results[0];
-      const qty = Number(it.qty ?? 0);
-      const where = it.storeName ? ` at ${it.storeName}` : "";
-      if (qty > 0) {
-        return res.json(reply(`Yes, ${it.name} (SKU: ${it.sku || "—"}) — ${qty} in stock${where}.`));
-      }
-      return res.json(reply(`Currently out of stock for ${it.name}${where}.`));
-    }
-
-    return res.json(reply("Sorry, I didn't get that. Which item should I check?"));
+    // If we reach here, the intent was not check_stock_at_location or LowStockList
+    // Guide user to specify both product and location
+    return res.json(reply("Sorry, I didn't get that. Please specify both the product and location you're looking for. For example: 'Do you have seaweed at 99 Speedmart Acacia?'"));
   } catch (e) {
     console.error(e);
     return res.json(reply("Something went wrong while checking stock."));
@@ -272,85 +268,71 @@ app.post("/detect-intent", async (req, res) => {
     const intentName = response.queryResult?.intent?.displayName || "";
     const p = response.queryResult?.parameters || {};
     
-    // Handle location-specific product queries
+    // Handle check_stock_at_location intent (primary handler for all stock queries)
     if (intentName === "CheckStockAtLocation" || (p.product && p.location)) {
-      const productName = p.product || "";
-      const locationName = p.location || "";
+      // Extract parameters from Dialogflow queryResult.parameters
+      // Dialogflow may pass parameters as arrays, so handle both string and array formats
+      // Use queryText as fallback for product if parameter is not provided
+      const productParam = Array.isArray(p.product) ? p.product[0] : p.product;
+      const productName = productParam || response.queryResult?.queryText || "";
+      const locationName = (Array.isArray(p.location) ? p.location[0] : p.location) || "";
       
-      if (productName && locationName) {
-        const { items, scope } = await queryInventoryByProductAndLocation({ 
-          productName, 
-          locationName 
+      // Log parameters for debugging
+      console.log("detect-intent - Product parameter (raw):", p.product);
+      console.log("detect-intent - Location parameter (raw):", p.location);
+      console.log("detect-intent - Query text:", response.queryResult?.queryText);
+      console.log("detect-intent - Detected product:", productName);
+      console.log("detect-intent - Detected location:", locationName);
+      
+      // Validate if both product and location are provided
+      if (!productName || !locationName) {
+        return res.json({ 
+          fulfillmentText: "Please specify both product and location.",
+          raw: response.queryResult 
         });
-        
-        if (scope === "location_not_found") {
-          return res.json({ 
-            fulfillmentText: `I couldn't find the location "${locationName}". Please check the store name and try again.`,
-            raw: response.queryResult 
-          });
-        }
-        
-        if (scope === "product_not_found" || items.length === 0) {
-          return res.json({ 
-            fulfillmentText: `I couldn't find "${productName}" at ${locationName}. It might be out of stock or not available at that location.`,
-            raw: response.queryResult 
-          });
-        }
-        
-        const it = items[0];
-        const qty = Number(it.qty ?? 0);
-        
-        if (qty > 0) {
-          return res.json({ 
-            fulfillmentText: `Yes, ${it.name} is available at ${locationName}. There are ${qty} units in stock${it.sku ? ` (SKU: ${it.sku})` : ""}.`,
-            raw: response.queryResult 
-          });
-        } else {
-          return res.json({ 
-            fulfillmentText: `Sorry, ${it.name} is currently out of stock at ${locationName}.`,
-            raw: response.queryResult 
-          });
-        }
+      }
+      
+      // Query Firestore for the correct stock info
+      const { items, scope } = await queryInventoryByProductAndLocation({ 
+        productName, 
+        locationName 
+      });
+      
+      // Handle the response depending on what is found
+      if (scope === "location_not_found") {
+        return res.json({ 
+          fulfillmentText: `Sorry, I couldn't find the location "${locationName}". Please check the store name and try again.`,
+          raw: response.queryResult 
+        });
+      }
+      
+      if (scope === "product_not_found" || items.length === 0) {
+        return res.json({ 
+          fulfillmentText: `I couldn't find "${productName}" at ${locationName}. It might be out of stock or not available at that location.`,
+          raw: response.queryResult 
+        });
+      }
+      
+      // If product found, return the stock info
+      const it = items[0]; // Highest-scoring match (first item after sorting)
+      const qty = Number(it.qty ?? 0);
+      
+      if (qty > 0) {
+        return res.json({ 
+          fulfillmentText: `Yes, ${it.name} is available at ${locationName}. There are ${qty} units in stock${it.sku ? ` (SKU: ${it.sku})` : ""}.`,
+          raw: response.queryResult 
+        });
+      } else {
+        return res.json({ 
+          fulfillmentText: `Sorry, ${it.name} is currently out of stock at ${locationName}.`,
+          raw: response.queryResult 
+        });
       }
     }
     
-    // Check if fulfillment needs webhook processing
-    if (intentName === "CheckStock") {
-      // Process with our custom logic
-      const term = p.product || p.any || text;
-      const store = p.store || storeId;
-      
-      if (term) {
-        const { items, scope } = await queryInventoryByStoreAndTerm({ term, storeId: store });
-        if (!items.length) {
-          return res.json({ 
-            fulfillmentText: `I couldn't find "${term}" in any store right now.`,
-            raw: response.queryResult 
-          });
-        }
-        
-        const it = items[0];
-        const qty = Number(it.qty ?? 0);
-        const where = it.storeName ? ` at ${it.storeName}` : "";
-        
-        let fulfillmentText;
-        if (scope === "selected") {
-          fulfillmentText = qty > 0
-            ? `Yes, ${it.name} (SKU: ${it.sku || "—"}) — ${qty} in stock${where}.`
-            : `Currently out of stock for ${it.name}${where}.`;
-        } else if (scope === "any" && store) {
-          fulfillmentText = `There is no ${term} in your selected store. You can go to ${it.storeName || it.storeId}; they have it there.`;
-        } else {
-          fulfillmentText = qty > 0
-            ? `Yes, ${it.name} (SKU: ${it.sku || "—"}) — ${qty} in stock${where}.`
-            : `Currently out of stock for ${it.name}${where}.`;
-        }
-        
-        return res.json({ fulfillmentText, raw: response.queryResult });
-      }
-    }
-
-    const fulfillmentText = response.queryResult?.fulfillmentText || "Sorry, I didn't get that.";
+    // If we reach here, the intent was not check_stock_at_location
+    // Guide user to specify both product and location
+    const fulfillmentText = response.queryResult?.fulfillmentText || "Sorry, I didn't get that. Please specify both the product and location you're looking for. For example: 'Do you have seaweed at 99 Speedmart Acacia?'";
     return res.json({ fulfillmentText, raw: response.queryResult });
   } catch (e) {
     console.error("detect-intent error", e);
