@@ -58,6 +58,43 @@ async function queryInventoryByStoreAndTerm({ term, storeId }) {
   return { items: all, scope: "any" };
 }
 
+// Query inventory by product and location names
+async function queryInventoryByProductAndLocation({ productName, locationName }) {
+  const productNorm = norm(productName);
+  const locationNorm = norm(locationName);
+  const productTokens = tokens(productName);
+  
+  // Get all inventory items
+  const snap = await db.collection("inventory").get();
+  let items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  
+  // Filter by location (storeName) - case-insensitive match
+  items = items.filter(item => {
+    const storeNameNorm = norm(item.storeName || "");
+    const storeIdNorm = norm(item.storeId || "");
+    // Check if location matches storeName or storeId
+    return storeNameNorm.includes(locationNorm) || 
+           locationNorm.includes(storeNameNorm) ||
+           storeIdNorm.includes(locationNorm) ||
+           locationNorm.includes(storeIdNorm);
+  });
+  
+  if (items.length === 0) {
+    return { items: [], scope: "location_not_found" };
+  }
+  
+  // Filter by product name - case-insensitive match
+  const matched = items.filter(item => {
+    const fields = [item.name, item.sku, item.category].map(norm);
+    // Check for substring match or token match
+    const sym = fields.some(f => f.includes(productNorm) || productNorm.includes(f));
+    const tok = productTokens.length ? fields.some(f => productTokens.every(tk => f.includes(tk))) : false;
+    return sym || tok;
+  });
+  
+  return { items: matched, scope: matched.length > 0 ? "found" : "product_not_found" };
+}
+
 // Legacy function for backward compatibility
 async function searchInventory({ term, storeId }) {
   const { items } = await queryInventoryByStoreAndTerm({ term, storeId });
@@ -109,6 +146,63 @@ async function dfHandler(req, res) {
         return res.json(reply(`Yes, ${it.name} (SKU: ${it.sku || "—"}) — ${qty} in stock${where}.`));
       }
       return res.json(reply(`Currently out of stock for ${it.name}${where}.`));
+    }
+
+    // Handle location-specific product queries (e.g., "Is Oil Packet 1KG available at 99 Speedmart Acacia?")
+    // Check if both product and location parameters are present
+    if (intent === "CheckStockAtLocation" || (p.product && p.location)) {
+      const productName = p.product || "";
+      const locationName = p.location || "";
+      
+      if (!productName && !locationName) {
+        // Fall through to generic CheckStock if no specific params
+      } else {
+        if (!productName) {
+          return res.json(reply("Which product are you looking for?"));
+        }
+        if (!locationName) {
+          // If product but no location, use the generic CheckStock logic
+          const { items, scope } = await queryInventoryByStoreAndTerm({ term: productName, storeId: "" });
+          if (!items.length) {
+            return res.json(reply(`I couldn't find "${productName}" in any store right now.`));
+          }
+          const it = items[0];
+          const qty = Number(it.qty ?? 0);
+          const where = it.storeName ? ` at ${it.storeName}` : "";
+          if (qty > 0) {
+            return res.json(reply(`Yes, ${it.name} (SKU: ${it.sku || "—"}) — ${qty} in stock${where}.`));
+          }
+          return res.json(reply(`Currently out of stock for ${it.name}${where}.`));
+        }
+        
+        // Both product and location provided
+        const { items, scope } = await queryInventoryByProductAndLocation({ 
+          productName, 
+          locationName 
+        });
+        
+        if (scope === "location_not_found") {
+          return res.json(reply(`I couldn't find the location "${locationName}". Please check the store name and try again.`));
+        }
+        
+        if (scope === "product_not_found" || items.length === 0) {
+          return res.json(reply(`I couldn't find "${productName}" at ${locationName}. It might be out of stock or not available at that location.`));
+        }
+        
+        // Found the product at the location
+        const it = items[0];
+        const qty = Number(it.qty ?? 0);
+        
+        if (qty > 0) {
+          return res.json(reply(
+            `Yes, ${it.name} is available at ${locationName}. There are ${qty} units in stock${it.sku ? ` (SKU: ${it.sku})` : ""}.`
+          ));
+        } else {
+          return res.json(reply(
+            `Sorry, ${it.name} is currently out of stock at ${locationName}.`
+          ));
+        }
+      }
     }
 
     if (intent === "LowStockList") {
@@ -175,11 +269,54 @@ app.post("/detect-intent", async (req, res) => {
     };
 
     const [response] = await sessionClient.detectIntent(request);
+    const intentName = response.queryResult?.intent?.displayName || "";
+    const p = response.queryResult?.parameters || {};
+    
+    // Handle location-specific product queries
+    if (intentName === "CheckStockAtLocation" || (p.product && p.location)) {
+      const productName = p.product || "";
+      const locationName = p.location || "";
+      
+      if (productName && locationName) {
+        const { items, scope } = await queryInventoryByProductAndLocation({ 
+          productName, 
+          locationName 
+        });
+        
+        if (scope === "location_not_found") {
+          return res.json({ 
+            fulfillmentText: `I couldn't find the location "${locationName}". Please check the store name and try again.`,
+            raw: response.queryResult 
+          });
+        }
+        
+        if (scope === "product_not_found" || items.length === 0) {
+          return res.json({ 
+            fulfillmentText: `I couldn't find "${productName}" at ${locationName}. It might be out of stock or not available at that location.`,
+            raw: response.queryResult 
+          });
+        }
+        
+        const it = items[0];
+        const qty = Number(it.qty ?? 0);
+        
+        if (qty > 0) {
+          return res.json({ 
+            fulfillmentText: `Yes, ${it.name} is available at ${locationName}. There are ${qty} units in stock${it.sku ? ` (SKU: ${it.sku})` : ""}.`,
+            raw: response.queryResult 
+          });
+        } else {
+          return res.json({ 
+            fulfillmentText: `Sorry, ${it.name} is currently out of stock at ${locationName}.`,
+            raw: response.queryResult 
+          });
+        }
+      }
+    }
     
     // Check if fulfillment needs webhook processing
-    if (response.queryResult?.intent?.displayName === "CheckStock") {
+    if (intentName === "CheckStock") {
       // Process with our custom logic
-      const p = response.queryResult.parameters || {};
       const term = p.product || p.any || text;
       const store = p.store || storeId;
       

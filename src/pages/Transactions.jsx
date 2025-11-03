@@ -1,5 +1,6 @@
 // src/pages/Transactions.jsx
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   collection,
   serverTimestamp,
@@ -132,6 +133,11 @@ export default function Transactions() {
   return (
     <div className="p-6 space-y-8">
       <header className="space-y-1">
+        <div>
+          <Link to="/dashboard" className="text-blue-600 hover:underline">
+            ← Back to Dashboard
+          </Link>
+        </div>
         <h1 className="text-2xl font-bold">Transactions</h1>
         <p className="text-gray-600 dark:text-gray-400">
           Welcome,{" "}

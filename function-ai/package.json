@@ -6,6 +6,7 @@
   "scripts": {
     "serve": "firebase emulators:start --only functions",
     "deploy": "firebase deploy --only functions",
+    "test": "node test-webhook.js",
     "clean": "rimraf node_modules package-lock.json && npm i"
   },
   "dependencies": {

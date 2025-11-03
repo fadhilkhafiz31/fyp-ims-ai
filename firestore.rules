@@ -12,20 +12,23 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin'];
     }
     
+    // Helper function to check if user has admin or staff role
+    function isAdminOrStaff() {
+      return request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'staff'];
+    }
+    
     // Inventory collection: authenticated users can read, only admins/staff can write
     match /inventory/{itemId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'staff'];
+      allow write: if isAdminOrStaff();
     }
     
     // Transactions collection: authenticated users can read, only admins/staff can write
     match /transactions/{transactionId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'staff'];
+      allow write: if isAdminOrStaff();
     }
   }
 }
