@@ -1,4 +1,4 @@
-// src/pages/DashboardAdmin.jsx
+// src/pages/Chatbot.jsx
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { collection, onSnapshot } from "firebase/firestore";
@@ -8,7 +8,6 @@ import { useAuth } from "../contexts/AuthContext";
 import { useRole } from "../hooks/useRole";
 import { useStore } from "../contexts/StoreContext";
 import ChatbotPanel from "../components/ChatbotPanel";
-import LocationSelector from "../components/LocationSelector";
 import { PageReady } from "../components/NProgressBar";
 
 // ============================================
@@ -21,21 +20,21 @@ const LOW_STOCK_THRESHOLD = 5;
 // ============================================
 function TopNavigation() {
   return (
-         <nav className="w-full bg-[#2E6A4E] border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
-       <div className="max-w-7xl mx-auto pl-2 pr-4 sm:pl-4 sm:pr-6 lg:px-8">
-         <div className="flex items-center justify-between h-16">
-           {/* Left: SmartStockAI Logo */}
-           <div className="flex items-center gap-2">
-             <img
-               src="/Logo SmartStockAI.png"
-               alt="SmartStockAI Logo"
-               className="w-10 h-10 bg-transparent object-contain"
-               style={{ mixBlendMode: 'normal' }}
-             />
-             <span className="font-bold text-lg text-white">
-               SmartStockAI
-             </span>
-           </div>
+    <nav className="w-full bg-[#2E6A4E] border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto pl-2 pr-4 sm:pl-4 sm:pr-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* Left: SmartStockAI Logo */}
+          <div className="flex items-center gap-2">
+            <img
+              src="/Logo SmartStockAI.png"
+              alt="SmartStockAI Logo"
+              className="w-10 h-10 bg-transparent object-contain"
+              style={{ mixBlendMode: 'normal' }}
+            />
+            <span className="font-bold text-lg text-white">
+              SmartStockAI
+            </span>
+          </div>
 
           {/* Center: Search Bar */}
           <div className="hidden xl:flex flex-1 max-w-lg mx-4">
@@ -99,7 +98,7 @@ function TopNavigation() {
             </div>
 
             {/* Icons */}
-            <Link to="/chatbot" className="p-2 text-white hover:text-green-100 hover:bg-green-700/30 rounded-lg transition text-xl">
+            <Link to="/chatbot" className="p-2 text-white hover:text-green-100 hover:bg-green-700/30 rounded-lg transition text-xl bg-green-700/40">
               🤖
             </Link>
             <button className="p-2 text-white hover:text-green-100 hover:bg-green-700/30 rounded-lg transition">
@@ -165,12 +164,13 @@ function TopNavigation() {
 function SideNavigation({ activeItemCount }) {
   const location = useLocation();
   const isDashboardActive = location.pathname === "/dashboard";
+  const isChatbotActive = location.pathname === "/chatbot";
 
   const menuItems = [
     { icon: "grid", label: "Dashboard", path: "/dashboard", active: isDashboardActive },
     { icon: "transaction", label: "Transaction", path: "/transactions" },
     { icon: "bell", label: "Stock Notification", path: "/stock-notification", badge: activeItemCount || 0 },
-    { icon: "chatbot", label: "SmartStockAI Assistant", path: "/chatbot" },
+    { icon: "chatbot", label: "SmartStockAI Assistant", path: "/chatbot", active: isChatbotActive },
     { icon: "inventory", label: "Inventory", path: "/inventory" },
     { icon: "user", label: "My Profile", path: "#", isMock: true },
     { icon: "gear", label: "Settings", path: "#", isMock: true },
@@ -196,11 +196,6 @@ function SideNavigation({ activeItemCount }) {
       ),
       chatbot: (
         <span className="text-xl">🤖</span>
-      ),
-      envelope: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-        </svg>
       ),
       inventory: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -268,73 +263,10 @@ function SideNavigation({ activeItemCount }) {
   );
 }
 
-function OutOfStockCard({ item }) {
-  const qty = Number(item.qty ?? 0);
-  const isOutOfStock = qty === 0;
-  const statusText = isOutOfStock ? "is out of stock" : "needs restocking";
-
-  return (
-    <div className="relative border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-white dark:bg-gray-900 hover:shadow-lg transition-shadow">
-      {/* Alert badge - centered at top */}
-      <div className="absolute top-1.5 left-1/2 transform -translate-x-1/2 z-10">
-        <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center shadow-lg">
-          <svg
-            className="w-4 h-4 text-white"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-            />
-          </svg>
-        </div>
-      </div>
-
-      {/* Image placeholder */}
-      <div className="aspect-[4/3] bg-gray-100 dark:bg-gray-800 relative">
-        {item.imageUrl ? (
-          <img
-            src={item.imageUrl}
-            alt={item.name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <div className="grid grid-cols-3 gap-1 w-16 h-16 opacity-30">
-              {[...Array(9)].map((_, i) => (
-                <div
-                  key={i}
-                  className="bg-gray-400 dark:bg-gray-600 rounded"
-                />
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Content */}
-      <div className="p-3 text-center">
-        <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100">
-          {item.name} <span className="text-red-600 dark:text-red-400">{statusText}</span>
-        </h3>
-        {!isOutOfStock && (
-          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-            Current stock: {qty}
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ============================================
 // Main Component
 // ============================================
-export default function DashboardAdmin() {
+export default function Chatbot() {
   const { user } = useAuth();
   const { role } = useRole();
   const { storeId } = useStore();
@@ -344,7 +276,7 @@ export default function DashboardAdmin() {
   // Effects
   // ============================================
   useEffect(() => {
-    // Admin sees all inventory items
+    // Get inventory items for badge count
     const invRef = collection(db, "inventory");
     const unsubscribe = onSnapshot(invRef, (snapshot) => {
       const items = snapshot.docs.map((doc) => ({
@@ -383,66 +315,9 @@ export default function DashboardAdmin() {
         <SideNavigation activeItemCount={lowStockItems.length} />
 
         {/* Main Content Area */}
-        <main className="flex-1 ml-64 p-6 space-y-8">
-          {/* Stock Notification Section */}
-          <section>
-            <div className="flex items-center gap-2 mb-4">
-              <svg
-                className="w-6 h-6 text-yellow-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                />
-              </svg>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Stock Notification</h2>
-            </div>
-
-            {lowStockItems.length === 0 ? (
-              <div className="bg-white dark:bg-gray-900 rounded-xl p-12 text-center border border-gray-200 dark:border-gray-700">
-                <div className="inline-block p-4 bg-green-100 dark:bg-green-900/40 rounded-full mb-4">
-                  <svg
-                    className="w-12 h-12 text-green-600 dark:text-green-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                  All Items In Stock
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  No items require restocking at this time.
-                </p>
-              </div>
-                         ) : (
-               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                 {lowStockItems.map((item) => (
-                   <OutOfStockCard key={item.id} item={item} />
-                 ))}
-               </div>
-             )}
-          </section>
-
-          {/* Choose Location Section */}
-          <section>
-            <LocationSelector />
-          </section>
-
+        <main className="flex-1 ml-64 p-6">
           {/* Chatbot Section */}
-          <section id="chatbot">
+          <section>
             <div className="flex items-center gap-2 mb-4">
               <span className="text-2xl">🤖</span>
               <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">SmartStockAI Assistant</h2>

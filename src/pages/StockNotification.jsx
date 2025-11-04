@@ -1,6 +1,6 @@
 // src/pages/StockNotification.jsx
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { useAuth } from "../contexts/AuthContext";
@@ -19,35 +19,61 @@ const LOW_STOCK_THRESHOLD = 5;
 // ============================================
 function TopNavigation() {
   return (
-    <nav className="w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav className="w-full bg-[#2E6A4E] border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto pl-2 pr-4 sm:pl-4 sm:pr-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Left: Logo and Store Name */}
-          <div className="flex items-center gap-4">
-            {/* Logo */}
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">SS</span>
-              </div>
-              <span className="font-bold text-lg text-gray-900 dark:text-gray-100">
-                SmartStockAI
-              </span>
-            </div>
+          {/* Left: SmartStockAI Logo */}
+          <div className="flex items-center gap-2">
+            <img
+              src="/Logo SmartStockAI.png"
+              alt="SmartStockAI Logo"
+              className="w-10 h-10 bg-transparent object-contain"
+              style={{ mixBlendMode: 'normal' }}
+            />
+            <span className="font-bold text-lg text-white">
+              SmartStockAI
+            </span>
+          </div>
 
+          {/* Center: Search Bar */}
+          <div className="hidden xl:flex flex-1 max-w-lg mx-4">
+            <div className="relative w-full">
+              <input
+                type="text"
+                placeholder="Search for an item from nearby location"
+                className="w-full pl-10 pr-4 py-2 border border-green-400/30 rounded-lg bg-white/10 backdrop-blur-sm text-white placeholder-green-100/70 focus:ring-2 focus:ring-green-300 focus:border-transparent focus:bg-white/20"
+              />
+              <svg
+                className="absolute left-3 top-2.5 w-5 h-5 text-green-100"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
+          </div>
+
+          {/* Right: Store Info, Icons and Menu */}
+          <div className="flex items-center gap-3">
             {/* 99 Speedmart Logo */}
-            <div className="hidden md:flex items-center gap-2 border-l border-gray-200 dark:border-gray-700 pl-4">
-              <div className="w-8 h-8 bg-green-600 rounded flex items-center justify-center">
-                <span className="text-white font-bold text-sm">99</span>
-              </div>
-              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                99 SPEEDMART
-              </span>
+            <div className="hidden md:flex items-center border-r border-green-400/30 pr-4">
+              <img 
+                src="/99speedmart logo.png" 
+                alt="99 Speedmart Logo" 
+                className="h-8 w-auto"
+              />
             </div>
 
             {/* Location */}
-            <div className="hidden lg:flex items-center gap-2 text-sm">
+            <div className="hidden lg:flex items-center gap-2 text-sm border-r border-green-400/30 pr-4">
               <svg
-                className="w-5 h-5 text-red-600 dark:text-red-400"
+                className="w-5 h-5 text-red-300"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -65,55 +91,16 @@ function TopNavigation() {
                   d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                 />
               </svg>
-              <span className="text-gray-700 dark:text-gray-300">
+              <span className="text-white">
                 99 Speedmart Acacia, Nilai
               </span>
             </div>
-          </div>
 
-          {/* Center: Search Bar */}
-          <div className="hidden xl:flex flex-1 max-w-lg mx-4">
-            <div className="relative w-full">
-              <input
-                type="text"
-                placeholder="Search for an item from nearby location"
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <svg
-                className="absolute left-3 top-2.5 w-5 h-5 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-            </div>
-          </div>
-
-          {/* Right: Icons and Menu */}
-          <div className="flex items-center gap-3">
             {/* Icons */}
-            <button className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition">
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                />
-              </svg>
-            </button>
-            <button className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition">
+            <Link to="/chatbot" className="p-2 text-white hover:text-green-100 hover:bg-green-700/30 rounded-lg transition text-xl">
+              🤖
+            </Link>
+            <button className="p-2 text-white hover:text-green-100 hover:bg-green-700/30 rounded-lg transition">
               <svg
                 className="w-6 h-6"
                 fill="none"
@@ -128,40 +115,34 @@ function TopNavigation() {
                 />
               </svg>
             </button>
-            <button className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition">
+            <Link to="/stock-notification" className="relative p-2 text-white hover:text-green-100 hover:bg-green-700/30 rounded-lg transition bg-green-700/40">
               <svg
                 className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
+                fill="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                />
+                <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-600 rounded-full"></span>
-            </button>
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-400 rounded-full"></span>
+            </Link>
 
             {/* Menu Links */}
-            <div className="hidden sm:flex items-center gap-4 border-l border-gray-200 dark:border-gray-700 pl-4 ml-2">
+            <div className="hidden sm:flex items-center gap-4 border-l border-green-400/30 pl-4 ml-2">
               <Link
                 to="/"
-                className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition"
+                className="text-sm font-medium text-white hover:text-green-100 transition"
               >
                 HOME
               </Link>
               <Link
                 to="/about"
-                className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition"
+                className="text-sm font-medium text-white hover:text-green-100 transition"
               >
                 ABOUT US
               </Link>
               <Link
                 to="/contact"
-                className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition"
+                className="text-sm font-medium text-white hover:text-green-100 transition"
               >
                 CONTACT
               </Link>
@@ -174,14 +155,19 @@ function TopNavigation() {
 }
 
 function SideNavigation({ activeItemCount }) {
+  const location = useLocation();
+  const isDashboardActive = location.pathname === "/dashboard";
+  const isStockNotificationActive = location.pathname === "/stock-notification";
+
   const menuItems = [
-    { icon: "grid", label: "Dashboard", path: "/dashboard" },
-    { icon: "location", label: "Location", path: "/location" },
-    { icon: "bell", label: "Stock Notification", path: "/stock-notification", active: true, badge: activeItemCount || 0 },
-    { icon: "envelope", label: "Message", path: "/messages" },
-    { icon: "user", label: "My Profile", path: "/profile" },
-    { icon: "gear", label: "Settings", path: "/settings" },
-    { icon: "question", label: "Help & Support", path: "/help" },
+    { icon: "grid", label: "Dashboard", path: "/dashboard", active: isDashboardActive },
+    { icon: "transaction", label: "Transaction", path: "/transactions" },
+    { icon: "bell", label: "Stock Notification", path: "/stock-notification", active: isStockNotificationActive, badge: activeItemCount || 0 },
+    { icon: "chatbot", label: "SmartStockAI Assistant", path: "/chatbot" },
+    { icon: "inventory", label: "Inventory", path: "/inventory" },
+    { icon: "user", label: "My Profile", path: "#", isMock: true },
+    { icon: "gear", label: "Settings", path: "#", isMock: true },
+    { icon: "question", label: "Help & Support", path: "#", isMock: true },
   ];
 
   const getIcon = (iconName) => {
@@ -191,10 +177,9 @@ function SideNavigation({ activeItemCount }) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
         </svg>
       ),
-      location: (
+      transaction: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
         </svg>
       ),
       bell: (
@@ -202,9 +187,12 @@ function SideNavigation({ activeItemCount }) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
       ),
-      envelope: (
+      chatbot: (
+        <span className="text-xl">🤖</span>
+      ),
+      inventory: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
         </svg>
       ),
       user: (
@@ -227,23 +215,34 @@ function SideNavigation({ activeItemCount }) {
     return icons[iconName] || icons.grid;
   };
 
+  const handleMockClick = (e, item) => {
+    if (item.isMock) {
+      e.preventDefault();
+      alert(`${item.label} - Coming soon!`);
+    }
+  };
+
   return (
     <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 h-[calc(100vh-4rem)] overflow-y-auto fixed left-0 top-16">
       <nav className="p-4">
+        <div className="mb-4">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Admin Dashboard</h2>
+        </div>
         <ul className="space-y-2">
           {menuItems.map((item) => (
             <li key={item.path}>
               <Link
                 to={item.path}
+                onClick={(e) => handleMockClick(e, item)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${
                   item.active
-                    ? "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300"
+                    ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300"
                     : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                 }`}
               >
                 {getIcon(item.icon)}
                 <span className="font-medium">{item.label}</span>
-                {item.badge && (
+                {item.badge && item.badge > 0 && (
                   <span className="ml-auto w-5 h-5 bg-red-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
                     {item.badge}
                   </span>
@@ -263,12 +262,12 @@ function OutOfStockCard({ item }) {
   const statusText = isOutOfStock ? "is out of stock" : "needs restocking";
 
   return (
-    <div className="relative border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-white dark:bg-gray-900 hover:shadow-lg transition-shadow">
+    <div className="relative border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-white dark:bg-gray-900 hover:shadow-md transition-shadow">
       {/* Alert badge - centered at top */}
-      <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-10">
-        <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center shadow-lg">
+      <div className="absolute top-1 left-1/2 transform -translate-x-1/2 z-10">
+        <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center shadow-md">
           <svg
-            className="w-6 h-6 text-white"
+            className="w-3 h-3 text-white"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -293,7 +292,7 @@ function OutOfStockCard({ item }) {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <div className="grid grid-cols-3 gap-1 w-24 h-24 opacity-30">
+            <div className="grid grid-cols-3 gap-0.5 w-12 h-12 opacity-30">
               {[...Array(9)].map((_, i) => (
                 <div
                   key={i}
@@ -306,13 +305,13 @@ function OutOfStockCard({ item }) {
       </div>
 
       {/* Content */}
-      <div className="p-4 text-center">
-        <h3 className="font-semibold text-base text-gray-900 dark:text-gray-100">
-          {item.name} <span className="text-red-600 dark:text-red-400">{statusText}</span>
+      <div className="p-2 text-center">
+        <h3 className="font-semibold text-xs text-gray-900 dark:text-gray-100 leading-tight">
+          {item.name} <span className="text-red-600 dark:text-red-400 text-[10px]">{statusText}</span>
         </h3>
         {!isOutOfStock && (
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Current stock: {qty}
+          <p className="text-[10px] text-gray-600 dark:text-gray-400 mt-0.5">
+            Stock: {qty}
           </p>
         )}
       </div>
@@ -428,7 +427,7 @@ export default function StockNotification() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 mb-6">
                 {lowStockItems.map((item) => (
                   <OutOfStockCard key={item.id} item={item} />
                 ))}

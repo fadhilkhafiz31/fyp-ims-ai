@@ -15,6 +15,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Inventory = lazy(() => import("./pages/Inventory"));
 const Transactions = lazy(() => import("./pages/Transactions"));
 const StockNotification = lazy(() => import("./pages/StockNotification"));
+const Chatbot = lazy(() => import("./pages/Chatbot"));
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -76,6 +77,19 @@ ReactDOM.createRoot(document.getElementById("root")).render(
                   <RoleGuard allow={["admin", "staff"]}>
                     <PageReady />
                     <StockNotification />
+                  </RoleGuard>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* ✅ Chatbot — only admin & staff can access */}
+            <Route
+              path="/chatbot"
+              element={
+                <ProtectedRoute>
+                  <RoleGuard allow={["admin", "staff"]}>
+                    <PageReady />
+                    <Chatbot />
                   </RoleGuard>
                 </ProtectedRoute>
               }
