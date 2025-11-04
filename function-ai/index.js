@@ -265,7 +265,7 @@ async function dfHandler(req, res) {
         
         if (qty > 0) {
           return res.json(reply(
-            `Yes, ${it.name} is available at ${locationName}. There are ${qty} units in stock${it.sku ? ` (SKU: ${it.sku})` : ""}.`
+            `Yes, ${it.name} is available at ${locationName}. There are ${qty} units in stock.`
           ));
         } else {
           return res.json(reply(
@@ -279,12 +279,25 @@ async function dfHandler(req, res) {
     if (intent === "CheckStock") {
       // Handle product parameter which may be an array from Dialogflow
       const productParam = Array.isArray(p.product) ? p.product[0] : p.product;
-      const term = productParam || p.any || qr.queryText || "";
+      // If product param is not extracted, try to extract from queryText
+      // Remove common phrases like "do you have", "is there", "check", etc.
+      let term = productParam || p.any || "";
+      if (!term && qr.queryText) {
+        const queryText = qr.queryText.toLowerCase();
+        // Remove common question phrases to extract product name
+        term = queryText
+          .replace(/^(do you have|do we have|is there|are there|check|show me|find|search for|i need|i want)\s+/i, "")
+          .replace(/\?$/, "")
+          .trim();
+      }
+      // Fallback to raw queryText if still empty
+      term = term || qr.queryText || "";
       const storeId = p.store || ""; // Passed from /detect-intent
       
       // Log for debugging
       console.log("CheckStock - Product parameter (raw):", p.product);
       console.log("CheckStock - Store parameter (raw):", p.store);
+      console.log("CheckStock - Query text:", qr.queryText);
       console.log("CheckStock - Detected product/term:", term);
       
       if (!term) return res.json(reply("What item are you looking for?"));
@@ -355,7 +368,7 @@ async function dfHandler(req, res) {
       }
       
       if (qty > 0) {
-        return res.json(reply(`Yes, ${it.name} (SKU: ${it.sku || "—"}) — ${qty} in stock${where}.`));
+        return res.json(reply(`Yes, ${it.name} — ${qty} in stock${where}.`));
       }
       
       return res.json(reply(`Currently out of stock for ${it.name}${where}. I can notify the supplier for restock.`));
@@ -469,7 +482,7 @@ app.post("/detect-intent", async (req, res) => {
         
         if (qty > 0) {
           return res.json({ 
-            fulfillmentText: `Yes, ${it.name} is available at ${locationName}. There are ${qty} units in stock${it.sku ? ` (SKU: ${it.sku})` : ""}.`,
+            fulfillmentText: `Yes, ${it.name} is available at ${locationName}. There are ${qty} units in stock.`,
             raw: response.queryResult 
           });
         } else {
@@ -485,12 +498,25 @@ app.post("/detect-intent", async (req, res) => {
     if (intentName === "CheckStock") {
       // Handle product parameter which may be an array from Dialogflow
       const productParam = Array.isArray(p.product) ? p.product[0] : p.product;
-      const term = productParam || p.any || response.queryResult?.queryText || text || "";
+      // If product param is not extracted, try to extract from queryText
+      // Remove common phrases like "do you have", "is there", "check", etc.
+      let term = productParam || p.any || "";
+      if (!term && response.queryResult?.queryText) {
+        const queryText = response.queryResult.queryText.toLowerCase();
+        // Remove common question phrases to extract product name
+        term = queryText
+          .replace(/^(do you have|do we have|is there|are there|check|show me|find|search for|i need|i want)\s+/i, "")
+          .replace(/\?$/, "")
+          .trim();
+      }
+      // Fallback to raw text if still empty
+      term = term || text || "";
       const storeIdParam = p.store || storeId || "";
       
       // Log for debugging
       console.log("detect-intent CheckStock - Product parameter (raw):", p.product);
       console.log("detect-intent CheckStock - Store parameter (raw):", p.store);
+      console.log("detect-intent CheckStock - Query text:", response.queryResult?.queryText);
       console.log("detect-intent CheckStock - Detected product/term:", term);
       
       if (!term) {
@@ -574,7 +600,7 @@ app.post("/detect-intent", async (req, res) => {
       
       if (qty > 0) {
         return res.json({ 
-          fulfillmentText: `Yes, ${it.name} (SKU: ${it.sku || "—"}) — ${qty} in stock${where}.`,
+          fulfillmentText: `Yes, ${it.name} — ${qty} in stock${where}.`,
           raw: response.queryResult 
         });
       }

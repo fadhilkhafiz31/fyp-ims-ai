@@ -5,13 +5,14 @@ import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { useAuth } from "../contexts/AuthContext";
 import { useStore } from "../contexts/StoreContext";
+import { useRole } from "../hooks/useRole";
 import { PageReady } from "../components/NProgressBar";
 import LocationSelector from "../components/LocationSelector";
 
 // ============================================
 // Constants
 // ============================================
-const OUT_OF_STOCK_THRESHOLD = 0;
+const LOW_STOCK_THRESHOLD = 5;
 
 // ============================================
 // Helper Components
@@ -257,6 +258,10 @@ function SideNavigation({ activeItemCount }) {
 }
 
 function OutOfStockCard({ item }) {
+  const qty = Number(item.qty ?? 0);
+  const isOutOfStock = qty === 0;
+  const statusText = isOutOfStock ? "is out of stock" : "needs restocking";
+
   return (
     <div className="relative border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-white dark:bg-gray-900 hover:shadow-lg transition-shadow">
       {/* Alert badge - centered at top */}
@@ -303,8 +308,13 @@ function OutOfStockCard({ item }) {
       {/* Content */}
       <div className="p-4 text-center">
         <h3 className="font-semibold text-base text-gray-900 dark:text-gray-100">
-          {item.name} <span className="text-red-600 dark:text-red-400">is out of stock</span>
+          {item.name} <span className="text-red-600 dark:text-red-400">{statusText}</span>
         </h3>
+        {!isOutOfStock && (
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            Current stock: {qty}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -315,6 +325,7 @@ function OutOfStockCard({ item }) {
 // ============================================
 export default function StockNotification() {
   const { user } = useAuth();
+  const { role } = useRole();
   const { storeId } = useStore();
   const [inventory, setInventory] = useState([]);
 
@@ -322,33 +333,48 @@ export default function StockNotification() {
   // Effects
   // ============================================
   useEffect(() => {
-    if (!storeId) {
-      setInventory([]);
-      return;
+    // If user is admin, get all inventory items (like DashboardAdmin)
+    // Otherwise, filter by storeId if available
+    if (role === "admin") {
+      const invRef = collection(db, "inventory");
+      const unsubscribe = onSnapshot(invRef, (snapshot) => {
+        const items = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setInventory(items);
+      });
+      return () => unsubscribe();
+    } else {
+      // For staff or when storeId is required
+      if (!storeId) {
+        setInventory([]);
+        return;
+      }
+
+      const invRef = query(
+        collection(db, "inventory"),
+        where("storeId", "==", storeId)
+      );
+      const unsubscribe = onSnapshot(invRef, (snapshot) => {
+        const items = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setInventory(items);
+      });
+
+      return () => unsubscribe();
     }
-
-    const invRef = query(
-      collection(db, "inventory"),
-      where("storeId", "==", storeId)
-    );
-    const unsubscribe = onSnapshot(invRef, (snapshot) => {
-      const items = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setInventory(items);
-    });
-
-    return () => unsubscribe();
-  }, [storeId]);
+  }, [storeId, role]);
 
   // ============================================
   // Computed Values
   // ============================================
-  const outOfStockItems = useMemo(
+  const lowStockItems = useMemo(
     () =>
       inventory.filter(
-        (item) => Number(item.qty ?? 0) <= OUT_OF_STOCK_THRESHOLD
+        (item) => Number(item.qty ?? 0) <= LOW_STOCK_THRESHOLD
       ),
     [inventory]
   );
@@ -366,7 +392,7 @@ export default function StockNotification() {
       {/* Sidebar + Main Content */}
       <div className="flex">
         {/* Side Navigation */}
-        <SideNavigation activeItemCount={outOfStockItems.length} />
+        <SideNavigation activeItemCount={lowStockItems.length} />
 
         {/* Main Content Area */}
         <main className="flex-1 ml-64 p-6">
@@ -375,8 +401,8 @@ export default function StockNotification() {
             <LocationSelector />
           </div>
 
-          {/* Out of Stock Items Grid */}
-          {outOfStockItems.length === 0 ? (
+          {/* Low Stock Items Grid */}
+          {lowStockItems.length === 0 ? (
             <div className="bg-white dark:bg-gray-900 rounded-xl p-12 text-center border border-gray-200 dark:border-gray-700">
               <div className="inline-block p-4 bg-green-100 dark:bg-green-900/40 rounded-full mb-4">
                 <svg
@@ -403,7 +429,7 @@ export default function StockNotification() {
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-                {outOfStockItems.map((item) => (
+                {lowStockItems.map((item) => (
                   <OutOfStockCard key={item.id} item={item} />
                 ))}
               </div>
@@ -413,7 +439,7 @@ export default function StockNotification() {
                 <button
                   onClick={() => {
                     alert(
-                      `Notifying supplier to restock ${outOfStockItems.length} item(s).`
+                      `Notifying supplier to restock ${lowStockItems.length} item(s).`
                     );
                     // TODO: Implement actual supplier notification functionality
                   }}

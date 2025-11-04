@@ -22,7 +22,7 @@ export default function Transactions() {
   const txRef = collection(db, "transactions");
   const invRef = collection(db, "inventory");
 
-  // realtime transactions
+  // realtime transactions - Both staff and admin see all transactions
   useEffect(() => {
     const q = query(txRef, orderBy("createdAt", "desc"));
     return onSnapshot(q, (snap) =>
@@ -30,20 +30,27 @@ export default function Transactions() {
     );
   }, []);
 
-  // load inventory
+  // load inventory - Both staff and admin see all inventory from all stores
+  // This allows staff to help customers find items at other locations
   useEffect(() => {
     return onSnapshot(invRef, (snap) =>
       setCatalog(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
   }, []);
 
-  // resolve display name with unit if available
+  // resolve display name with unit and store name for clarity
   const displayNameById = (id, fallbackName) => {
     const it = catalog.find((x) => x.id === id);
     if (!it) return fallbackName || id || "unknown";
     const base = it.name || fallbackName || id;
     const unit = it.unit || it.Unit || it.package || it.size || it.measure || it.UOM || it.uom;
-    return unit ? `${base} ${unit}` : base;
+    const nameWithUnit = unit ? `${base} ${unit}` : base;
+    
+    // Always show store name to distinguish between items from different stores
+    if (it.storeName) {
+      return `${nameWithUnit} - ${it.storeName}`;
+    }
+    return nameWithUnit;
   };
 
   // --- Last 7 Days summary ---
@@ -115,6 +122,7 @@ export default function Transactions() {
           type,
           itemId: form.itemId,
           itemName: inv.name ?? null,
+          storeId: inv.storeId || null, // Store the storeId for transaction tracking
           qty: delta,
           note: (form.note || "").trim() || null,
           createdAt: serverTimestamp(),
@@ -146,7 +154,7 @@ export default function Transactions() {
           </span>
         </p>
         <p className="text-sm text-gray-500">
-          Log stock in/out and view recent activity.
+          Log stock in/out and view recent activity. Staff can see all items from all stores to help customers.
         </p>
       </header>
 
@@ -220,11 +228,21 @@ export default function Transactions() {
           onChange={(e) => setForm((s) => ({ ...s, itemId: e.target.value }))}
         >
           <option value="">Select item…</option>
-          {catalog.map((it) => (
-            <option key={it.id} value={it.id}>
-              {displayNameById(it.id, it.name || it.title || it.id)}
-            </option>
-          ))}
+          {catalog
+            .sort((a, b) => {
+              // Sort by store name first, then by item name
+              const storeA = (a.storeName || "").toLowerCase();
+              const storeB = (b.storeName || "").toLowerCase();
+              if (storeA !== storeB) return storeA.localeCompare(storeB);
+              const nameA = (a.name || "").toLowerCase();
+              const nameB = (b.name || "").toLowerCase();
+              return nameA.localeCompare(nameB);
+            })
+            .map((it) => (
+              <option key={it.id} value={it.id}>
+                {displayNameById(it.id, it.name || it.title || it.id)}
+              </option>
+            ))}
         </select>
 
         <input
@@ -281,9 +299,9 @@ export default function Transactions() {
                 {t.type}
               </div>
               <div>
-                {displayNameById(t.itemId, t.itemName)}{" "}
+                {displayNameById(t.itemId, t.itemName)}
                 {typeof t.balanceAfter === "number"
-                  ? `(stock after: ${t.balanceAfter})`
+                  ? ` (stock after: ${t.balanceAfter})`
                   : ""}
               </div>
               <div>{t.qty}</div>
