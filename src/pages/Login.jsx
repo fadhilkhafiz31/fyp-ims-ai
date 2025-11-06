@@ -46,16 +46,11 @@ export default function Login() {
       {/* Header */}
       <header className="relative z-10 flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-2">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="text-white">
-            <path d="M12 2C6.48 2 2 6.48 2 12c0 1.54.36 2.98.97 4.29l1.93-1.93C4.75 13.85 4.5 13 4.5 12c0-4.14 3.36-7.5 7.5-7.5s7.5 3.36 7.5 7.5c0 .73-.13 1.43-.37 2.08l1.57 1.57C21.27 15.62 21.5 13.87 21.5 12c0-5.24-4.26-9.5-9.5-9.5z" fill="currentColor" opacity="0.7"/>
-            <circle cx="9" cy="9" r="1.5" fill="currentColor"/>
-            <circle cx="15" cy="9" r="1.5" fill="currentColor"/>
-            <path d="M12 13.5c-1.38 0-2.5 1.12-2.5 2.5s1.12 2.5 2.5 2.5 2.5-1.12 2.5-2.5-1.12-2.5-2.5-2.5z" fill="currentColor" opacity="0.7"/>
-            <path d="M7 15l2-2M15 15l-2-2M12 11v2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-          </svg>
-          <span className="text-white text-xl font-semibold">
-            SmartStock<span className="font-bold text-lg">AI</span>
-          </span>
+          <img 
+            src="/Smart Stock AI (1).png" 
+            alt="SmartStock AI Logo" 
+            className="h-12 w-auto"
+          />
         </div>
         <nav className="flex items-center gap-8">
           <Link to="/" className="text-white uppercase text-sm font-medium hover:opacity-80">HOME</Link>

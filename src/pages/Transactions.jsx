@@ -13,6 +13,8 @@ import {
 import { db } from "../lib/firebase";
 import { useRole } from "../hooks/useRole";
 import { PageReady } from "../components/NProgressBar";
+import { useStore } from "../contexts/StoreContext";
+import LocationSelector from "../components/LocationSelector";
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -271,6 +273,7 @@ function SideNavigation({ activeItemCount }) {
 // ============================================
 export default function Transactions() {
   const { role } = useRole();
+  const { storeId } = useStore();
   const [items, setItems] = useState([]);
   const [catalog, setCatalog] = useState([]);
   const [inventory, setInventory] = useState([]);
@@ -297,6 +300,11 @@ export default function Transactions() {
     });
   }, []);
 
+  // Clear selected item when location changes
+  useEffect(() => {
+    setForm((prev) => ({ ...prev, itemId: "" }));
+  }, [storeId]);
+
   // Calculate low stock items for badge
   const lowStockItems = useMemo(
     () =>
@@ -306,19 +314,19 @@ export default function Transactions() {
     [inventory]
   );
 
-  // resolve display name with unit and store name for clarity
+  // Filter catalog by selected location
+  const filteredCatalog = useMemo(() => {
+    if (!storeId) return [];
+    return catalog.filter((item) => item.storeId === storeId);
+  }, [catalog, storeId]);
+
+  // resolve display name with unit (store name not needed since we filter by location)
   const displayNameById = (id, fallbackName) => {
     const it = catalog.find((x) => x.id === id);
     if (!it) return fallbackName || id || "unknown";
     const base = it.name || fallbackName || id;
     const unit = it.unit || it.Unit || it.package || it.size || it.measure || it.UOM || it.uom;
-    const nameWithUnit = unit ? `${base} ${unit}` : base;
-    
-    // Always show store name to distinguish between items from different stores
-    if (it.storeName) {
-      return `${nameWithUnit} - ${it.storeName}`;
-    }
-    return nameWithUnit;
+    return unit ? `${base} ${unit}` : base;
   };
 
   // --- Last 7 Days summary ---
@@ -365,6 +373,7 @@ export default function Transactions() {
   // transaction handler
   async function handleAdd(e) {
     e.preventDefault();
+    if (!storeId) return alert("Please select a location first");
     if (!form.itemId) return alert("Choose an item");
     const delta = Number(form.qty);
     if (!Number.isFinite(delta) || delta <= 0) return alert("Qty must be > 0");
@@ -429,7 +438,7 @@ export default function Transactions() {
               </span>
             </p>
             <p className="text-sm text-gray-500">
-              Log stock in/out and view recent activity. Staff can see all items from all stores to help customers.
+              Select a location first, then log stock in/out for products at that location.
             </p>
           </header>
 
@@ -486,6 +495,9 @@ export default function Transactions() {
         )}
       </div>
 
+      {/* Location Selector */}
+      <LocationSelector />
+
       {/* Entry form */}
       <form onSubmit={handleAdd} className="grid grid-cols-1 md:grid-cols-5 gap-3">
         <select
@@ -501,14 +513,13 @@ export default function Transactions() {
           className="border rounded px-3 py-2"
           value={form.itemId}
           onChange={(e) => setForm((s) => ({ ...s, itemId: e.target.value }))}
+          disabled={!storeId}
         >
-          <option value="">Select item…</option>
-          {catalog
+          <option value="">
+            {storeId ? "Select item…" : "Please select a location first"}
+          </option>
+          {filteredCatalog
             .sort((a, b) => {
-              // Sort by store name first, then by item name
-              const storeA = (a.storeName || "").toLowerCase();
-              const storeB = (b.storeName || "").toLowerCase();
-              if (storeA !== storeB) return storeA.localeCompare(storeB);
               const nameA = (a.name || "").toLowerCase();
               const nameB = (b.name || "").toLowerCase();
               return nameA.localeCompare(nameB);

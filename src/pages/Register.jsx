@@ -77,16 +77,11 @@ export default function Register() {
       {/* Header */}
       <header className="relative z-10 flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-2">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="text-white">
-            <path d="M12 2C6.48 2 2 6.48 2 12c0 1.54.36 2.98.97 4.29l1.93-1.93C4.75 13.85 4.5 13 4.5 12c0-4.14 3.36-7.5 7.5-7.5s7.5 3.36 7.5 7.5c0 .73-.13 1.43-.37 2.08l1.57 1.57C21.27 15.62 21.5 13.87 21.5 12c0-5.24-4.26-9.5-9.5-9.5z" fill="currentColor" opacity="0.7"/>
-            <circle cx="9" cy="9" r="1.5" fill="currentColor"/>
-            <circle cx="15" cy="9" r="1.5" fill="currentColor"/>
-            <path d="M12 13.5c-1.38 0-2.5 1.12-2.5 2.5s1.12 2.5 2.5 2.5 2.5-1.12 2.5-2.5-1.12-2.5-2.5-2.5z" fill="currentColor" opacity="0.7"/>
-            <path d="M7 15l2-2M15 15l-2-2M12 11v2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-          </svg>
-          <span className="text-white text-xl font-semibold">
-            SmartStock<span className="font-bold text-lg">AI</span>
-          </span>
+          <img 
+            src="/Smart Stock AI (1).png" 
+            alt="SmartStock AI Logo" 
+            className="h-12 w-auto"
+          />
         </div>
         <nav className="flex items-center gap-8">
           <Link to="/" className="text-white uppercase text-sm font-medium hover:opacity-80">HOME</Link>
@@ -101,15 +96,11 @@ export default function Register() {
         <form onSubmit={submit} className="w-full max-w-md bg-white rounded-lg shadow-2xl p-8">
           {/* 99 SPEEDMART Logo */}
           <div className="flex items-center justify-center mb-6">
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" className="text-orange-500 absolute -top-1 -left-1">
-                  <path d="M7 18c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12L8.1 13h7.45c.75 0 1.41-.41 1.75-1.03L21.7 4H5.21l-.94-2H1zm16 16c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" fill="currentColor"/>
-                </svg>
-                <span className="text-orange-500 text-3xl font-bold relative z-10">99</span>
-              </div>
-              <span className="text-gray-800 text-2xl font-semibold">SPEEDMART</span>
-            </div>
+            <img 
+              src="/99speedmart logo.png" 
+              alt="99 Speedmart Logo" 
+              className="max-w-80 h-auto"
+            />
           </div>
 
           {/* Heading */}

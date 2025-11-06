@@ -315,24 +315,74 @@ export default function Inventory() {
       return;
     }
 
+    setLoading(true);
+    // eslint-disable-next-line no-console
+    console.log("Inventory: Loading items for storeId:", storeId);
+    let cleanup = () => {};
+    
+    // Try query with orderBy first (requires composite index)
     const qRef = query(
       collection(db, INVENTORY_COL),
       where("storeId", "==", storeId),
       orderBy("updatedAt", "desc")
     );
+    
     const unsub = onSnapshot(
       qRef,
       (snap) => {
-        setItems(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        const itemsData = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        // eslint-disable-next-line no-console
+        console.log(`Inventory: Loaded ${itemsData.length} items for storeId: ${storeId}`);
+        setItems(itemsData);
         setLoading(false);
       },
       (err) => {
         // eslint-disable-next-line no-console
         console.error("onSnapshot error:", err);
-        setLoading(false);
+        
+        // If composite index error, try without orderBy
+        if (err.code === 'failed-precondition' || err.message?.includes('index')) {
+          // eslint-disable-next-line no-console
+          console.warn("Composite index missing, falling back to query without orderBy");
+          const fallbackRef = query(
+            collection(db, INVENTORY_COL),
+            where("storeId", "==", storeId)
+          );
+          
+          const fallbackUnsub = onSnapshot(
+            fallbackRef,
+            (snap) => {
+              const itemsData = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+              // Sort manually by updatedAt
+              itemsData.sort((a, b) => {
+                const aTime = a.updatedAt?.toMillis?.() || 0;
+                const bTime = b.updatedAt?.toMillis?.() || 0;
+                return bTime - aTime;
+              });
+              // eslint-disable-next-line no-console
+              console.log(`Inventory: Loaded ${itemsData.length} items (fallback) for storeId: ${storeId}`);
+              setItems(itemsData);
+              setLoading(false);
+            },
+            (fallbackErr) => {
+              // eslint-disable-next-line no-console
+              console.error("Fallback query error:", fallbackErr);
+              setItems([]);
+              setLoading(false);
+            }
+          );
+          cleanup = () => fallbackUnsub();
+        } else {
+          setItems([]);
+          setLoading(false);
+        }
       }
     );
-    return unsub;
+    
+    return () => {
+      unsub();
+      cleanup();
+    };
   }, [storeId]);
 
   // ---- load store options ----
@@ -887,8 +937,8 @@ export default function Inventory() {
                 <div>{Number(it.qty ?? 0)}</div>
                 <div>{Number(it.reorderPoint ?? 0)}</div>
                 <div className="truncate">{it.category || "—"}</div>
-                <div className="truncate">{it.StoreName || "—"}</div>
-                <div className="truncate">{it.StoreId || "—"}</div>
+                <div className="truncate">{it.storeName || it.StoreName || "—"}</div>
+                <div className="truncate">{it.storeId || it.StoreId || "—"}</div>
                 <div className="truncate">
                   {Array.isArray(it.Keywords) ? it.Keywords.join(", ") : it.Keywords || "—"}
                 </div>
