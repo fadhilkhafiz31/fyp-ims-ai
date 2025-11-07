@@ -40,6 +40,16 @@ app.use(express.json());
 const norm = (s) => (s || "").toString().trim().toLowerCase();
 const tokens = (s) => norm(s).split(/[^a-z0-9]+/).filter(Boolean);
 
+// Format date as "Today is Monday, 6 November 2025"
+function formatTodayDate() {
+  const today = new Date();
+  const dayOfWeek = today.toLocaleString('en-US', { weekday: 'long' });
+  const day = today.getDate();
+  const month = today.toLocaleString('en-US', { month: 'long' });
+  const year = today.getFullYear();
+  return `Today is ${dayOfWeek}, ${day} ${month} ${year}`;
+}
+
 // Calculate product match score for ranking matches
 // Returns score: 100 (exact) > 50 (token match) > 30 (partial name) > 20 (SKU) > 10 (category)
 function calculateProductScore(item, productName, productTokens) {
@@ -501,6 +511,12 @@ async function dfHandler(req, res) {
       if (!low.length) return res.json(reply("All items are healthy."));
       const lines = low.map(x => `• ${x.name} (qty ${Number(x.qty ?? 0)})`);
       return res.json(reply(`Low stock items:\n${lines.join("\n")}`));
+    }
+
+    // Handle date-related intents (GetDate, CurrentDate, WhatDate, whatDay, etc.)
+    if (intent === "GetDate" || intent === "CurrentDate" || intent === "WhatDate" || intent === "whatDay" ||
+        (qr.queryText && /(what|what's|tell me|show me|current|today).*(date|day|today)|(what day|what date|what's the date|what's today)/i.test(qr.queryText))) {
+      return res.json(reply(formatTodayDate()));
     }
 
     // Fallback: If no recognized intent, try to extract product from query text
@@ -965,6 +981,15 @@ app.post("/detect-intent", async (req, res) => {
       
       return res.json({ 
         fulfillmentText: `Currently out of stock for ${it.name}${where}. I can notify the supplier for restock.`,
+        raw: response.queryResult 
+      });
+    }
+
+    // Handle date-related intents (GetDate, CurrentDate, WhatDate, whatDay, etc.)
+    if (intentName === "GetDate" || intentName === "CurrentDate" || intentName === "WhatDate" || intentName === "whatDay" ||
+        (response.queryResult?.queryText && /(what|what's|tell me|show me|current|today).*(date|day|today)|(what day|what date|what's the date|what's today)/i.test(response.queryResult.queryText))) {
+      return res.json({ 
+        fulfillmentText: formatTodayDate(),
         raw: response.queryResult 
       });
     }
