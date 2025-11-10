@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { login } from "../lib/firebase";
+import { login, loginAsGuest } from "../lib/firebase";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -23,6 +23,26 @@ export default function Login() {
       navigate("/dashboard");
     } catch (e) {
       setErr(e.code || e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleGuestLogin() {
+    setErr("");
+    setLoading(true);
+    try {
+      await loginAsGuest();
+      navigate("/chatbot");
+    } catch (e) {
+      // Provide user-friendly error messages
+      if (e.code === "auth/admin-restricted-operation") {
+        setErr("Anonymous authentication is not enabled. Please enable it in Firebase Console under Authentication → Sign-in method → Anonymous.");
+      } else if (e.code === "auth/operation-not-allowed") {
+        setErr("Anonymous authentication is disabled. Please enable it in Firebase Console.");
+      } else {
+        setErr(e.message || e.code || "Failed to sign in as guest. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -156,6 +176,16 @@ export default function Login() {
             className="w-full bg-black text-white font-semibold py-3 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-4"
           >
             {loading ? "Signing in..." : "Log in"}
+          </button>
+
+          {/* Guest Button */}
+          <button
+            type="button"
+            onClick={handleGuestLogin}
+            disabled={loading}
+            className="w-full bg-[#2E6A4E] text-white font-semibold py-3 rounded-lg hover:bg-[#235a43] transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+          >
+            {loading ? "Loading..." : "Continue as Guest"}
           </button>
 
           {/* Sign up Link */}

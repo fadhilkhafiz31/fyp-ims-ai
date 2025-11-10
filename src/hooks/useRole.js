@@ -11,6 +11,15 @@ export function useRole() {
 
   useEffect(() => {
     if (!user) { setRole(null); setReady(true); return; }
+    
+    // Check if user is anonymous (guest)
+    if (user.isAnonymous) {
+      setRole("guest");
+      setReady(true);
+      return;
+    }
+    
+    // For authenticated users, check Firestore for role
     const ref = doc(db, "users", user.uid);
     const unsub = onSnapshot(ref, (snap) => {
       setRole(snap.exists() ? snap.data().role ?? null : null);

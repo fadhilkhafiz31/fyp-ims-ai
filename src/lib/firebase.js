@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { getAuth, signInWithEmailAndPassword, signOut, signInAnonymously } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 // your config (✅ same one you used)
@@ -27,4 +27,8 @@ export function login(email, password) {
 
 export function logout() {
   return signOut(auth);
+}
+
+export function loginAsGuest() {
+  return signInAnonymously(auth);
 }

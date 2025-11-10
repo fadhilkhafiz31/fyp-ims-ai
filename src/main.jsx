@@ -82,15 +82,13 @@ ReactDOM.createRoot(document.getElementById("root")).render(
               }
             />
 
-            {/* ✅ Chatbot — only admin & staff can access */}
+            {/* ✅ Chatbot — accessible by admin, staff, and guests */}
             <Route
               path="/chatbot"
               element={
-                <ProtectedRoute>
-                  <RoleGuard allow={["admin", "staff"]}>
-                    <PageReady />
-                    <Chatbot />
-                  </RoleGuard>
+                <ProtectedRoute allowGuest={true}>
+                  <PageReady />
+                  <Chatbot />
                 </ProtectedRoute>
               }
             />

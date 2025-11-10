@@ -21,21 +21,20 @@ const LOW_STOCK_THRESHOLD = 5;
 // ============================================
 function TopNavigation() {
   return (
-         <nav className="w-full bg-[#2E6A4E] border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
-       <div className="max-w-7xl mx-auto pl-2 pr-4 sm:pl-4 sm:pr-6 lg:px-8">
-         <div className="flex items-center justify-between h-16">
-           {/* Left: SmartStockAI Logo */}
-           <div className="flex items-center gap-2">
-             <img
-               src="/Logo SmartStockAI.png"
-               alt="SmartStockAI Logo"
-               className="w-10 h-10 bg-transparent object-contain"
-               style={{ mixBlendMode: 'normal' }}
-             />
-             <span className="font-bold text-lg text-white">
-               SmartStockAI
-             </span>
-           </div>
+    <nav className="w-full bg-[#2E6A4E] border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
+      <div className="flex items-center h-16">
+        {/* Left: SmartStockAI Logo - Absolute left corner */}
+        <div className="flex items-center pl-2">
+          <img
+            src="/Smart Stock AI (1).png"
+            alt="SmartStockAI Logo"
+            className="h-10 w-auto bg-transparent object-contain"
+            style={{ mixBlendMode: 'normal' }}
+          />
+        </div>
+
+        {/* Center and Right content */}
+        <div className="flex-1 flex items-center justify-between max-w-7xl mx-auto pr-4 sm:pr-6 lg:px-8">
 
           {/* Center: Search Bar */}
           <div className="hidden xl:flex flex-1 max-w-lg mx-4">

@@ -8,6 +8,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useRole } from "../hooks/useRole";
 import { useStore } from "../contexts/StoreContext";
 import ChatbotPanel from "../components/ChatbotPanel";
+import LocationSelector from "../components/LocationSelector";
 import { PageReady } from "../components/NProgressBar";
 
 // ============================================
@@ -18,23 +19,22 @@ const LOW_STOCK_THRESHOLD = 5;
 // ============================================
 // Helper Components
 // ============================================
-function TopNavigation() {
+function TopNavigation({ isGuest = false }) {
   return (
     <nav className="w-full bg-[#2E6A4E] border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto pl-2 pr-4 sm:pl-4 sm:pr-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Left: SmartStockAI Logo */}
-          <div className="flex items-center gap-2">
-            <img
-              src="/Logo SmartStockAI.png"
-              alt="SmartStockAI Logo"
-              className="w-10 h-10 bg-transparent object-contain"
-              style={{ mixBlendMode: 'normal' }}
-            />
-            <span className="font-bold text-lg text-white">
-              SmartStockAI
-            </span>
-          </div>
+      <div className="flex items-center h-16">
+        {/* Left: SmartStockAI Logo - Absolute left corner */}
+        <div className="flex items-center pl-2">
+          <img
+            src="/Smart Stock AI (1).png"
+            alt="SmartStockAI Logo"
+            className="h-10 w-auto bg-transparent object-contain"
+            style={{ mixBlendMode: 'normal' }}
+          />
+        </div>
+
+        {/* Center and Right content */}
+        <div className="flex-1 flex items-center justify-between max-w-7xl mx-auto pr-4 sm:pr-6 lg:px-8">
 
           {/* Center: Search Bar */}
           <div className="hidden xl:flex flex-1 max-w-lg mx-4">
@@ -71,67 +71,73 @@ function TopNavigation() {
               />
             </div>
 
-            {/* Location */}
-            <div className="hidden lg:flex items-center gap-2 text-sm border-r border-green-400/30 pr-4">
-              <svg
-                className="w-5 h-5 text-red-300"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-              <span className="text-white">
-                99 Speedmart Acacia, Nilai
-              </span>
-            </div>
+            {/* Location - Hide for guests (they use LocationSelector instead) */}
+            {!isGuest && (
+              <div className="hidden lg:flex items-center gap-2 text-sm border-r border-green-400/30 pr-4">
+                <svg
+                  className="w-5 h-5 text-red-300"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+                <span className="text-white">
+                  99 Speedmart Acacia, Nilai
+                </span>
+              </div>
+            )}
 
-            {/* Icons */}
-            <Link to="/chatbot" className="p-2 text-white hover:text-green-100 hover:bg-green-700/30 rounded-lg transition text-xl bg-green-700/40">
-              🤖
-            </Link>
-            <button className="p-2 text-white hover:text-green-100 hover:bg-green-700/30 rounded-lg transition">
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                />
-              </svg>
-            </button>
-            <Link to="/stock-notification" className="relative p-2 text-white hover:text-green-100 hover:bg-green-700/30 rounded-lg transition">
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                />
-              </svg>
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-400 rounded-full"></span>
-            </Link>
+            {/* Icons - Hide admin/staff features for guests */}
+            {!isGuest && (
+              <>
+                <Link to="/chatbot" className="p-2 text-white hover:text-green-100 hover:bg-green-700/30 rounded-lg transition text-xl bg-green-700/40">
+                  🤖
+                </Link>
+                <button className="p-2 text-white hover:text-green-100 hover:bg-green-700/30 rounded-lg transition">
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                    />
+                  </svg>
+                </button>
+                <Link to="/stock-notification" className="relative p-2 text-white hover:text-green-100 hover:bg-green-700/30 rounded-lg transition">
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                    />
+                  </svg>
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-400 rounded-full"></span>
+                </Link>
+              </>
+            )}
 
             {/* Menu Links */}
             <div className="hidden sm:flex items-center gap-4 border-l border-green-400/30 pl-4 ml-2">
@@ -268,7 +274,7 @@ function SideNavigation({ activeItemCount }) {
 // ============================================
 export default function Chatbot() {
   const { user } = useAuth();
-  const { role } = useRole();
+  const { role, ready: roleReady } = useRole();
   const { storeId } = useStore();
   const [inventory, setInventory] = useState([]);
 
@@ -276,7 +282,18 @@ export default function Chatbot() {
   // Effects
   // ============================================
   useEffect(() => {
-    // Get inventory items for badge count
+    // Don't fetch if role is not ready yet
+    if (!roleReady) {
+      return;
+    }
+    
+    // Only fetch inventory for admin/staff (not guests)
+    if (role === "guest") {
+      setInventory([]);
+      return;
+    }
+    
+    // Get inventory items for badge count (only for admin/staff)
     const invRef = collection(db, "inventory");
     const unsubscribe = onSnapshot(invRef, (snapshot) => {
       const items = snapshot.docs.map((doc) => ({
@@ -286,7 +303,7 @@ export default function Chatbot() {
       setInventory(items);
     });
     return () => unsubscribe();
-  }, []);
+  }, [role, roleReady]);
 
   // ============================================
   // Computed Values
@@ -302,20 +319,39 @@ export default function Chatbot() {
   // ============================================
   // Render
   // ============================================
+  // Wait for role to be ready before rendering
+  if (!roleReady) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
+        <PageReady />
+        <div className="text-sm text-gray-500">Loading...</div>
+      </div>
+    );
+  }
+  
+  const isGuest = role === "guest";
+  
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <PageReady />
 
       {/* Top Navigation */}
-      <TopNavigation />
+      <TopNavigation isGuest={isGuest} />
 
       {/* Sidebar + Main Content */}
       <div className="flex">
-        {/* Side Navigation */}
-        <SideNavigation activeItemCount={lowStockItems.length} />
+        {/* Side Navigation - Only show for admin/staff */}
+        {!isGuest && <SideNavigation activeItemCount={lowStockItems.length} />}
 
         {/* Main Content Area */}
-        <main className="flex-1 ml-64 p-6">
+        <main className={`flex-1 ${isGuest ? 'p-6' : 'ml-64 p-6'}`}>
+          {/* Location Selector - Show for guests and authenticated users */}
+          {isGuest && (
+            <div className="mb-6">
+              <LocationSelector />
+            </div>
+          )}
+          
           {/* Chatbot Section */}
           <section>
             <div className="flex items-center gap-2 mb-4">
