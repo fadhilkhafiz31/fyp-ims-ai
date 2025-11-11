@@ -71,7 +71,7 @@
 ## 🤖 AI Integration Flow
 
 1. **User Query (Frontend)**
-   Customer asks: "Is *Blue Lemonade* available?"
+   Customer asks: "Do you have *Beras Faiza 5KG* at 99 Speedmart Acacia?"
 
 2. **Dialogflow ES Agent (NLP Layer)**
    Detects `CheckStock` intent → forwards to webhook.

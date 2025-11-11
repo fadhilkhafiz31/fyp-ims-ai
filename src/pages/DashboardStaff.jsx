@@ -8,6 +8,7 @@ import { auth, db } from "../lib/firebase";
 import { useAuth } from "../contexts/AuthContext";
 import ChatbotPanel from "../components/ChatbotPanel";
 import { PageReady } from "../components/NProgressBar";
+import TopNavigation from "../components/TopNavigation";
 
 // ============================================
 // Constants
@@ -167,38 +168,42 @@ export default function DashboardStaff() {
   // Render
   // ============================================
   return (
-    <div className="p-6 space-y-8">
-      <PageReady />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      <TopNavigation role="staff" />
 
-      {/* Header */}
-      <header className="space-y-1">
-        <h1 className="text-3xl font-bold">Staff Dashboard</h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          Welcome, <span className="font-medium text-gray-900 dark:text-gray-200">{user?.displayName || "Staff"}</span>
-        </p>
-      </header>
+      <div className="p-6 space-y-8">
+        <PageReady />
 
-      {/* Quick Actions */}
-      <QuickActions lowStockCount={lowStock.length} />
+        {/* Header */}
+        <header className="space-y-1">
+          <h1 className="text-3xl font-bold">Staff Dashboard</h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Welcome, <span className="font-medium text-gray-900 dark:text-gray-200">{user?.displayName || "Staff"}</span>
+          </p>
+        </header>
 
-      {/* KPI Cards */}
-      <section className="grid grid-cols-1 sm:grid-cols-4 gap-6">
-        <KPI label="Total Items" value={totalItems} />
-        <KPI label="Total Categories" value={totalCategories} />
-        <KPI label="Total Stock Qty" value={totalQty} />
-        <KPI
-          label={`Low Stock (≤ ${LOW_STOCK_THRESHOLD})`}
-          value={lowStock.length}
-          pill={lowStock.length > 0 ? "warning" : "ok"}
-        />
-      </section>
+        {/* Quick Actions */}
+        <QuickActions lowStockCount={lowStock.length} />
 
-      {/* Low Stock Table */}
-      <LowStockTable lowStock={lowStock} />
+        {/* KPI Cards */}
+        <section className="grid grid-cols-1 sm:grid-cols-4 gap-6">
+          <KPI label="Total Items" value={totalItems} />
+          <KPI label="Total Categories" value={totalCategories} />
+          <KPI label="Total Stock Qty" value={totalQty} />
+          <KPI
+            label={`Low Stock (≤ ${LOW_STOCK_THRESHOLD})`}
+            value={lowStock.length}
+            pill={lowStock.length > 0 ? "warning" : "ok"}
+          />
+        </section>
 
-      {/* Chatbot Assistant */}
-      <div className="mt-6">
-        <ChatbotPanel />
+        {/* Low Stock Table */}
+        <LowStockTable lowStock={lowStock} />
+
+        {/* Chatbot Assistant */}
+        <div className="mt-6">
+          <ChatbotPanel />
+        </div>
       </div>
     </div>
   );

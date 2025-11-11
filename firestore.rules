@@ -31,10 +31,16 @@ service cloud.firestore {
       allow write: if isAdminOrStaff();
     }
     
-    // StoreId collection: authenticated users can read (for store selection dropdown)
+    // StoreId collection: allow public read (for About/Contact pages), authenticated users can read (for store selection dropdown)
     match /storeId/{storeDocId} {
-      allow read: if request.auth != null;
+      allow read: if true; // Allow public read for About/Contact pages
       allow write: if isAdminOrStaff();
+    }
+    
+    // Contact messages collection: allow public write (for contact form)
+    match /contact_messages/{messageId} {
+      allow create: if true; // Allow anyone to create contact messages
+      allow read: if isAdminOrStaff(); // Only admin/staff can read messages
     }
   }
 }

@@ -1,6 +1,7 @@
 // src/pages/Dashboard.jsx (Router/Orchestrator)
 import { useRole } from "../hooks/useRole";
 import { PageReady } from "../components/NProgressBar";
+import TopNavigation from "../components/TopNavigation";
 import DashboardCustomer from "./DashboardCustomer";
 import DashboardStaff from "./DashboardStaff";
 import DashboardAdmin from "./DashboardAdmin";
@@ -16,10 +17,13 @@ export default function Dashboard() {
   // ============================================
   if (!ready) {
     return (
-      <div className="p-6">
-        <PageReady />
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          Loading dashboard…
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+        <TopNavigation />
+        <div className="p-6">
+          <PageReady />
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            Loading dashboard…
+          </div>
         </div>
       </div>
     );
