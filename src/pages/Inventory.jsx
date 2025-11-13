@@ -1,6 +1,6 @@
 // src/pages/Inventory.jsx
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, Navigate, useLocation } from "react-router-dom";
 import {
   addDoc,
   collection,
@@ -21,6 +21,18 @@ import { useStore } from "../contexts/StoreContext";
 
 const INVENTORY_COL = "inventory";
 const LOW_STOCK_THRESHOLD = 5;
+
+const formatTimestamp = (ts) => {
+  if (!ts) return "—";
+  const date = typeof ts.toDate === "function" ? ts.toDate() : new Date(ts);
+  return date.toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
 function KPI({ label, value }) {
   return (
@@ -191,6 +203,7 @@ function SideNavigation({ activeItemCount }) {
     { icon: "inventory", label: "Inventory", path: "/inventory", active: isInventoryActive },
     { icon: "user", label: "My Profile", path: "#", isMock: true },
     { icon: "gear", label: "Settings", path: "#", isMock: true },
+    { icon: "logout", label: "Log Out", path: "/login" },
     { icon: "question", label: "Help & Support", path: "#", isMock: true },
   ];
 
@@ -233,6 +246,13 @@ function SideNavigation({ activeItemCount }) {
       question: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      logout: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4-4-4" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12H9" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16v1a3 3 0 01-3 3H7a3 3 0 01-3-3V7a3 3 0 013-3h3a3 3 0 013 3v1" />
         </svg>
       ),
     };
@@ -284,7 +304,7 @@ function SideNavigation({ activeItemCount }) {
 // Main Component
 // ============================================
 export default function Inventory() {
-  const { role } = useRole();
+  const { role, ready: roleReady } = useRole();
   const { storeId, storeName, setStore, stores } = useStore();
 
   const defaultFormState = {
@@ -567,6 +587,19 @@ export default function Inventory() {
       alert("Failed to delete item.");
     }
   };
+
+  if (!roleReady) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
+        <PageReady />
+        <div className="text-sm text-gray-500">Loading...</div>
+      </div>
+    );
+  }
+
+  if (role !== "admin" && role !== "staff") {
+    return <Navigate to="/chatbot" replace />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -916,7 +949,7 @@ export default function Inventory() {
         ) : (
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {/* header */}
-            <div className="grid grid-cols-9 gap-2 px-4 py-2 text-xs uppercase tracking-wide text-gray-500">
+            <div className="grid grid-cols-10 gap-2 px-4 py-2 text-xs uppercase tracking-wide text-gray-500">
               <div>Name</div>
               <div>SKU</div>
               <div>Qty</div>
@@ -924,20 +957,32 @@ export default function Inventory() {
               <div>Category</div>
               <div>Store Name</div>
               <div>Store ID</div>
+              <div>Created</div>
               <div>Keywords</div>
               <div className="text-right">Actions</div>
             </div>
 
             {/* rows */}
             {items.map((it) => (
-              <div key={it.id} className="grid grid-cols-9 gap-2 px-4 py-3 text-sm items-center">
+              <div key={it.id} className="grid grid-cols-10 gap-2 px-4 py-3 text-sm items-center">
                 <div className="truncate">{it.name || "—"}</div>
                 <div className="truncate">{it.sku || "—"}</div>
                 <div>{Number(it.qty ?? 0)}</div>
                 <div>{Number(it.reorderPoint ?? 0)}</div>
                 <div className="truncate">{it.category || "—"}</div>
-                <div className="truncate">{it.storeName || it.StoreName || "—"}</div>
+                <div
+                  className="break-words whitespace-normal text-sm leading-tight"
+                  title={it.storeName || it.StoreName || undefined}
+                >
+                  {it.storeName || it.StoreName || "—"}
+                </div>
                 <div className="truncate">{it.storeId || it.StoreId || "—"}</div>
+                <div
+                  className="break-words whitespace-normal text-sm leading-tight"
+                  title={formatTimestamp(it.createdAt)}
+                >
+                  {formatTimestamp(it.createdAt)}
+                </div>
                 <div className="truncate">
                   {Array.isArray(it.Keywords) ? it.Keywords.join(", ") : it.Keywords || "—"}
                 </div>
