@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useStore } from "../contexts/StoreContext";
+import LocationSelector from "./LocationSelector";
 
 export default function ChatbotPanel() {
   const webhookUrl = useMemo(() => import.meta.env.VITE_AI_WEBHOOK_URL || "", []);
+  const { storeName, storeId } = useStore();
   const [messages, setMessages] = useState([
     { role: "assistant", text: "Hi! I can help check item availability and stock levels." },
   ]);
@@ -32,28 +35,15 @@ export default function ChatbotPanel() {
     try {
       // Try Dialogflow detect-intent passthrough first (ensure no double slash)
       const detectUrl = `${webhookUrl.replace(/\/$/, "")}/detect-intent`;
-      let res = await fetch(detectUrl, {
+      const res = await fetch(detectUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           text, 
           languageCode: "en",
-          storeId: "", // Always search all stores for chatbot queries
+          storeId: storeId || "",
         }),
       });
-      if (!res.ok) {
-        // Fallback to existing DF-like payload endpoint
-        res = await fetch(webhookUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            queryResult: {
-              queryText: text,
-              parameters: { any: text, store: "" }, // Global search
-            },
-          }),
-        });
-      }
       const data = await res.json().catch(() => ({}));
       const reply = data?.fulfillmentText || "Sorry, I couldn't process that.";
       setMessages((m) => [...m, { role: "assistant", text: reply }]);
@@ -66,11 +56,24 @@ export default function ChatbotPanel() {
 
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-900 overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-        <h2 className="font-semibold">SmartStock Assistant</h2>
-        {!import.meta.env.VITE_AI_WEBHOOK_URL && import.meta.env.DEV && (
-          <span className="text-xs text-amber-600 dark:text-amber-400">Demo mode</span>
-        )}
+      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold">SmartStock Assistant</h2>
+          {!import.meta.env.VITE_AI_WEBHOOK_URL && import.meta.env.DEV && (
+            <span className="text-xs text-amber-600 dark:text-amber-400">Demo mode</span>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <LocationSelector label="Store Location:" />
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Selected branch:{" "}
+            <span className="font-semibold text-gray-900 dark:text-gray-100">
+              {storeName || "All locations"}
+            </span>{" "}
+            (include a location in your question for branch-specific answers)
+          </p>
+        </div>
       </div>
 
       <div className="h-80 overflow-y-auto p-4 space-y-3">
@@ -83,6 +86,7 @@ export default function ChatbotPanel() {
                   ? "bg-blue-600 text-white"
                   : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100")
               }
+              style={{ whiteSpace: "pre-line" }}
             >
               {m.text}
             </div>

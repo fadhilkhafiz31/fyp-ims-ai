@@ -508,11 +508,39 @@ async function dfHandler(req, res) {
         groupedByStore.get(storeKey).items.push(item);
       });
 
-      // If we found items but they were outside the user's selected store
-      if (storeId && scope === "selected_empty" && items.length > 0) {
-        const firstMatch = bestMatches[0].item;
+      let selectedStoreGroup = null;
+      if (storeId) {
+        selectedStoreGroup = Array.from(groupedByStore.values()).find(({ items }) =>
+          items.some((item) => item.storeId === storeId)
+        );
+      }
+
+      if (selectedStoreGroup) {
+        const selectedQty = selectedStoreGroup.items.reduce((sum, item) => sum + Number(item.qty ?? 0), 0);
+        const selectedName = selectedStoreGroup.items[0]?.storeName || selectedStoreGroup.items[0]?.storeId || "selected store";
+
+        if (selectedQty > 0) {
+          return res.json(reply(
+            `Yes, ${bestMatches[0].item.name} is available — ${selectedQty} in stock at ${selectedName}.`
+          ));
+        }
+
+        const alternativeGroups = Array.from(groupedByStore.values()).filter((g) => g !== selectedStoreGroup);
+        if (alternativeGroups.length) {
+          const locationList = alternativeGroups
+            .map(({ storeName, items }) => {
+              const totalQty = items.reduce((sum, item) => sum + Number(item.qty ?? 0), 0);
+              return `• ${storeName}: ${totalQty} units`;
+            })
+            .join("\n\n");
+
+          return res.json(reply(
+            `${bestMatches[0].item.name} is not available at ${selectedName} but available at ${alternativeGroups.length} other location(s):\n\n${locationList}`
+          ));
+        }
+
         return res.json(reply(
-          `I couldn't find "${term}" at your selected store, but it is in stock at ${firstMatch.storeName || 'another store'}. We have ${Number(firstMatch.qty ?? 0)} units there.`
+          `Sorry, ${bestMatches[0].item.name} is currently out of stock at ${selectedName}.`
         ));
       }
 
@@ -1010,10 +1038,41 @@ app.post("/detect-intent", async (req, res) => {
       });
 
       // If we found items but they were outside the user's selected store
-      if (storeIdParam && scope === "selected_empty" && items.length > 0) {
-        const firstMatch = bestMatches[0].item;
+      let selectedStoreGroup = null;
+      if (storeIdParam) {
+        selectedStoreGroup = Array.from(groupedByStore.values()).find(({ items }) =>
+          items.some((item) => item.storeId === storeIdParam)
+        );
+      }
+
+      if (selectedStoreGroup) {
+        const selectedQty = selectedStoreGroup.items.reduce((sum, item) => sum + Number(item.qty ?? 0), 0);
+        const selectedName = selectedStoreGroup.items[0]?.storeName || selectedStoreGroup.items[0]?.storeId || "selected store";
+
+        if (selectedQty > 0) {
+          return res.json({ 
+            fulfillmentText: `Yes, ${bestMatches[0].item.name} is available — ${selectedQty} in stock at ${selectedName}.`,
+            raw: response.queryResult 
+          });
+        }
+
+        const alternativeGroups = Array.from(groupedByStore.values()).filter((g) => g !== selectedStoreGroup);
+        if (alternativeGroups.length) {
+          const locationList = alternativeGroups
+            .map(({ storeName, items }) => {
+              const totalQty = items.reduce((sum, item) => sum + Number(item.qty ?? 0), 0);
+              return `• ${storeName}: ${totalQty} units`;
+            })
+            .join("\n\n");
+          
+          return res.json({ 
+            fulfillmentText: `${bestMatches[0].item.name} is not available at ${selectedName} but available at ${alternativeGroups.length} other location(s):\n\n${locationList}`,
+            raw: response.queryResult 
+          });
+        }
+
         return res.json({ 
-          fulfillmentText: `I couldn't find "${term}" at your selected store, but it is in stock at ${firstMatch.storeName || 'another store'}. We have ${Number(firstMatch.qty ?? 0)} units there.`,
+          fulfillmentText: `Sorry, ${bestMatches[0].item.name} is currently out of stock at ${selectedName}.`,
           raw: response.queryResult 
         });
       }
