@@ -1,5 +1,5 @@
 # fyp-ims-ai
-[![Firebase Hosting](https://img.shields.io/badge/Live%20Demo-https%3A%2F%2Fims--ai--821f0.web.app-blue?style=flat&logo=firebase&logoColor=white)](https://ims-ai-821f0.web.app)
+[![Firebase Hosting](https://img.shields.io/badge/Live%20Demo-https%3A%2F%2Fims--ai--821f0.web.app%2Flogin-blue?style=flat&logo=firebase&logoColor=white)](https://ims-ai-821f0.web.app/login)
 
 > **Inventory Management System with AI Chatbot for SMEs**
 > A web-based platform built with **React (Vite)**, **Firebase**, and **Dialogflow ES** to help small businesses manage stock levels, track low-inventory items in real time, and interact with an integrated AI chatbot for stock inquiries.
@@ -74,7 +74,7 @@
    Customer asks: "Do you have *Beras Faiza 5KG* at 99 Speedmart Acacia?"
 
 2. **Dialogflow ES Agent (NLP Layer)**
-   Detects `CheckStock` intent → forwards to webhook.
+   Detects `CheckStockAtLocation` intent → forwards to webhook.
 
 3. **Firebase Cloud Function (Webhook)**
    Reads Firestore (`items/{id}`) in real time → returns availability (and optional alternatives).
