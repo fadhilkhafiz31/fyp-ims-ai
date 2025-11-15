@@ -127,21 +127,29 @@ async function queryInventoryByStoreAndTerm({ term, storeId }) {
   const qNorm = norm(term);
   const qTokens = tokens(term);
 
-  // First try strict match within selected store
+  let prioritizedItems = [];
+  let prioritizedIds = new Set();
+
+  // First try strict match within selected store and keep those matches,
+  // but continue searching globally so we can list every location.
   if (storeId) {
     const snap = await db.collection("inventory")
       .where("storeId", "==", storeId)
       .get();
     
-    let items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    items = items.filter(x => {
+    prioritizedItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    prioritizedItems = prioritizedItems.filter(x => {
       const fields = [x.name, x.sku, x.category].map(norm);
       const sym = fields.some(f => f.includes(qNorm) || qNorm.includes(f));
       const tok = qTokens.length ? fields.some(f => qTokens.every(tk => f.includes(tk))) : false;
       return sym || tok;
     });
-    
-    if (items.length) return { items, scope: "selected" };
+    prioritizedIds = new Set(prioritizedItems.map(item => item.id));
+
+    if (!prioritizedItems.length) {
+      prioritizedItems = [];
+      prioritizedIds = new Set();
+    }
   }
 
   // Fallback: search all stores
@@ -154,7 +162,13 @@ async function queryInventoryByStoreAndTerm({ term, storeId }) {
     return sym || tok;
   });
 
-  return { items: all, scope: "any" };
+  // If we have prioritized matches, prepend them and mark scope
+  if (prioritizedItems.length) {
+    const remaining = all.filter(item => !prioritizedIds.has(item.id));
+    return { items: [...prioritizedItems, ...remaining], scope: "selected+any" };
+  }
+
+  return { items: all, scope: storeId ? "selected_empty" : "any" };
 }
 
 // Query inventory by product and location names
@@ -291,11 +305,38 @@ async function dfHandler(req, res) {
           return res.json(reply(
             `Yes, ${it.name} is available at ${locationName}. There are ${qty} units in stock.`
           ));
-        } else {
+        }
+
+        // Gather alternative locations
+        const { items: alternativeItems } = await queryInventoryByStoreAndTerm({ term: productName, storeId: "" });
+        const alternativeGroups = new Map();
+        alternativeItems.forEach((item) => {
+          const storeKey = item.storeName || item.storeId || "Unknown Store";
+          if (!alternativeGroups.has(storeKey)) {
+            alternativeGroups.set(storeKey, { storeName: storeKey, items: [] });
+          }
+          alternativeGroups.get(storeKey).items.push(item);
+        });
+
+        // Remove the original location from alternatives
+        alternativeGroups.delete(locationName);
+
+        if (alternativeGroups.size) {
+          const locationList = Array.from(alternativeGroups.values())
+            .map(({ storeName, items }) => {
+              const totalQty = items.reduce((sum, item) => sum + Number(item.qty ?? 0), 0);
+              return `• ${storeName}: ${totalQty} units`;
+            })
+            .join("\n\n");
+          
           return res.json(reply(
-            `Sorry, ${it.name} is currently out of stock at ${locationName}.`
+            `${it.name} is not available at ${locationName} but available at ${alternativeGroups.size} other location(s):\n\n${locationList}`
           ));
         }
+
+        return res.json(reply(
+          `Sorry, ${it.name} is currently out of stock at ${locationName}.`
+        ));
       }
       
       // If location is missing but product is detected, search all locations
@@ -358,10 +399,10 @@ async function dfHandler(req, res) {
             const totalQty = items.reduce((sum, item) => sum + Number(item.qty ?? 0), 0);
             return `• ${storeName}: ${totalQty} units`;
           })
-          .join("\n");
+          .join("\n\n");
         
         return res.json(reply(
-          `Yes, ${matchedProductName} is available at ${groupedByStore.size} location(s):\n${locationList}`
+          `Yes, ${matchedProductName} is available at ${groupedByStore.size} location(s):\n\n${locationList}`
         ));
       }
 
@@ -468,7 +509,7 @@ async function dfHandler(req, res) {
       });
 
       // If we found items but they were outside the user's selected store
-      if (scope === "any" && items.length > 0 && storeId) {
+      if (storeId && scope === "selected_empty" && items.length > 0) {
         const firstMatch = bestMatches[0].item;
         return res.json(reply(
           `I couldn't find "${term}" at your selected store, but it is in stock at ${firstMatch.storeName || 'another store'}. We have ${Number(firstMatch.qty ?? 0)} units there.`
@@ -483,10 +524,10 @@ async function dfHandler(req, res) {
             const totalQty = items.reduce((sum, item) => sum + Number(item.qty ?? 0), 0);
             return `• ${storeName}: ${totalQty} units`;
           })
-          .join("\n");
+          .join("\n\n");
         
         return res.json(reply(
-          `Yes, ${productName} is available at ${groupedByStore.size} location(s):\n${locationList}`
+          `Yes, ${productName} is available at ${groupedByStore.size} location(s):\n\n${locationList}`
         ));
       }
 
@@ -582,15 +623,15 @@ async function dfHandler(req, res) {
             // If multiple locations, list them all
             if (groupedByStore.size > 1) {
               const productName = bestMatches[0].item.name;
-              const locationList = Array.from(groupedByStore.values())
-                .map(({ storeName, items }) => {
-                  const totalQty = items.reduce((sum, item) => sum + Number(item.qty ?? 0), 0);
-                  return `• ${storeName}: ${totalQty} units`;
-                })
-                .join("\n");
+          const locationList = Array.from(groupedByStore.values())
+            .map(({ storeName, items }) => {
+              const totalQty = items.reduce((sum, item) => sum + Number(item.qty ?? 0), 0);
+              return `• ${storeName}: ${totalQty} units`;
+            })
+            .join("\n\n");
               
               return res.json(reply(
-                `Yes, ${productName} is available at ${groupedByStore.size} location(s):\n${locationList}`
+            `Yes, ${productName} is available at ${groupedByStore.size} location(s):\n\n${locationList}`
               ));
             }
             
@@ -741,12 +782,38 @@ app.post("/detect-intent", async (req, res) => {
               fulfillmentText: `Yes, ${it.name} is available at ${locationName}. There are ${qty} units in stock.`,
               raw: response.queryResult 
             });
-          } else {
+          }
+
+          const { items: alternativeItems } = await queryInventoryByStoreAndTerm({ term: productName, storeId: "" });
+          const alternativeGroups = new Map();
+          alternativeItems.forEach((item) => {
+            const storeKey = item.storeName || item.storeId || "Unknown Store";
+            if (!alternativeGroups.has(storeKey)) {
+              alternativeGroups.set(storeKey, { storeName: storeKey, items: [] });
+            }
+            alternativeGroups.get(storeKey).items.push(item);
+          });
+
+          alternativeGroups.delete(locationName);
+
+          if (alternativeGroups.size) {
+            const locationList = Array.from(alternativeGroups.values())
+              .map(({ storeName, items }) => {
+                const totalQty = items.reduce((sum, item) => sum + Number(item.qty ?? 0), 0);
+                return `• ${storeName}: ${totalQty} units`;
+              })
+              .join("\n\n");
+            
             return res.json({ 
-              fulfillmentText: `Sorry, ${it.name} is currently out of stock at ${locationName}.`,
+              fulfillmentText: `${it.name} is not available at ${locationName} but available at ${alternativeGroups.size} other location(s):\n\n${locationList}`,
               raw: response.queryResult 
             });
           }
+
+          return res.json({ 
+            fulfillmentText: `Sorry, ${it.name} is currently out of stock at ${locationName}.`,
+            raw: response.queryResult 
+          });
         }
         
         // If location is missing but product is detected, search all locations
@@ -815,10 +882,10 @@ app.post("/detect-intent", async (req, res) => {
               const totalQty = items.reduce((sum, item) => sum + Number(item.qty ?? 0), 0);
               return `• ${storeName}: ${totalQty} units`;
             })
-            .join("\n");
+            .join("\n\n");
           
           return res.json({ 
-            fulfillmentText: `Yes, ${matchedProductName} is available at ${groupedByStore.size} location(s):\n${locationList}`,
+            fulfillmentText: `Yes, ${matchedProductName} is available at ${groupedByStore.size} location(s):\n\n${locationList}`,
             raw: response.queryResult 
           });
         }
@@ -943,7 +1010,7 @@ app.post("/detect-intent", async (req, res) => {
       });
 
       // If we found items but they were outside the user's selected store
-      if (scope === "any" && items.length > 0 && storeIdParam) {
+      if (storeIdParam && scope === "selected_empty" && items.length > 0) {
         const firstMatch = bestMatches[0].item;
         return res.json({ 
           fulfillmentText: `I couldn't find "${term}" at your selected store, but it is in stock at ${firstMatch.storeName || 'another store'}. We have ${Number(firstMatch.qty ?? 0)} units there.`,
@@ -959,10 +1026,10 @@ app.post("/detect-intent", async (req, res) => {
             const totalQty = items.reduce((sum, item) => sum + Number(item.qty ?? 0), 0);
             return `• ${storeName}: ${totalQty} units`;
           })
-          .join("\n");
+          .join("\n\n");
         
         return res.json({ 
-          fulfillmentText: `Yes, ${productName} is available at ${groupedByStore.size} location(s):\n${locationList}`,
+          fulfillmentText: `Yes, ${productName} is available at ${groupedByStore.size} location(s):\n\n${locationList}`,
           raw: response.queryResult 
         });
       }
@@ -1060,10 +1127,10 @@ app.post("/detect-intent", async (req, res) => {
                   const totalQty = items.reduce((sum, item) => sum + Number(item.qty ?? 0), 0);
                   return `• ${storeName}: ${totalQty} units`;
                 })
-                .join("\n");
+                .join("\n\n");
               
               return res.json({ 
-                fulfillmentText: `Yes, ${productName} is available at ${groupedByStore.size} location(s):\n${locationList}`,
+                fulfillmentText: `Yes, ${productName} is available at ${groupedByStore.size} location(s):\n\n${locationList}`,
                 raw: response.queryResult 
               });
             }

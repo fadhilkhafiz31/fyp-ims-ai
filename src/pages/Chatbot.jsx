@@ -19,7 +19,7 @@ const LOW_STOCK_THRESHOLD = 5;
 // ============================================
 // Helper Components
 // ============================================
-function TopNavigation({ isGuest = false }) {
+function TopNavigation({ isRestricted = false }) {
   return (
     <nav className="w-full bg-[#2E6A4E] border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
       <div className="flex items-center h-16">
@@ -72,7 +72,7 @@ function TopNavigation({ isGuest = false }) {
             </div>
 
             {/* Location - Hide for guests (they use LocationSelector instead) */}
-            {!isGuest && (
+            {!isRestricted && (
               <div className="hidden lg:flex items-center gap-2 text-sm border-r border-green-400/30 pr-4">
                 <svg
                   className="w-5 h-5 text-red-300"
@@ -100,7 +100,7 @@ function TopNavigation({ isGuest = false }) {
             )}
 
             {/* Icons - Hide admin/staff features for guests */}
-            {!isGuest && (
+            {!isRestricted && (
               <>
                 <Link to="/chatbot" className="p-2 text-white hover:text-green-100 hover:bg-green-700/30 rounded-lg transition text-xl bg-green-700/40">
                   🤖
@@ -180,6 +180,7 @@ function SideNavigation({ activeItemCount }) {
     { icon: "inventory", label: "Inventory", path: "/inventory" },
     { icon: "user", label: "My Profile", path: "#", isMock: true },
     { icon: "gear", label: "Settings", path: "#", isMock: true },
+    { icon: "logout", label: "Log Out", path: "/login" },
     { icon: "question", label: "Help & Support", path: "#", isMock: true },
   ];
 
@@ -222,6 +223,13 @@ function SideNavigation({ activeItemCount }) {
       question: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      logout: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4-4-4" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12H9" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16v1a3 3 0 01-3 3H7a3 3 0 01-3-3V7a3 3 0 013-3h3a3 3 0 013 3v1" />
         </svg>
       ),
     };
@@ -329,24 +337,24 @@ export default function Chatbot() {
     );
   }
   
-  const isGuest = role === "guest";
+  const isRestricted = role === "guest" || role === "customer";
   
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <PageReady />
 
       {/* Top Navigation */}
-      <TopNavigation isGuest={isGuest} />
+      <TopNavigation isRestricted={isRestricted} />
 
       {/* Sidebar + Main Content */}
       <div className="flex">
         {/* Side Navigation - Only show for admin/staff */}
-        {!isGuest && <SideNavigation activeItemCount={lowStockItems.length} />}
+        {!isRestricted && <SideNavigation activeItemCount={lowStockItems.length} />}
 
         {/* Main Content Area */}
-        <main className={`flex-1 ${isGuest ? 'p-6' : 'ml-64 p-6'}`}>
+        <main className={`flex-1 ${isRestricted ? 'p-6' : 'ml-64 p-6'}`}>
           {/* Location Selector - Show for guests and authenticated users */}
-          {isGuest && (
+          {isRestricted && (
             <div className="mb-6">
               <LocationSelector />
             </div>

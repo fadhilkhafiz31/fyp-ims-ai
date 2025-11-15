@@ -965,11 +965,21 @@ export default function Inventory() {
             {/* rows */}
             {items.map((it) => (
               <div key={it.id} className="grid grid-cols-10 gap-2 px-4 py-3 text-sm items-center">
-                <div className="truncate">{it.name || "—"}</div>
+                <div
+                  className="break-words whitespace-normal text-sm leading-tight"
+                  title={it.name || undefined}
+                >
+                  {it.name || "—"}
+                </div>
                 <div className="truncate">{it.sku || "—"}</div>
                 <div>{Number(it.qty ?? 0)}</div>
                 <div>{Number(it.reorderPoint ?? 0)}</div>
-                <div className="truncate">{it.category || "—"}</div>
+                <div
+                  className="break-words whitespace-normal text-sm leading-tight"
+                  title={it.category || undefined}
+                >
+                  {it.category || "—"}
+                </div>
                 <div
                   className="break-words whitespace-normal text-sm leading-tight"
                   title={it.storeName || it.StoreName || undefined}

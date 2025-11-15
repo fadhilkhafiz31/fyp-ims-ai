@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useStore } from "../contexts/StoreContext";
 
 export default function ChatbotPanel() {
   const webhookUrl = useMemo(() => import.meta.env.VITE_AI_WEBHOOK_URL || "", []);
-  const { storeId } = useStore();
   const [messages, setMessages] = useState([
     { role: "assistant", text: "Hi! I can help check item availability and stock levels." },
   ]);
@@ -32,15 +30,15 @@ export default function ChatbotPanel() {
 
     setSending(true);
     try {
-      // Try Dialogflow detect-intent passthrough first
-      const detectUrl = webhookUrl.replace(/\/$/, "") + "/detect-intent";
+      // Try Dialogflow detect-intent passthrough first (ensure no double slash)
+      const detectUrl = `${webhookUrl.replace(/\/$/, "")}/detect-intent`;
       let res = await fetch(detectUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           text, 
           languageCode: "en",
-          storeId: storeId || "", // Include selected store
+          storeId: "", // Always search all stores for chatbot queries
         }),
       });
       if (!res.ok) {
@@ -51,7 +49,7 @@ export default function ChatbotPanel() {
           body: JSON.stringify({
             queryResult: {
               queryText: text,
-              parameters: { any: text, store: storeId || "" }, // Include store in parameters
+              parameters: { any: text, store: "" }, // Global search
             },
           }),
         });

@@ -33,7 +33,7 @@ export default function Login() {
     setLoading(true);
     try {
       await loginAsGuest();
-      navigate("/chatbot");
+      navigate("/guest-chatbot");
     } catch (e) {
       // Provide user-friendly error messages
       if (e.code === "auth/admin-restricted-operation") {

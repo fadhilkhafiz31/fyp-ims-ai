@@ -165,6 +165,7 @@ function SideNavigation({ activeItemCount }) {
     { icon: "inventory", label: "Inventory", path: "/inventory" },
     { icon: "user", label: "My Profile", path: "#", isMock: true },
     { icon: "gear", label: "Settings", path: "#", isMock: true },
+    { icon: "logout", label: "Log Out", path: "/login" },
     { icon: "question", label: "Help & Support", path: "#", isMock: true },
   ];
 
@@ -207,6 +208,13 @@ function SideNavigation({ activeItemCount }) {
       question: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      logout: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4-4-4" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12H9" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16v1a3 3 0 01-3 3H7a3 3 0 01-3-3V7a3 3 0 013-3h3a3 3 0 013 3v1" />
         </svg>
       ),
     };
@@ -329,41 +337,41 @@ export default function StockNotification() {
   // ============================================
   // Effects
   // ============================================
-  useEffect(() => {
-    // If user is admin, get all inventory items (like DashboardAdmin)
-    // Otherwise, filter by storeId if available
-    if (role === "admin") {
-      const invRef = collection(db, "inventory");
-      const unsubscribe = onSnapshot(invRef, (snapshot) => {
-        const items = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setInventory(items);
-      });
-      return () => unsubscribe();
-    } else {
-      // For staff or when storeId is required
-      if (!storeId) {
-        setInventory([]);
-        return;
-      }
+useEffect(() => {
+  // Admins can view all stores, but when a store is selected in LocationSelector,
+  // we scope results to that location so the UI stays in sync with the inventory page.
+  const baseRef = collection(db, "inventory");
 
-      const invRef = query(
-        collection(db, "inventory"),
-        where("storeId", "==", storeId)
-      );
-      const unsubscribe = onSnapshot(invRef, (snapshot) => {
-        const items = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setInventory(items);
-      });
+  // If a storeId is selected (for both admin & staff), filter by that store.
+  if (storeId) {
+    const storeScopedRef = query(baseRef, where("storeId", "==", storeId));
+    const unsubscribe = onSnapshot(storeScopedRef, (snapshot) => {
+      const items = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setInventory(items);
+    });
+    return () => unsubscribe();
+  }
 
-      return () => unsubscribe();
-    }
-  }, [storeId, role]);
+  // No store selected:
+  // - Admins fall back to viewing every item.
+  // - Staff see nothing until a store is assigned.
+  if (role === "admin") {
+    const unsubscribe = onSnapshot(baseRef, (snapshot) => {
+      const items = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setInventory(items);
+    });
+    return () => unsubscribe();
+  }
+
+  setInventory([]);
+  return () => {};
+}, [storeId, role]);
 
   // ============================================
   // Computed Values
