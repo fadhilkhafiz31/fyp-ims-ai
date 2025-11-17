@@ -8,6 +8,7 @@ import { useStore } from "../contexts/StoreContext";
 import { useRole } from "../hooks/useRole";
 import { PageReady } from "../components/NProgressBar";
 import LocationSelector from "../components/LocationSelector";
+import TopNavigation from "../components/TopNavigation";
 
 // ============================================
 // Constants
@@ -17,142 +18,7 @@ const LOW_STOCK_THRESHOLD = 5;
 // ============================================
 // Helper Components
 // ============================================
-function TopNavigation() {
-  return (
-    <nav className="w-full bg-[#2E6A4E] border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
-      <div className="flex items-center h-16">
-        {/* Left: SmartStockAI Logo - Absolute left corner */}
-        <div className="flex items-center pl-2">
-          <img
-            src="/Smart Stock AI (1).png"
-            alt="SmartStockAI Logo"
-            className="h-10 w-auto bg-transparent object-contain"
-            style={{ mixBlendMode: 'normal' }}
-          />
-        </div>
-
-        {/* Center and Right content */}
-        <div className="flex-1 flex items-center justify-between max-w-7xl mx-auto pr-4 sm:pr-6 lg:px-8">
-          {/* Center: Search Bar */}
-          <div className="hidden xl:flex flex-1 max-w-lg mx-4">
-            <div className="relative w-full">
-              <input
-                type="text"
-                placeholder="Search for an item from nearby location"
-                className="w-full pl-10 pr-4 py-2 border border-green-400/30 rounded-lg bg-white/10 backdrop-blur-sm text-white placeholder-green-100/70 focus:ring-2 focus:ring-green-300 focus:border-transparent focus:bg-white/20"
-              />
-              <svg
-                className="absolute left-3 top-2.5 w-5 h-5 text-green-100"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-            </div>
-          </div>
-
-          {/* Right: Store Info, Icons and Menu */}
-          <div className="flex items-center gap-3">
-            {/* 99 Speedmart Logo */}
-            <div className="hidden md:flex items-center border-r border-green-400/30 pr-4">
-              <img 
-                src="/99speedmart logo.png" 
-                alt="99 Speedmart Logo" 
-                className="h-8 w-auto"
-              />
-            </div>
-
-            {/* Location */}
-            <div className="hidden lg:flex items-center gap-2 text-sm border-r border-green-400/30 pr-4">
-              <svg
-                className="w-5 h-5 text-red-300"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-              <span className="text-white">
-                99 Speedmart Acacia, Nilai
-              </span>
-            </div>
-
-            {/* Icons */}
-            <Link to="/chatbot" className="p-2 text-white hover:text-green-100 hover:bg-green-700/30 rounded-lg transition text-xl">
-              🤖
-            </Link>
-            <button className="p-2 text-white hover:text-green-100 hover:bg-green-700/30 rounded-lg transition">
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                />
-              </svg>
-            </button>
-            <Link to="/stock-notification" className="relative p-2 text-white hover:text-green-100 hover:bg-green-700/30 rounded-lg transition bg-green-700/40">
-              <svg
-                className="w-6 h-6"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-400 rounded-full"></span>
-            </Link>
-
-            {/* Menu Links */}
-            <div className="hidden sm:flex items-center gap-4 border-l border-green-400/30 pl-4 ml-2">
-              <Link
-                to="/dashboard"
-                className="text-sm font-medium text-white hover:text-green-100 transition"
-              >
-                HOME
-              </Link>
-              <Link
-                to="/about"
-                className="text-sm font-medium text-white hover:text-green-100 transition"
-              >
-                ABOUT US
-              </Link>
-              <Link
-                to="/contact"
-                className="text-sm font-medium text-white hover:text-green-100 transition"
-              >
-                CONTACT
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    </nav>
-  );
-}
-
-function SideNavigation({ activeItemCount }) {
+function SideNavigation({ activeItemCount, onClose }) {
   const location = useLocation();
   const isDashboardActive = location.pathname === "/dashboard";
   const isStockNotificationActive = location.pathname === "/stock-notification";
@@ -231,8 +97,18 @@ function SideNavigation({ activeItemCount }) {
   return (
     <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 h-[calc(100vh-4rem)] overflow-y-auto fixed left-0 top-16">
       <nav className="p-4">
-        <div className="mb-4">
+        <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Admin Dashboard</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex items-center justify-center rounded-md p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+            aria-label="Close sidebar"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
         <ul className="space-y-2">
           {menuItems.map((item) => (
@@ -333,6 +209,7 @@ export default function StockNotification() {
   const { role } = useRole();
   const { storeId } = useStore();
   const [inventory, setInventory] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // ============================================
   // Effects
@@ -421,15 +298,20 @@ useEffect(() => {
       <PageReady />
 
       {/* Top Navigation */}
-      <TopNavigation />
+      <TopNavigation role={role} onToggleSidebar={() => setSidebarOpen((v) => !v)} />
 
       {/* Sidebar + Main Content */}
       <div className="flex">
         {/* Side Navigation */}
-        <SideNavigation activeItemCount={lowStockItems.length} />
+        {sidebarOpen && (
+          <SideNavigation
+            activeItemCount={lowStockItems.length}
+            onClose={() => setSidebarOpen(false)}
+          />
+        )}
 
         {/* Main Content Area */}
-        <main className="flex-1 ml-64 p-6">
+        <main className={`flex-1 ${sidebarOpen ? "ml-64" : ""} p-6`}>
           {/* Location Selector */}
           <div className="mb-6">
             <LocationSelector />

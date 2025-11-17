@@ -20,7 +20,7 @@ const LOW_STOCK_THRESHOLD = 5;
 // ============================================
 // Helper Components
 // ============================================
-function SideNavigation({ activeItemCount }) {
+function SideNavigation({ activeItemCount, onClose }) {
   const location = useLocation();
   const isDashboardActive = location.pathname === "/dashboard";
   const isTransactionsActive = location.pathname === "/transactions";
@@ -101,8 +101,18 @@ function SideNavigation({ activeItemCount }) {
   return (
     <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 h-[calc(100vh-4rem)] overflow-y-auto fixed left-0 top-16">
       <nav className="p-4">
-        <div className="mb-4">
+        <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Staff Dashboard</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex items-center justify-center rounded-md p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+            aria-label="Close sidebar"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
         <ul className="space-y-2">
           {menuItems.map((item) => (
@@ -223,6 +233,7 @@ export default function DashboardStaff() {
   const { user } = useAuth();
   const { storeId, storeName } = useStore();
   const [inventory, setInventory] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // ============================================
   // Effects
@@ -275,12 +286,17 @@ export default function DashboardStaff() {
   // ============================================
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <TopNavigation role="staff" />
+      <TopNavigation role="staff" onToggleSidebar={() => setSidebarOpen((v) => !v)} />
 
       <div className="flex">
-        <SideNavigation activeItemCount={lowStock.length} />
+        {sidebarOpen && (
+          <SideNavigation
+            activeItemCount={lowStock.length}
+            onClose={() => setSidebarOpen(false)}
+          />
+        )}
 
-        <main className="flex-1 ml-64 p-6 space-y-8">
+        <main className={`flex-1 ${sidebarOpen ? "ml-64" : ""} p-6 space-y-8`}>
           <PageReady />
 
           {/* Header */}

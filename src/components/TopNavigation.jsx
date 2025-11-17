@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useStore } from "../contexts/StoreContext";
 
-export default function TopNavigation({ role = null }) {
+export default function TopNavigation({ role = null, onToggleSidebar = null }) {
   const { user } = useAuth();
   const { storeName, storeId } = useStore();
 
@@ -19,8 +19,20 @@ export default function TopNavigation({ role = null }) {
   return (
     <nav className="w-full bg-[#2E6A4E] border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
       <div className="flex items-center h-16">
-        {/* Left: SmartStockAI Logo */}
+        {/* Left: Hamburger button (if provided) and SmartStockAI Logo */}
         <div className="flex items-center pl-2">
+          {onToggleSidebar && (
+            <button
+              type="button"
+              onClick={onToggleSidebar}
+              className="mr-2 inline-flex items-center justify-center rounded-md p-2 text-white hover:bg-green-700/30 focus:outline-none focus:ring-2 focus:ring-white"
+              aria-label="Toggle sidebar"
+            >
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          )}
           <img
             src="/Smart Stock AI (1).png"
             alt="SmartStockAI Logo"
