@@ -400,7 +400,7 @@ async function dfHandler(req, res) {
             return `• ${storeName}: ${totalQty} units`;
           })
           .join("\n\n");
-        
+
         return res.json(reply(
           `Yes, ${matchedProductName} is available at ${groupedByStore.size} location(s):\n\n${locationList}`
         ));
@@ -414,7 +414,7 @@ async function dfHandler(req, res) {
       if (qty > 0) {
         return res.json(reply(`Yes, ${it.name} — ${qty} in stock${where}.`));
       }
-      
+
       return res.json(reply(`Currently out of stock for ${it.name}${where}. I can notify the supplier for restock.`));
     }
 

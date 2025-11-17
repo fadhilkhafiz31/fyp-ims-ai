@@ -19,12 +19,24 @@ const LOW_STOCK_THRESHOLD = 5;
 // ============================================
 // Helper Components
 // ============================================
-function TopNavigation({ isRestricted = false }) {
+function TopNavigation({ isRestricted = false, onToggleSidebar }) {
   return (
     <nav className="w-full bg-[#2E6A4E] border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
       <div className="flex items-center h-16">
         {/* Left: SmartStockAI Logo - Absolute left corner */}
         <div className="flex items-center pl-2">
+          {!isRestricted && (
+            <button
+              type="button"
+              onClick={onToggleSidebar}
+              className="mr-2 inline-flex items-center justify-center rounded-md p-2 text-white hover:bg-green-700/30 focus:outline-none focus:ring-2 focus:ring-white"
+              aria-label="Toggle sidebar"
+            >
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          )}
           <img
             src="/Smart Stock AI (1).png"
             alt="SmartStockAI Logo"
@@ -167,7 +179,7 @@ function TopNavigation({ isRestricted = false }) {
   );
 }
 
-function SideNavigation({ activeItemCount }) {
+function SideNavigation({ activeItemCount, onClose }) {
   const location = useLocation();
   const isDashboardActive = location.pathname === "/dashboard";
   const isChatbotActive = location.pathname === "/chatbot";
@@ -246,8 +258,18 @@ function SideNavigation({ activeItemCount }) {
   return (
     <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 h-[calc(100vh-4rem)] overflow-y-auto fixed left-0 top-16">
       <nav className="p-4">
-        <div className="mb-4">
+        <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Admin Dashboard</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex items-center justify-center rounded-md p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+            aria-label="Close sidebar"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
         <ul className="space-y-2">
           {menuItems.map((item) => (
@@ -285,6 +307,7 @@ export default function Chatbot() {
   const { role, ready: roleReady } = useRole();
   const { storeId } = useStore();
   const [inventory, setInventory] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // ============================================
   // Effects
@@ -344,15 +367,20 @@ export default function Chatbot() {
       <PageReady />
 
       {/* Top Navigation */}
-      <TopNavigation isRestricted={isRestricted} />
+      <TopNavigation isRestricted={isRestricted} onToggleSidebar={() => setSidebarOpen((v) => !v)} />
 
       {/* Sidebar + Main Content */}
       <div className="flex">
         {/* Side Navigation - Only show for admin/staff */}
-        {!isRestricted && <SideNavigation activeItemCount={lowStockItems.length} />}
+        {!isRestricted && sidebarOpen && (
+          <SideNavigation
+            activeItemCount={lowStockItems.length}
+            onClose={() => setSidebarOpen(false)}
+          />
+        )}
 
         {/* Main Content Area */}
-        <main className={`flex-1 ${isRestricted ? 'p-6' : 'ml-64 p-6'}`}>
+        <main className={`flex-1 ${isRestricted ? 'p-6' : sidebarOpen ? 'ml-64 p-6' : 'p-6'}`}>
           {/* Location Selector - Show for guests and authenticated users */}
           {isRestricted && (
             <div className="mb-6">
