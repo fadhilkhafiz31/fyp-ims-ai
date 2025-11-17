@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import * as motion from "motion/react-client";
-import { AnimatePresence } from "motion/react-client";
 import { db } from "../lib/firebase";
 import { useAuth } from "../contexts/AuthContext";
 import { useStore } from "../contexts/StoreContext";
@@ -341,14 +340,12 @@ useEffect(() => {
       {/* Sidebar + Main Content */}
       <div className="flex">
         {/* Side Navigation */}
-        <AnimatePresence>
-          {sidebarOpen && (
-            <SideNavigation
-              activeItemCount={lowStockItems.length}
-              onClose={() => setSidebarOpen(false)}
-            />
-          )}
-        </AnimatePresence>
+        {sidebarOpen && (
+          <SideNavigation
+            activeItemCount={lowStockItems.length}
+            onClose={() => setSidebarOpen(false)}
+          />
+        )}
 
         {/* Main Content Area */}
         <main className={`flex-1 ${sidebarOpen ? "ml-64" : ""} p-6`}>

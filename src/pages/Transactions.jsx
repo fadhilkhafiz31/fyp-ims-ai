@@ -10,6 +10,7 @@ import {
   doc,
   runTransaction,
 } from "firebase/firestore";
+import * as motion from "motion/react-client";
 import { db } from "../lib/firebase";
 import { useRole } from "../hooks/useRole";
 import { PageReady } from "../components/NProgressBar";
@@ -252,7 +253,17 @@ function SideNavigation({ activeItemCount, onClose }) {
   };
 
   return (
-    <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 h-[calc(100vh-4rem)] overflow-y-auto fixed left-0 top-16">
+    <motion.aside
+      className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 h-[calc(100vh-4rem)] overflow-y-auto fixed left-0 top-16 z-40"
+      initial={{ x: -256, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      exit={{ x: -256, opacity: 0 }}
+      transition={{
+        type: "spring",
+        stiffness: 300,
+        damping: 30
+      }}
+    >
       <nav className="p-4">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Admin Dashboard</h2>
@@ -267,9 +278,27 @@ function SideNavigation({ activeItemCount, onClose }) {
             </svg>
           </button>
         </div>
-        <ul className="space-y-2">
-          {menuItems.map((item) => (
-            <li key={item.path}>
+        <motion.ul
+          className="space-y-2"
+          initial="hidden"
+          animate="visible"
+          variants={{
+            visible: {
+              transition: {
+                staggerChildren: 0.05
+              }
+            }
+          }}
+        >
+          {menuItems.map((item, index) => (
+            <motion.li
+              key={`${item.icon}-${item.label}-${index}`}
+              variants={{
+                hidden: { opacity: 0, x: -20 },
+                visible: { opacity: 1, x: 0 }
+              }}
+              transition={{ duration: 0.3 }}
+            >
               <Link
                 to={item.path}
                 onClick={(e) => handleMockClick(e, item)}
@@ -287,11 +316,11 @@ function SideNavigation({ activeItemCount, onClose }) {
                   </span>
                 )}
               </Link>
-            </li>
+            </motion.li>
           ))}
-        </ul>
+        </motion.ul>
       </nav>
-    </aside>
+    </motion.aside>
   );
 }
 

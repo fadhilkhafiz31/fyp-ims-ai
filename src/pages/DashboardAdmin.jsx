@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import * as motion from "motion/react-client";
-import { AnimatePresence } from "motion/react-client";
 
 import { db } from "../lib/firebase";
 import { useAuth } from "../contexts/AuthContext";
@@ -32,6 +31,8 @@ function SideNavigation({ activeItemCount, onClose }) {
     { icon: "bell", label: "Stock Notification", path: "/stock-notification", badge: activeItemCount || 0 },
     { icon: "chatbot", label: "SmartStockAI Assistant", path: "/chatbot" },
     { icon: "inventory", label: "Inventory", path: "/inventory" },
+    { icon: "user", label: "My Profile", path: "#", isMock: true },
+    { icon: "gear", label: "Settings", path: "#", isMock: true },
     { icon: "logout", label: "Log Out", path: "/login" },
     { icon: "question", label: "Help & Support", path: "#", isMock: true },
   ];
@@ -318,14 +319,12 @@ export default function DashboardAdmin() {
       {/* Sidebar + Main Content */}
       <div className="flex">
         {/* Side Navigation */}
-        <AnimatePresence>
-          {sidebarOpen && (
-            <SideNavigation
-              activeItemCount={lowStockItems.length}
-              onClose={() => setSidebarOpen(false)}
-            />
-          )}
-        </AnimatePresence>
+        {sidebarOpen && (
+          <SideNavigation
+            activeItemCount={lowStockItems.length}
+            onClose={() => setSidebarOpen(false)}
+          />
+        )}
 
         {/* Main Content Area */}
         <main className={`flex-1 ${sidebarOpen ? "ml-64" : ""} p-6 space-y-8`}>

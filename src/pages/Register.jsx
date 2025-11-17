@@ -1,12 +1,14 @@
 import { useState } from "react";
+import * as motion from "motion/react-client";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth } from "../lib/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../lib/firebase";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 
 export default function Register() {
   const nav = useNavigate();
+  const location = useLocation();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
@@ -61,20 +63,22 @@ export default function Register() {
 
   return (
     <div className="min-h-screen bg-[#2E6A4E] relative overflow-hidden">
-      {/* Geometric Pattern Background */}
+      {/* Diagonal Stripes Background Pattern */}
       <div 
-        className="absolute inset-0 opacity-15"
+        className="absolute inset-0"
         style={{
-          backgroundImage: `
-            repeating-linear-gradient(30deg, transparent, transparent 35px, rgba(255,255,255,0.1) 35px, rgba(255,255,255,0.1) 37px),
-            repeating-linear-gradient(120deg, transparent, transparent 35px, rgba(255,255,255,0.1) 35px, rgba(255,255,255,0.1) 37px),
-            repeating-linear-gradient(60deg, transparent, transparent 60px, rgba(255,255,255,0.08) 60px, rgba(255,255,255,0.08) 62px)
-          `,
-          backgroundSize: '120px 120px'
+          backgroundImage: `repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 20px,
+            rgba(255, 255, 255, 0.05) 20px,
+            rgba(255, 255, 255, 0.05) 22px
+          )`,
+          backgroundSize: '28.28px 28.28px'
         }}
       ></div>
 
-      {/* Header */}
+      {/* Header - Static, no motion */}
       <header className="relative z-10 flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-2">
           <img 
@@ -84,7 +88,6 @@ export default function Register() {
           />
         </div>
         <nav className="flex items-center gap-8">
-          <Link to="/" className="text-white uppercase text-sm font-medium hover:opacity-80">HOME</Link>
           <Link to="/about" className="text-white uppercase text-sm font-medium hover:opacity-80">ABOUT US</Link>
           <Link to="/contact" className="text-white uppercase text-sm font-medium hover:opacity-80">CONTACT</Link>
           <Link to="/register" className="bg-white text-black uppercase text-sm font-medium px-4 py-2 rounded hover:opacity-90">SIGN UP</Link>
@@ -93,28 +96,61 @@ export default function Register() {
 
       {/* Register Form Container */}
       <div className="relative z-10 flex items-center justify-center min-h-[calc(100vh-80px)] p-6">
-        <form onSubmit={submit} className="w-full max-w-md bg-white rounded-lg shadow-2xl p-8">
+        <motion.form
+          key={location.pathname}
+          onSubmit={submit}
+          className="w-full max-w-md bg-white rounded-lg shadow-2xl p-8"
+          initial={{ opacity: 0, x: -100, scale: 0.95 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          exit={{ opacity: 0, x: 100, scale: 0.95 }}
+          transition={{ 
+            duration: 0.5,
+            ease: [0.25, 0.46, 0.45, 0.94]
+          }}
+        >
           {/* 99 SPEEDMART Logo */}
-          <div className="flex items-center justify-center mb-6">
+          <motion.div
+            className="flex items-center justify-center mb-6"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+          >
             <img 
               src="/99speedmart logo.png" 
               alt="99 Speedmart Logo" 
               className="max-w-80 h-auto"
             />
-          </div>
+          </motion.div>
 
           {/* Heading */}
-          <h1 className="text-3xl font-bold text-black mb-8 text-center">Create account</h1>
+          <motion.h1
+            className="text-3xl font-bold text-black mb-8 text-center"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.4 }}
+          >
+            Create account
+          </motion.h1>
 
           {/* Error Message */}
           {err && (
-            <div className="bg-red-50 border-2 border-red-300 text-red-700 px-4 py-3 rounded-lg text-sm mb-4">
+            <motion.div
+              className="bg-red-50 border-2 border-red-300 text-red-700 px-4 py-3 rounded-lg text-sm mb-4"
+              initial={{ opacity: 0, scale: 0.95, y: -10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
               {err}
-            </div>
+            </motion.div>
           )}
 
           {/* Name Input */}
-          <div className="mb-4">
+          <motion.div
+            className="mb-4"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, delay: 0.5 }}
+          >
             <div className="relative">
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-gray-500">
@@ -130,10 +166,15 @@ export default function Register() {
                 required
               />
             </div>
-          </div>
+          </motion.div>
 
           {/* Email Input */}
-          <div className="mb-4">
+          <motion.div
+            className="mb-4"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, delay: 0.6 }}
+          >
             <div className="relative">
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-gray-500">
@@ -149,11 +190,23 @@ export default function Register() {
                 required
               />
             </div>
-          </div>
+          </motion.div>
 
           {/* Password Input */}
-          <div className="mb-4">
-            <p className="text-xs text-gray-500 mb-1 ml-1">Password must contain at least one letter and one number</p>
+          <motion.div
+            className="mb-4"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, delay: 0.7 }}
+          >
+            <motion.p
+              className="text-xs text-gray-500 mb-1 ml-1"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3, delay: 0.7 }}
+            >
+              Password must contain at least one letter and one number
+            </motion.p>
             <div className="relative">
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-gray-500">
@@ -182,10 +235,15 @@ export default function Register() {
                 </svg>
               </button>
             </div>
-          </div>
+          </motion.div>
 
           {/* Confirm Password Input */}
-          <div className="mb-4">
+          <motion.div
+            className="mb-4"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, delay: 0.8 }}
+          >
             <div className="relative">
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-gray-500">
@@ -215,27 +273,51 @@ export default function Register() {
               </button>
             </div>
             {confirmPass && pass !== confirmPass && (
-              <p className="text-xs text-red-500 mt-1 ml-1">Passwords do not match</p>
+              <motion.p
+                className="text-xs text-red-500 mt-1 ml-1"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2 }}
+              >
+                Passwords do not match
+              </motion.p>
             )}
             {confirmPass && pass === confirmPass && confirmPass.length > 0 && (
-              <p className="text-xs text-green-500 mt-1 ml-1">Passwords match</p>
+              <motion.p
+                className="text-xs text-green-500 mt-1 ml-1"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2 }}
+              >
+                Passwords match
+              </motion.p>
             )}
-          </div>
+          </motion.div>
 
           {/* Register Button */}
-          <button
+          <motion.button
             type="submit"
             disabled={loading}
             className="w-full bg-black text-white font-semibold py-3 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.9 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
             {loading ? "Creating account..." : "Register"}
-          </button>
+          </motion.button>
 
           {/* Login Link */}
-          <p className="text-center text-sm text-gray-700">
+          <motion.p
+            className="text-center text-sm text-gray-700"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 1.0 }}
+          >
             Have an account? <Link to="/login" className="text-gray-900 hover:underline font-medium">Login</Link>
-          </p>
-      </form>
+          </motion.p>
+      </motion.form>
       </div>
     </div>
   );
