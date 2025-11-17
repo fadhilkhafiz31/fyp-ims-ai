@@ -2,6 +2,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
+import * as motion from "motion/react-client";
+import { AnimatePresence } from "motion/react-client";
 import { db } from "../lib/firebase";
 import { useAuth } from "../contexts/AuthContext";
 import { useStore } from "../contexts/StoreContext";
@@ -29,8 +31,6 @@ function SideNavigation({ activeItemCount, onClose }) {
     { icon: "bell", label: "Stock Notification", path: "/stock-notification", active: isStockNotificationActive, badge: activeItemCount || 0 },
     { icon: "chatbot", label: "SmartStockAI Assistant", path: "/chatbot" },
     { icon: "inventory", label: "Inventory", path: "/inventory" },
-    { icon: "user", label: "My Profile", path: "#", isMock: true },
-    { icon: "gear", label: "Settings", path: "#", isMock: true },
     { icon: "logout", label: "Log Out", path: "/login" },
     { icon: "question", label: "Help & Support", path: "#", isMock: true },
   ];
@@ -95,7 +95,17 @@ function SideNavigation({ activeItemCount, onClose }) {
   };
 
   return (
-    <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 h-[calc(100vh-4rem)] overflow-y-auto fixed left-0 top-16">
+    <motion.aside
+      className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 h-[calc(100vh-4rem)] overflow-y-auto fixed left-0 top-16 z-40"
+      initial={{ x: -256, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      exit={{ x: -256, opacity: 0 }}
+      transition={{
+        type: "spring",
+        stiffness: 300,
+        damping: 30
+      }}
+    >
       <nav className="p-4">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Admin Dashboard</h2>
@@ -110,9 +120,27 @@ function SideNavigation({ activeItemCount, onClose }) {
             </svg>
           </button>
         </div>
-        <ul className="space-y-2">
-          {menuItems.map((item) => (
-            <li key={item.path}>
+        <motion.ul
+          className="space-y-2"
+          initial="hidden"
+          animate="visible"
+          variants={{
+            visible: {
+              transition: {
+                staggerChildren: 0.05
+              }
+            }
+          }}
+        >
+          {menuItems.map((item, index) => (
+            <motion.li
+              key={`${item.icon}-${item.label}-${index}`}
+              variants={{
+                hidden: { opacity: 0, x: -20 },
+                visible: { opacity: 1, x: 0 }
+              }}
+              transition={{ duration: 0.3 }}
+            >
               <Link
                 to={item.path}
                 onClick={(e) => handleMockClick(e, item)}
@@ -130,21 +158,31 @@ function SideNavigation({ activeItemCount, onClose }) {
                   </span>
                 )}
               </Link>
-            </li>
+            </motion.li>
           ))}
-        </ul>
+        </motion.ul>
       </nav>
-    </aside>
+    </motion.aside>
   );
 }
 
-function OutOfStockCard({ item }) {
+function OutOfStockCard({ item, index }) {
   const qty = Number(item.qty ?? 0);
   const isOutOfStock = qty === 0;
   const statusText = isOutOfStock ? "is out of stock" : "needs restocking";
 
   return (
-    <div className="relative border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-white dark:bg-gray-900 hover:shadow-md transition-shadow">
+    <motion.div
+      className="relative border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-white dark:bg-gray-900 hover:shadow-md transition-shadow"
+      initial={{ opacity: 0, scale: 0.9, y: 20 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{
+        duration: 0.4,
+        delay: index * 0.05,
+        ease: [0.25, 0.46, 0.45, 0.94]
+      }}
+      style={{ willChange: 'transform, opacity' }}
+    >
       {/* Alert badge - centered at top */}
       <div className="absolute top-1 left-1/2 transform -translate-x-1/2 z-10">
         <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center shadow-md">
@@ -197,7 +235,7 @@ function OutOfStockCard({ item }) {
           </p>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -303,12 +341,14 @@ useEffect(() => {
       {/* Sidebar + Main Content */}
       <div className="flex">
         {/* Side Navigation */}
-        {sidebarOpen && (
-          <SideNavigation
-            activeItemCount={lowStockItems.length}
-            onClose={() => setSidebarOpen(false)}
-          />
-        )}
+        <AnimatePresence>
+          {sidebarOpen && (
+            <SideNavigation
+              activeItemCount={lowStockItems.length}
+              onClose={() => setSidebarOpen(false)}
+            />
+          )}
+        </AnimatePresence>
 
         {/* Main Content Area */}
         <main className={`flex-1 ${sidebarOpen ? "ml-64" : ""} p-6`}>
@@ -319,34 +359,71 @@ useEffect(() => {
 
           {/* Low Stock Items Grid */}
           {lowStockItems.length === 0 ? (
-            <div className="bg-white dark:bg-gray-900 rounded-xl p-12 text-center border border-gray-200 dark:border-gray-700">
-              <div className="inline-block p-4 bg-green-100 dark:bg-green-900/40 rounded-full mb-4">
+            <motion.div
+              key={`all-in-stock-${storeId || 'all'}-${lowStockItems.length}`}
+              className="bg-white dark:bg-gray-900 rounded-xl p-12 text-center border border-gray-200 dark:border-gray-700"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+            >
+              <motion.div
+                className="inline-block p-4 bg-green-100 dark:bg-green-900/40 rounded-full mb-4"
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{
+                  duration: 0.6,
+                  delay: 0.2,
+                  type: "spring",
+                  stiffness: 200,
+                  damping: 15
+                }}
+              >
                 <svg
                   className="w-12 h-12 text-green-600 dark:text-green-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path
+                  <motion.path
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
                     d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    initial={{ pathLength: 0, opacity: 0 }}
+                    animate={{ pathLength: 1, opacity: 1 }}
+                    transition={{
+                      duration: 0.8,
+                      delay: 0.5,
+                      ease: "easeInOut"
+                    }}
                   />
                 </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              </motion.div>
+              <motion.h3
+                className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4, delay: 0.6 }}
+              >
                 All Items In Stock
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              </motion.h3>
+              <motion.p
+                className="text-sm text-gray-600 dark:text-gray-400"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4, delay: 0.7 }}
+              >
                 No items require restocking at this time.
-              </p>
-            </div>
+              </motion.p>
+            </motion.div>
           ) : (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 mb-6">
-                {lowStockItems.map((item) => (
-                  <OutOfStockCard key={item.id} item={item} />
+              <div
+                key={`grid-${lowStockItems.length}-${lowStockItems.map(i => i.id).join('-')}`}
+                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 mb-6"
+              >
+                {lowStockItems.map((item, index) => (
+                  <OutOfStockCard key={item.id} item={item} index={index} />
                 ))}
               </div>
 
