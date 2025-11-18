@@ -79,7 +79,6 @@ export default function Login() {
         <nav className="flex items-center gap-8">
           <Link to="/about" className="text-white uppercase text-sm font-medium hover:opacity-80">ABOUT US</Link>
           <Link to="/contact" className="text-white uppercase text-sm font-medium hover:opacity-80">CONTACT</Link>
-          <Link to="/login" className="bg-white text-black uppercase text-sm font-medium px-4 py-2 rounded hover:opacity-90">LOG IN</Link>
         </nav>
       </header>
 

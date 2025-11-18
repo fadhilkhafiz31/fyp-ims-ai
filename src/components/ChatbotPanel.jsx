@@ -16,12 +16,57 @@ export default function ChatbotPanel() {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Check if the message is asking about the current time
+  function isTimeQuestion(text) {
+    const normalized = text.toLowerCase().trim();
+    const timeKeywords = [
+      "what time",
+      "what's the time",
+      "what is the time",
+      "current time",
+      "time now",
+      "time is it",
+      "tell me the time",
+      "what time is",
+      "time please",
+      "show me the time",
+      "time please",
+      "time?"
+    ];
+    return timeKeywords.some((keyword) => normalized.includes(keyword));
+  }
+
+  // Get formatted current time
+  function getCurrentTime() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+    const dateString = now.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    return `The current time is ${timeString}.\nToday is ${dateString}.`;
+  }
+
   async function handleSend(e) {
     e.preventDefault();
     const text = input.trim();
     if (!text) return;
     setInput("");
     setMessages((m) => [...m, { role: "user", text }]);
+
+    // Check if it's a time question and handle it directly
+    if (isTimeQuestion(text)) {
+      const timeResponse = getCurrentTime();
+      setMessages((m) => [...m, { role: "assistant", text: timeResponse }]);
+      return;
+    }
 
     if (!webhookUrl) {
       setMessages((m) => [
