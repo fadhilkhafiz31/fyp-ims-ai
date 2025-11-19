@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { AnimatePresence, motion } from "motion/react-client";
 import "./index.css";
 import { AuthProvider } from "./contexts/AuthContext";
 import { StoreProvider } from "./contexts/StoreContext";
@@ -20,31 +21,52 @@ const Chatbot = lazy(() => import("./pages/Chatbot"));
 const About = lazy(() => import("./pages/About"));
 const Contact = lazy(() => import("./pages/Contact"));
 
-ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <AuthProvider>
-        <StoreProvider>
-          <RouteProgress />
+function AnimatedRoutes() {
+  const location = useLocation();
 
-        <Suspense
-          fallback={
-            <div className="p-6 flex items-center gap-2 text-sm text-gray-500">
-              <span className="inline-block h-4 w-4 animate-spin rounded-full border border-gray-400 border-t-transparent" />
-              Loading…
-            </div>
-          }
-        >
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+            <Route 
+              path="/login" 
+              element={
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Login />
+                </motion.div>
+              } 
+            />
+            <Route 
+              path="/register" 
+              element={
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Register />
+                </motion.div>
+              } 
+            />
 
             {/* Public routes with AppLayout - accessible without authentication */}
             <Route
               path="/about"
               element={
                 <AppLayout>
-                  <About />
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <About />
+                  </motion.div>
                 </AppLayout>
               }
             />
@@ -52,7 +74,14 @@ ReactDOM.createRoot(document.getElementById("root")).render(
               path="/contact"
               element={
                 <AppLayout>
-                  <Contact />
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Contact />
+                  </motion.div>
                 </AppLayout>
               }
             />
@@ -62,8 +91,15 @@ ReactDOM.createRoot(document.getElementById("root")).render(
               path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <PageReady />
-                  <Dashboard />
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <PageReady />
+                    <Dashboard />
+                  </motion.div>
                 </ProtectedRoute>
               }
             />
@@ -72,8 +108,15 @@ ReactDOM.createRoot(document.getElementById("root")).render(
               path="/inventory"
               element={
                 <ProtectedRoute>
-                  <PageReady />
-                  <Inventory />
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <PageReady />
+                    <Inventory />
+                  </motion.div>
                 </ProtectedRoute>
               }
             />
@@ -84,8 +127,15 @@ ReactDOM.createRoot(document.getElementById("root")).render(
               element={
                 <ProtectedRoute>
                   <RoleGuard allow={["admin", "staff"]}>
-                    <PageReady />
-                    <Transactions />
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <PageReady />
+                      <Transactions />
+                    </motion.div>
                   </RoleGuard>
                 </ProtectedRoute>
               }
@@ -97,8 +147,15 @@ ReactDOM.createRoot(document.getElementById("root")).render(
               element={
                 <ProtectedRoute>
                   <RoleGuard allow={["admin", "staff"]}>
-                    <PageReady />
-                    <StockNotification />
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <PageReady />
+                      <StockNotification />
+                    </motion.div>
                   </RoleGuard>
                 </ProtectedRoute>
               }
@@ -109,8 +166,15 @@ ReactDOM.createRoot(document.getElementById("root")).render(
               path="/chatbot"
               element={
                 <ProtectedRoute allowGuest={true}>
-                  <PageReady />
-                  <Chatbot />
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <PageReady />
+                    <Chatbot />
+                  </motion.div>
                 </ProtectedRoute>
               }
             />
@@ -137,7 +201,26 @@ ReactDOM.createRoot(document.getElementById("root")).render(
               }
             />
           </Routes>
-        </Suspense>
+      </AnimatePresence>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <AuthProvider>
+        <StoreProvider>
+          <RouteProgress />
+          <Suspense
+            fallback={
+              <div className="p-6 flex items-center gap-2 text-sm text-gray-500">
+                <span className="inline-block h-4 w-4 animate-spin rounded-full border border-gray-400 border-t-transparent" />
+                Loading…
+              </div>
+            }
+          >
+            <AnimatedRoutes />
+          </Suspense>
         </StoreProvider>
       </AuthProvider>
     </BrowserRouter>

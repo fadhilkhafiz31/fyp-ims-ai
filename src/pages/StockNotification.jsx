@@ -30,6 +30,8 @@ function SideNavigation({ activeItemCount, onClose }) {
     { icon: "bell", label: "Stock Notification", path: "/stock-notification", active: isStockNotificationActive, badge: activeItemCount || 0 },
     { icon: "chatbot", label: "SmartStockAI Assistant", path: "/chatbot" },
     { icon: "inventory", label: "Inventory", path: "/inventory" },
+    { icon: "user", label: "My Profile", path: "#", isMock: true },
+    { icon: "gear", label: "Settings", path: "#", isMock: true },
     { icon: "logout", label: "Log Out", path: "/login" },
     { icon: "question", label: "Help & Support", path: "#", isMock: true },
   ];

@@ -375,6 +375,7 @@ export default function Inventory() {
   const [editingId, setEditingId] = useState(null);
   const [storeOptions, setStoreOptions] = useState([]);
   const [storeLoadError, setStoreLoadError] = useState("");
+  const [highlightedItems, setHighlightedItems] = useState(new Set());
 
   // ---- realtime subscription ----
   useEffect(() => {
@@ -402,6 +403,37 @@ export default function Inventory() {
         const itemsData = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
         // eslint-disable-next-line no-console
         console.log(`Inventory: Loaded ${itemsData.length} items for storeId: ${storeId}`);
+        
+        // Highlight newly added or updated items
+        if (items.length > 0) {
+          const newItemIds = new Set(itemsData.map(item => item.id));
+          const oldItemIds = new Set(items.map(item => item.id));
+          const changedItems = new Set();
+          
+          // Find new items
+          newItemIds.forEach(id => {
+            if (!oldItemIds.has(id)) {
+              changedItems.add(id);
+            }
+          });
+          
+          // Find updated items (compare timestamps)
+          itemsData.forEach(newItem => {
+            const oldItem = items.find(item => item.id === newItem.id);
+            if (oldItem && newItem.updatedAt?.toMillis?.() > oldItem.updatedAt?.toMillis?.()) {
+              changedItems.add(newItem.id);
+            }
+          });
+          
+          if (changedItems.size > 0) {
+            setHighlightedItems(changedItems);
+            // Remove highlight after 2 seconds
+            setTimeout(() => {
+              setHighlightedItems(new Set());
+            }, 2000);
+          }
+        }
+        
         setItems(itemsData);
         setLoading(false);
       },
@@ -430,6 +462,37 @@ export default function Inventory() {
               });
               // eslint-disable-next-line no-console
               console.log(`Inventory: Loaded ${itemsData.length} items (fallback) for storeId: ${storeId}`);
+              
+              // Highlight newly added or updated items
+              if (items.length > 0) {
+                const newItemIds = new Set(itemsData.map(item => item.id));
+                const oldItemIds = new Set(items.map(item => item.id));
+                const changedItems = new Set();
+                
+                // Find new items
+                newItemIds.forEach(id => {
+                  if (!oldItemIds.has(id)) {
+                    changedItems.add(id);
+                  }
+                });
+                
+                // Find updated items (compare timestamps)
+                itemsData.forEach(newItem => {
+                  const oldItem = items.find(item => item.id === newItem.id);
+                  if (oldItem && newItem.updatedAt?.toMillis?.() > oldItem.updatedAt?.toMillis?.()) {
+                    changedItems.add(newItem.id);
+                  }
+                });
+                
+                if (changedItems.size > 0) {
+                  setHighlightedItems(changedItems);
+                  // Remove highlight after 2 seconds
+                  setTimeout(() => {
+                    setHighlightedItems(new Set());
+                  }, 2000);
+                }
+              }
+              
               setItems(itemsData);
               setLoading(false);
             },
@@ -760,15 +823,20 @@ export default function Inventory() {
             <label htmlFor="name" className="block text-sm mb-1">
               Name
             </label>
-            <input
+            <motion.input
               id="name"
               name="name"
               value={form.name}
               onChange={handleChange}
-              className="w-full border rounded px-3 py-2"
+              className="w-full border rounded px-3 py-2 focus:outline-none transition-colors"
               placeholder="e.g., Spritzer 550ml"
               autoComplete="off"
               required
+              whileFocus={{
+                borderColor: "#3b82f6",
+                boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.1)",
+              }}
+              transition={{ duration: 0.2 }}
             />
           </div>
 
@@ -776,15 +844,20 @@ export default function Inventory() {
             <label htmlFor="sku" className="block text-sm mb-1">
               SKU
             </label>
-            <input
+            <motion.input
               id="sku"
               name="sku"
               value={form.sku}
               onChange={handleChange}
-              className="w-full border rounded px-3 py-2"
+              className="w-full border rounded px-3 py-2 focus:outline-none transition-colors"
               placeholder="e.g., SPR-550"
               autoComplete="off"
               required
+              whileFocus={{
+                borderColor: "#3b82f6",
+                boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.1)",
+              }}
+              transition={{ duration: 0.2 }}
             />
           </div>
 
@@ -792,16 +865,21 @@ export default function Inventory() {
             <label htmlFor="qty" className="block text-sm mb-1">
               Qty
             </label>
-            <input
+            <motion.input
               id="qty"
               name="qty"
               value={form.qty}
               onChange={handleChange}
-              className="w-full border rounded px-3 py-2"
+              className="w-full border rounded px-3 py-2 focus:outline-none transition-colors"
               placeholder="0"
               inputMode="numeric"
               pattern="[0-9]*"
               required
+              whileFocus={{
+                borderColor: "#3b82f6",
+                boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.1)",
+              }}
+              transition={{ duration: 0.2 }}
             />
           </div>
 
@@ -809,16 +887,21 @@ export default function Inventory() {
             <label htmlFor="reorderPoint" className="block text-sm mb-1">
               Reorder Point
             </label>
-            <input
+            <motion.input
               id="reorderPoint"
               name="reorderPoint"
               value={form.reorderPoint}
               onChange={handleChange}
-              className="w-full border rounded px-3 py-2"
+              className="w-full border rounded px-3 py-2 focus:outline-none transition-colors"
               placeholder="5"
               inputMode="numeric"
               pattern="[0-9]*"
               required
+              whileFocus={{
+                borderColor: "#3b82f6",
+                boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.1)",
+              }}
+              transition={{ duration: 0.2 }}
             />
           </div>
 
@@ -826,15 +909,20 @@ export default function Inventory() {
             <label htmlFor="category" className="block text-sm mb-1">
               Category
             </label>
-            <input
+            <motion.input
               id="category"
               name="category"
               value={form.category}
               onChange={handleChange}
-              className="w-full border rounded px-3 py-2"
+              className="w-full border rounded px-3 py-2 focus:outline-none transition-colors"
               placeholder="e.g., Beverages"
               autoComplete="off"
               required
+              whileFocus={{
+                borderColor: "#3b82f6",
+                boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.1)",
+              }}
+              transition={{ duration: 0.2 }}
             />
           </div>
 
@@ -949,42 +1037,53 @@ export default function Inventory() {
             </>
           )}
 
-          <div>
-            <label htmlFor="Keywords" className="block text-sm mb-1">
-              Keywords
-            </label>
-            <input
-              id="Keywords"
-              name="Keywords"
-              value={form.Keywords}
-              onChange={handleChange}
-              className="w-full border rounded px-3 py-2"
-              placeholder="e.g., water,bottle,drinks"
-              autoComplete="off"
-              required
-            />
-          </div>
+              <div>
+                <label htmlFor="Keywords" className="block text-sm mb-1">
+                  Keywords
+                </label>
+                <motion.input
+                  id="Keywords"
+                  name="Keywords"
+                  value={form.Keywords}
+                  onChange={handleChange}
+                  className="w-full border rounded px-3 py-2 focus:outline-none transition-colors"
+                  placeholder="e.g., water,bottle,drinks"
+                  autoComplete="off"
+                  required
+                  whileFocus={{
+                    borderColor: "#3b82f6",
+                    boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.1)",
+                  }}
+                  transition={{ duration: 0.2 }}
+                />
+              </div>
 
           <div className="flex items-end gap-3">
-            <button
+            <motion.button
               type="submit"
               disabled={saving}
               className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg shadow-sm transition disabled:opacity-60"
+              whileHover={{ scale: 1.05, boxShadow: "0 4px 12px rgba(37, 99, 235, 0.4)" }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ duration: 0.2 }}
             >
               {saving ? (editingId ? "Saving..." : "Adding...") : editingId ? "Save" : "Add"}
-            </button>
+            </motion.button>
 
             {editingId && (
-              <button
+              <motion.button
                 type="button"
                 onClick={() => {
                   setEditingId(null);
                   resetForm();
                 }}
                 className="border border-gray-400 px-4 py-2 rounded hover:bg-gray-700 hover:text-white"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.2 }}
               >
                 Cancel
-              </button>
+              </motion.button>
             )}
           </div>
         </form>
@@ -1029,7 +1128,9 @@ export default function Inventory() {
                 }
               }}
             >
-              {items.map((it, index) => (
+              {items.map((it, index) => {
+                const isHighlighted = highlightedItems.has(it.id);
+                return (
                 <motion.div
                   key={it.id}
                   className="grid grid-cols-10 gap-2 px-4 py-3 text-sm items-center"
@@ -1040,6 +1141,11 @@ export default function Inventory() {
                   transition={{
                     duration: 0.3,
                     ease: "easeOut"
+                  }}
+                  animate={{
+                    backgroundColor: isHighlighted 
+                      ? "rgba(59, 130, 246, 0.1)" 
+                      : "transparent",
                   }}
                   whileHover={{
                     backgroundColor: "rgba(0, 0, 0, 0.02)",
@@ -1103,7 +1209,8 @@ export default function Inventory() {
                     </motion.button>
                   </div>
                 </motion.div>
-              ))}
+              );
+              })}
             </motion.div>
           </div>
         )}
