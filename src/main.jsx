@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react-client";
+import { EnhancedSpinner } from "./components/ui/EnhancedSpinner";
 import "./index.css";
 import { AuthProvider } from "./contexts/AuthContext";
 import { StoreProvider } from "./contexts/StoreContext";
@@ -26,32 +27,21 @@ function AnimatedRoutes() {
 
   return (
     <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
+      <motion.div
+        key={location.pathname}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        transition={{ duration: 0.3 }}
+      >
+        <Routes location={location}>
             <Route 
               path="/login" 
-              element={
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Login />
-                </motion.div>
-              } 
+              element={<Login />} 
             />
             <Route 
               path="/register" 
-              element={
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Register />
-                </motion.div>
-              } 
+              element={<Register />} 
             />
 
             {/* Public routes with AppLayout - accessible without authentication */}
@@ -59,14 +49,7 @@ function AnimatedRoutes() {
               path="/about"
               element={
                 <AppLayout>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <About />
-                  </motion.div>
+                  <About />
                 </AppLayout>
               }
             />
@@ -74,14 +57,7 @@ function AnimatedRoutes() {
               path="/contact"
               element={
                 <AppLayout>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <Contact />
-                  </motion.div>
+                  <Contact />
                 </AppLayout>
               }
             />
@@ -91,15 +67,8 @@ function AnimatedRoutes() {
               path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <PageReady />
-                    <Dashboard />
-                  </motion.div>
+                  <PageReady />
+                  <Dashboard />
                 </ProtectedRoute>
               }
             />
@@ -108,15 +77,8 @@ function AnimatedRoutes() {
               path="/inventory"
               element={
                 <ProtectedRoute>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <PageReady />
-                    <Inventory />
-                  </motion.div>
+                  <PageReady />
+                  <Inventory />
                 </ProtectedRoute>
               }
             />
@@ -127,15 +89,8 @@ function AnimatedRoutes() {
               element={
                 <ProtectedRoute>
                   <RoleGuard allow={["admin", "staff"]}>
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <PageReady />
-                      <Transactions />
-                    </motion.div>
+                    <PageReady />
+                    <Transactions />
                   </RoleGuard>
                 </ProtectedRoute>
               }
@@ -147,15 +102,8 @@ function AnimatedRoutes() {
               element={
                 <ProtectedRoute>
                   <RoleGuard allow={["admin", "staff"]}>
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <PageReady />
-                      <StockNotification />
-                    </motion.div>
+                    <PageReady />
+                    <StockNotification />
                   </RoleGuard>
                 </ProtectedRoute>
               }
@@ -166,15 +114,8 @@ function AnimatedRoutes() {
               path="/chatbot"
               element={
                 <ProtectedRoute allowGuest={true}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <PageReady />
-                    <Chatbot />
-                  </motion.div>
+                  <PageReady />
+                  <Chatbot />
                 </ProtectedRoute>
               }
             />
@@ -201,6 +142,7 @@ function AnimatedRoutes() {
               }
             />
           </Routes>
+        </motion.div>
       </AnimatePresence>
   );
 }
@@ -213,9 +155,11 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           <RouteProgress />
           <Suspense
             fallback={
-              <div className="p-6 flex items-center gap-2 text-sm text-gray-500">
-                <span className="inline-block h-4 w-4 animate-spin rounded-full border border-gray-400 border-t-transparent" />
-                Loading…
+              <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+                <div className="text-center">
+                  <EnhancedSpinner size="lg" className="mb-4" />
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
+                </div>
               </div>
             }
           >

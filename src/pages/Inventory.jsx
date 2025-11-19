@@ -19,6 +19,8 @@ import { db } from "../lib/firebase";
 import { PageReady } from "../components/NProgressBar";
 import { useRole } from "../hooks/useRole";
 import { useStore } from "../contexts/StoreContext";
+import { SkeletonTableRow, SkeletonKPI } from "../components/ui/SkeletonLoader";
+import { EnhancedSpinner } from "../components/ui/EnhancedSpinner";
 
 const INVENTORY_COL = "inventory";
 const LOW_STOCK_THRESHOLD = 5;
@@ -333,12 +335,12 @@ function SideNavigation({ activeItemCount, onClose }) {
                     : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                 }`}
               >
-                {getIcon(item.icon)}
+                <AnimatedIcon hoverRotate={item.icon === "gear"} hoverScale={true}>
+                  {getIcon(item.icon)}
+                </AnimatedIcon>
                 <span className="font-medium">{item.label}</span>
                 {item.badge && item.badge > 0 && (
-                  <span className="ml-auto w-5 h-5 bg-red-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                    {item.badge}
-                  </span>
+                  <AnimatedBadge count={item.badge} />
                 )}
               </Link>
             </motion.li>
@@ -802,9 +804,19 @@ export default function Inventory() {
 
       {/* KPIs */}
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <KPI label="Total Items" value={totals.totalItems} />
-        <KPI label="Total Stock Qty" value={totals.totalQty} />
-        <KPI label="Total Categories" value={totals.totalCategories} />
+        {loading ? (
+          <>
+            <SkeletonKPI />
+            <SkeletonKPI />
+            <SkeletonKPI />
+          </>
+        ) : (
+          <>
+            <KPI label="Total Items" value={totals.totalItems} />
+            <KPI label="Total Stock Qty" value={totals.totalQty} />
+            <KPI label="Total Categories" value={totals.totalCategories} />
+          </>
+        )}
       </section>
 
       {/* Add / Edit form */}
@@ -1097,7 +1109,11 @@ export default function Inventory() {
         </div>
 
         {loading ? (
-          <div className="px-4 py-5 text-gray-600 dark:text-gray-400 text-sm">Loading…</div>
+          <div className="divide-y divide-gray-200 dark:divide-gray-700">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <SkeletonTableRow key={i} />
+            ))}
+          </div>
         ) : items.length === 0 ? (
           <div className="px-4 py-5 text-gray-600 dark:text-gray-400 text-sm">No items yet.</div>
         ) : (

@@ -12,6 +12,8 @@ import ChatbotPanel from "../components/ChatbotPanel";
 import LocationSelector from "../components/LocationSelector";
 import { PageReady } from "../components/NProgressBar";
 import TopNavigation from "../components/TopNavigation";
+import AnimatedBadge from "../components/ui/AnimatedBadge";
+import AnimatedIcon from "../components/ui/AnimatedIcon";
 
 // ============================================
 // Constants
@@ -157,12 +159,12 @@ function SideNavigation({ activeItemCount, onClose }) {
                     : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                 }`}
               >
-                {getIcon(item.icon)}
+                <AnimatedIcon hoverRotate={item.icon === "gear"} hoverScale={true}>
+                  {getIcon(item.icon)}
+                </AnimatedIcon>
                 <span className="font-medium">{item.label}</span>
                 {item.badge && item.badge > 0 && (
-                  <span className="ml-auto w-5 h-5 bg-red-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                    {item.badge}
-                  </span>
+                  <AnimatedBadge count={item.badge} />
                 )}
               </Link>
             </motion.li>
