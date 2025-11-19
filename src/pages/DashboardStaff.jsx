@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
+import * as motion from "motion/react-client";
 
 import { auth, db } from "../lib/firebase";
 import { useAuth } from "../contexts/AuthContext";
@@ -99,7 +100,17 @@ function SideNavigation({ activeItemCount, onClose }) {
   };
 
   return (
-    <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 h-[calc(100vh-4rem)] overflow-y-auto fixed left-0 top-16">
+    <motion.aside
+      className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 h-[calc(100vh-4rem)] overflow-y-auto fixed left-0 top-16 z-40"
+      initial={{ x: -256, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      exit={{ x: -256, opacity: 0 }}
+      transition={{
+        type: "spring",
+        stiffness: 300,
+        damping: 30
+      }}
+    >
       <nav className="p-4">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Staff Dashboard</h2>
@@ -114,9 +125,27 @@ function SideNavigation({ activeItemCount, onClose }) {
             </svg>
           </button>
         </div>
-        <ul className="space-y-2">
-          {menuItems.map((item) => (
-            <li key={item.path}>
+        <motion.ul
+          className="space-y-2"
+          initial="hidden"
+          animate="visible"
+          variants={{
+            visible: {
+              transition: {
+                staggerChildren: 0.05
+              }
+            }
+          }}
+        >
+          {menuItems.map((item, index) => (
+            <motion.li
+              key={`${item.icon}-${item.label}-${index}`}
+              variants={{
+                hidden: { opacity: 0, x: -20 },
+                visible: { opacity: 1, x: 0 }
+              }}
+              transition={{ duration: 0.3 }}
+            >
               <Link
                 to={item.path}
                 onClick={(e) => handleMockClick(e, item)}
@@ -134,32 +163,60 @@ function SideNavigation({ activeItemCount, onClose }) {
                   </span>
                 )}
               </Link>
-            </li>
+            </motion.li>
           ))}
-        </ul>
+        </motion.ul>
       </nav>
-    </aside>
+    </motion.aside>
   );
 }
 
-function KPI({ label, value, pill }) {
+function KPI({ label, value, pill, index = 0 }) {
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-white dark:bg-gray-900">
+    <motion.div
+      className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-white dark:bg-gray-900"
+      initial={{ opacity: 0, y: 20, scale: 0.9 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{
+        duration: 0.4,
+        delay: index * 0.1,
+        ease: [0.25, 0.46, 0.45, 0.94]
+      }}
+      whileHover={{ scale: 1.02, y: -2 }}
+      style={{ willChange: 'transform, opacity' }}
+    >
       <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
         {label}
         {pill === "warning" && (
-          <span className="text-xs bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 px-2 py-0.5 rounded-full">
+          <motion.span
+            className="text-xs bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 px-2 py-0.5 rounded-full"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: index * 0.1 + 0.3, type: "spring", stiffness: 200 }}
+          >
             Attention
-          </span>
+          </motion.span>
         )}
         {pill === "ok" && (
-          <span className="text-xs bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full">
+          <motion.span
+            className="text-xs bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: index * 0.1 + 0.3, type: "spring", stiffness: 200 }}
+          >
             OK
-          </span>
+          </motion.span>
         )}
       </div>
-      <div className="text-2xl font-semibold mt-1">{value}</div>
-    </div>
+      <motion.div
+        className="text-2xl font-semibold mt-1"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: index * 0.1 + 0.2 }}
+      >
+        {value}
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -324,13 +381,14 @@ export default function DashboardStaff() {
 
           {/* KPI Cards */}
           <section className="grid grid-cols-1 sm:grid-cols-4 gap-6">
-            <KPI label="Total Items" value={totalItems} />
-            <KPI label="Total Categories" value={totalCategories} />
-            <KPI label="Total Stock Qty" value={totalQty} />
+            <KPI label="Total Items" value={totalItems} index={0} />
+            <KPI label="Total Categories" value={totalCategories} index={1} />
+            <KPI label="Total Stock Qty" value={totalQty} index={2} />
             <KPI
               label={`Low Stock (≤ ${LOW_STOCK_THRESHOLD})`}
               value={lowStock.length}
               pill={lowStock.length > 0 ? "warning" : "ok"}
+              index={3}
             />
           </section>
 

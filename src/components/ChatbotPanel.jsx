@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import * as motion from "motion/react-client";
 import { useStore } from "../contexts/StoreContext";
 import LocationSelector from "./LocationSelector";
 
@@ -123,8 +124,18 @@ export default function ChatbotPanel() {
 
       <div className="h-80 overflow-y-auto p-4 space-y-3">
         {messages.map((m, i) => (
-          <div key={i} className={m.role === "user" ? "text-right" : "text-left"}>
-            <div
+          <motion.div
+            key={i}
+            className={m.role === "user" ? "text-right" : "text-left"}
+            initial={{ opacity: 0, y: 10, x: m.role === "user" ? 20 : -20 }}
+            animate={{ opacity: 1, y: 0, x: 0 }}
+            transition={{
+              duration: 0.3,
+              delay: i === 0 ? 0 : 0.1,
+              ease: "easeOut"
+            }}
+          >
+            <motion.div
               className={
                 "inline-block max-w-[85%] px-3 py-2 rounded-lg text-sm " +
                 (m.role === "user"
@@ -132,11 +143,40 @@ export default function ChatbotPanel() {
                   : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100")
               }
               style={{ whiteSpace: "pre-line" }}
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.2 }}
             >
               {m.text}
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         ))}
+        {sending && (
+          <motion.div
+            className="text-left"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <div className="inline-block px-3 py-2 rounded-lg text-sm bg-gray-100 dark:bg-gray-800">
+              <div className="flex gap-1">
+                <motion.span
+                  animate={{ opacity: [0.4, 1, 0.4] }}
+                  transition={{ duration: 1, repeat: Infinity, delay: 0 }}
+                  className="w-2 h-2 bg-gray-400 rounded-full"
+                />
+                <motion.span
+                  animate={{ opacity: [0.4, 1, 0.4] }}
+                  transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
+                  className="w-2 h-2 bg-gray-400 rounded-full"
+                />
+                <motion.span
+                  animate={{ opacity: [0.4, 1, 0.4] }}
+                  transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
+                  className="w-2 h-2 bg-gray-400 rounded-full"
+                />
+              </div>
+            </div>
+          </motion.div>
+        )}
         <div ref={endRef} />
       </div>
 
@@ -148,13 +188,16 @@ export default function ChatbotPanel() {
           placeholder="Ask about an item, e.g., 'Do you have Beras Faiza 5KG?'"
           className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-        <button
+        <motion.button
           type="submit"
           disabled={sending}
           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-md"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          transition={{ duration: 0.2 }}
         >
           Send
-        </button>
+        </motion.button>
       </form>
     </div>
   );

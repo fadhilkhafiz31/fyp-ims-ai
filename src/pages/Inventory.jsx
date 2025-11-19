@@ -1018,59 +1018,93 @@ export default function Inventory() {
             </div>
 
             {/* rows */}
-            {items.map((it) => (
-              <div key={it.id} className="grid grid-cols-10 gap-2 px-4 py-3 text-sm items-center">
-                <div
-                  className="break-words whitespace-normal text-sm leading-tight"
-                  title={it.name || undefined}
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={{
+                visible: {
+                  transition: {
+                    staggerChildren: 0.03
+                  }
+                }
+              }}
+            >
+              {items.map((it, index) => (
+                <motion.div
+                  key={it.id}
+                  className="grid grid-cols-10 gap-2 px-4 py-3 text-sm items-center"
+                  variants={{
+                    hidden: { opacity: 0, x: -20 },
+                    visible: { opacity: 1, x: 0 }
+                  }}
+                  transition={{
+                    duration: 0.3,
+                    ease: "easeOut"
+                  }}
+                  whileHover={{
+                    backgroundColor: "rgba(0, 0, 0, 0.02)",
+                    transition: { duration: 0.2 }
+                  }}
+                  style={{ willChange: 'transform, opacity' }}
                 >
-                  {it.name || "—"}
-                </div>
-                <div className="truncate">{it.sku || "—"}</div>
-                <div>{Number(it.qty ?? 0)}</div>
-                <div>{Number(it.reorderPoint ?? 0)}</div>
-                <div
-                  className="break-words whitespace-normal text-sm leading-tight"
-                  title={it.category || undefined}
-                >
-                  {it.category || "—"}
-                </div>
-                <div
-                  className="break-words whitespace-normal text-sm leading-tight"
-                  title={it.storeName || it.StoreName || undefined}
-                >
-                  {it.storeName || it.StoreName || "—"}
-                </div>
-                <div className="truncate">{it.storeId || it.StoreId || "—"}</div>
-                <div
-                  className="break-words whitespace-normal text-sm leading-tight"
-                  title={formatTimestamp(it.createdAt)}
-                >
-                  {formatTimestamp(it.createdAt)}
-                </div>
-                <div className="truncate">
-                  {Array.isArray(it.Keywords) ? it.Keywords.join(", ") : it.Keywords || "—"}
-                </div>
+                  <div
+                    className="break-words whitespace-normal text-sm leading-tight"
+                    title={it.name || undefined}
+                  >
+                    {it.name || "—"}
+                  </div>
+                  <div className="truncate">{it.sku || "—"}</div>
+                  <div>{Number(it.qty ?? 0)}</div>
+                  <div>{Number(it.reorderPoint ?? 0)}</div>
+                  <div
+                    className="break-words whitespace-normal text-sm leading-tight"
+                    title={it.category || undefined}
+                  >
+                    {it.category || "—"}
+                  </div>
+                  <div
+                    className="break-words whitespace-normal text-sm leading-tight"
+                    title={it.storeName || it.StoreName || undefined}
+                  >
+                    {it.storeName || it.StoreName || "—"}
+                  </div>
+                  <div className="truncate">{it.storeId || it.StoreId || "—"}</div>
+                  <div
+                    className="break-words whitespace-normal text-sm leading-tight"
+                    title={formatTimestamp(it.createdAt)}
+                  >
+                    {formatTimestamp(it.createdAt)}
+                  </div>
+                  <div className="truncate">
+                    {Array.isArray(it.Keywords) ? it.Keywords.join(", ") : it.Keywords || "—"}
+                  </div>
 
-                {/* actions */}
-                <div className="flex gap-2 justify-end">
-                  <button
-                    type="button"
-                    onClick={() => handleEdit(it)}
-                    className="px-3 py-1 border rounded hover:bg-gray-100 dark:hover:bg-gray-800"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(it.id)}
-                    className="px-3 py-1 border rounded hover:bg-red-600 hover:text-white"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
+                  {/* actions */}
+                  <div className="flex gap-2 justify-end">
+                    <motion.button
+                      type="button"
+                      onClick={() => handleEdit(it)}
+                      className="px-3 py-1 border rounded hover:bg-gray-100 dark:hover:bg-gray-800"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      Edit
+                    </motion.button>
+                    <motion.button
+                      type="button"
+                      onClick={() => handleDelete(it.id)}
+                      className="px-3 py-1 border rounded hover:bg-red-600 hover:text-white"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      Delete
+                    </motion.button>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
           </div>
         )}
       </section>
