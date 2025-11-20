@@ -1,12 +1,16 @@
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 import * as motion from "motion/react-client";
 import { useAuth } from "../contexts/AuthContext";
 import { useStore } from "../contexts/StoreContext";
+import { useSearch } from "../contexts/SearchContext";
 import AnimatedLink from "./ui/AnimatedLink";
 
 export default function TopNavigation({ role = null, onToggleSidebar = null }) {
   const { user } = useAuth();
   const { storeName, storeId } = useStore();
+  const { searchQuery, updateSearch, clearSearch, hasSearch } = useSearch();
+  const [localSearch, setLocalSearch] = useState(searchQuery);
 
   const effectiveRole = typeof role === "string" ? role.toLowerCase() : null;
   const isPrivileged = effectiveRole === "admin" || effectiveRole === "staff";
@@ -17,6 +21,22 @@ export default function TopNavigation({ role = null, onToggleSidebar = null }) {
     (effectiveRole === "customer" ? "Customer" : "User");
 
   const storeLabel = storeName || storeId || "Select a store";
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      updateSearch(localSearch);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [localSearch, updateSearch]);
+
+  // Sync local search with context when cleared externally
+  useEffect(() => {
+    if (!searchQuery && localSearch) {
+      setLocalSearch("");
+    }
+  }, [searchQuery, localSearch]);
 
   return (
     <nav className="w-full bg-[#2E6A4E] border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
@@ -51,8 +71,10 @@ export default function TopNavigation({ role = null, onToggleSidebar = null }) {
               <div className="relative w-full">
                 <input
                   type="text"
-                  placeholder="Search for an item from nearby location"
-                  className="w-full pl-10 pr-4 py-2 border border-green-400/30 rounded-lg bg-white/10 backdrop-blur-sm text-white placeholder-green-100/70 focus:ring-2 focus:ring-green-300 focus:border-transparent focus:bg-white/20"
+                  value={localSearch}
+                  onChange={(e) => setLocalSearch(e.target.value)}
+                  placeholder="Search items by name, SKU, category..."
+                  className="w-full pl-10 pr-10 py-2 border border-green-400/30 rounded-lg bg-white/10 backdrop-blur-sm text-white placeholder-green-100/70 focus:ring-2 focus:ring-green-300 focus:border-transparent focus:bg-white/20"
                 />
                 <svg
                   className="absolute left-3 top-2.5 w-5 h-5 text-green-100"
@@ -67,6 +89,21 @@ export default function TopNavigation({ role = null, onToggleSidebar = null }) {
                     d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                   />
                 </svg>
+                {hasSearch && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLocalSearch("");
+                      clearSearch();
+                    }}
+                    className="absolute right-3 top-2.5 text-green-100 hover:text-white transition-colors"
+                    aria-label="Clear search"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
               </div>
             </div>
           ) : (

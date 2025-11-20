@@ -11,6 +11,7 @@ import { RouteProgress, PageReady } from "./components/NProgressBar";
 import RoleGuard from "./components/RoleGuard";
 import AppLayout from "./layouts/AppLayout";
 import { ToastProvider } from "./contexts/ToastContext";
+import { SearchProvider } from "./contexts/SearchContext";
 
 // Lazy load pages
 const Login = lazy(() => import("./pages/Login"));
@@ -236,19 +237,21 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       <AuthProvider>
         <StoreProvider>
           <ToastProvider>
-            <RouteProgress />
-            <Suspense
-              fallback={
-                <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-                  <div className="text-center">
-                    <EnhancedSpinner size="lg" className="mb-4" />
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
+            <SearchProvider>
+              <RouteProgress />
+              <Suspense
+                fallback={
+                  <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+                    <div className="text-center">
+                      <EnhancedSpinner size="lg" className="mb-4" />
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
+                    </div>
                   </div>
-                </div>
-              }
-            >
-              <AnimatedRoutes />
-            </Suspense>
+                }
+              >
+                <AnimatedRoutes />
+              </Suspense>
+            </SearchProvider>
           </ToastProvider>
         </StoreProvider>
       </AuthProvider>

@@ -13,6 +13,7 @@ import TopNavigation from "../components/TopNavigation";
 import AnimatedBadge from "../components/ui/AnimatedBadge";
 import AnimatedIcon from "../components/ui/AnimatedIcon";
 import { useToast } from "../contexts/ToastContext";
+import { useSearch } from "../contexts/SearchContext";
 
 // ============================================
 // Constants
@@ -266,6 +267,7 @@ export default function StockNotification() {
   const { role } = useRole();
   const { storeId } = useStore();
   const { toast } = useToast();
+  const { filterItems, searchQuery, hasSearch } = useSearch();
   const [inventory, setInventory] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -311,12 +313,17 @@ useEffect(() => {
   // ============================================
   // Computed Values
   // ============================================
+  // Filter inventory based on search, then filter for low stock
+  const filteredInventory = useMemo(() => {
+    return filterItems(inventory, ["name", "sku", "category"]);
+  }, [inventory, filterItems]);
+
   const lowStockItems = useMemo(
     () =>
-      inventory.filter(
+      filteredInventory.filter(
         (item) => Number(item.qty ?? 0) <= LOW_STOCK_THRESHOLD
       ),
-    [inventory]
+    [filteredInventory]
   );
 
   // ============================================
@@ -424,7 +431,7 @@ useEffect(() => {
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.4, delay: 0.6 }}
               >
-                All Items In Stock
+                {hasSearch ? "No Low Stock Items Found" : "All Items In Stock"}
               </motion.h3>
               <motion.p
                 className="text-sm text-gray-600 dark:text-gray-400"
@@ -432,7 +439,9 @@ useEffect(() => {
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.4, delay: 0.7 }}
               >
-                No items require restocking at this time.
+                {hasSearch 
+                  ? `No items matching "${searchQuery}" require restocking.`
+                  : "No items require restocking at this time."}
               </motion.p>
             </motion.div>
           ) : (

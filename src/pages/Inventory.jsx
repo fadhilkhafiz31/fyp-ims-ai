@@ -24,6 +24,7 @@ import { EnhancedSpinner } from "../components/ui/EnhancedSpinner";
 import AnimatedBadge from "../components/ui/AnimatedBadge";
 import AnimatedIcon from "../components/ui/AnimatedIcon";
 import { useToast } from "../contexts/ToastContext";
+import { useSearch } from "../contexts/SearchContext";
 
 const INVENTORY_COL = "inventory";
 const LOW_STOCK_THRESHOLD = 5;
@@ -361,6 +362,7 @@ export default function Inventory() {
   const { role, ready: roleReady } = useRole();
   const { storeId, storeName, setStore, stores } = useStore();
   const { toast } = useToast();
+  const { searchQuery, filterItems, hasSearch } = useSearch();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const defaultFormState = {
@@ -578,13 +580,18 @@ export default function Inventory() {
     return { totalQty, totalItems, totalCategories };
   }, [items]);
 
-  // Calculate low stock items for badge
+  // Filter items based on search query
+  const filteredItems = useMemo(() => {
+    return filterItems(items, ["name", "sku", "category", "Keywords"]);
+  }, [items, filterItems]);
+
+  // Calculate low stock items for badge (from filtered items)
   const lowStockItems = useMemo(
     () =>
-      items.filter(
+      filteredItems.filter(
         (item) => Number(item.qty ?? 0) <= LOW_STOCK_THRESHOLD
       ),
-    [items]
+    [filteredItems]
   );
 
   // ---- helpers ----
@@ -1106,8 +1113,23 @@ export default function Inventory() {
       {/* Table */}
       <section className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden bg-white dark:bg-gray-900/50">
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="font-semibold text-lg">Items</h2>
-          <div className="text-sm text-gray-500">{items.length} total</div>
+          <div className="flex items-center gap-3">
+            <h2 className="font-semibold text-lg">Items</h2>
+            {hasSearch && (
+              <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-full">
+                Searching: "{searchQuery}"
+              </span>
+            )}
+          </div>
+          <div className="text-sm text-gray-500">
+            {hasSearch ? (
+              <span>
+                {filteredItems.length} of {items.length} items
+              </span>
+            ) : (
+              <span>{items.length} total</span>
+            )}
+          </div>
         </div>
 
         {loading ? (
@@ -1116,8 +1138,17 @@ export default function Inventory() {
               <SkeletonTableRow key={i} />
             ))}
           </div>
-        ) : items.length === 0 ? (
-          <div className="px-4 py-5 text-gray-600 dark:text-gray-400 text-sm">No items yet.</div>
+        ) : filteredItems.length === 0 ? (
+          <div className="px-4 py-5 text-center">
+            {hasSearch ? (
+              <div className="text-gray-600 dark:text-gray-400">
+                <p className="text-sm mb-2">No items found matching "{searchQuery}"</p>
+                <p className="text-xs text-gray-500 dark:text-gray-500">Try a different search term</p>
+              </div>
+            ) : (
+              <div className="text-gray-600 dark:text-gray-400 text-sm">No items yet.</div>
+            )}
+          </div>
         ) : (
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {/* header */}
@@ -1146,7 +1177,7 @@ export default function Inventory() {
                 }
               }}
             >
-              {items.map((it, index) => {
+              {filteredItems.map((it, index) => {
                 const isHighlighted = highlightedItems.has(it.id);
                 return (
                 <motion.div

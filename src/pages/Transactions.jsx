@@ -20,6 +20,7 @@ import TopNavigation from "../components/TopNavigation";
 import AnimatedBadge from "../components/ui/AnimatedBadge";
 import AnimatedIcon from "../components/ui/AnimatedIcon";
 import { useToast } from "../contexts/ToastContext";
+import { useSearch } from "../contexts/SearchContext";
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -183,6 +184,7 @@ export default function Transactions() {
   const { role } = useRole();
   const { storeId } = useStore();
   const { toast } = useToast();
+  const { filterItems, searchQuery, hasSearch } = useSearch();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [items, setItems] = useState([]);
   const [catalog, setCatalog] = useState([]);
@@ -199,6 +201,11 @@ export default function Transactions() {
       setItems(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
   }, []);
+
+  // Filter transactions based on search
+  const filteredTransactions = useMemo(() => {
+    return filterItems(items, ["itemName", "note", "type"]);
+  }, [items, filterItems]);
 
   // load inventory - Both staff and admin see all inventory from all stores
   // This allows staff to help customers find items at other locations
@@ -479,18 +486,45 @@ export default function Transactions() {
 
       {/* Full transaction list */}
       <div className="border rounded">
-        <div className="grid grid-cols-5 gap-2 font-semibold px-3 py-2 border-b">
-          <div>Time</div>
-          <div>Type</div>
-          <div>Item</div>
-          <div>Qty</div>
-          <div>Note</div>
+        <div className="flex items-center justify-between px-3 py-2 border-b">
+          <div className="flex items-center gap-3">
+            <div className="grid grid-cols-5 gap-2 font-semibold flex-1">
+              <div>Time</div>
+              <div>Type</div>
+              <div>Item</div>
+              <div>Qty</div>
+              <div>Note</div>
+            </div>
+            {hasSearch && (
+              <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-full">
+                Searching: "{searchQuery}"
+              </span>
+            )}
+          </div>
+          <div className="text-xs text-gray-500 ml-4">
+            {hasSearch ? (
+              <span>
+                {filteredTransactions.length} of {items.length}
+              </span>
+            ) : (
+              <span>{items.length} total</span>
+            )}
+          </div>
         </div>
 
-        {items.length === 0 ? (
-          <div className="px-3 py-4 text-gray-500">No transactions yet.</div>
+        {filteredTransactions.length === 0 ? (
+          <div className="px-3 py-4 text-center">
+            {hasSearch ? (
+              <div className="text-gray-500">
+                <p className="text-sm mb-1">No transactions found matching "{searchQuery}"</p>
+                <p className="text-xs text-gray-400">Try a different search term</p>
+              </div>
+            ) : (
+              <div className="text-gray-500">No transactions yet.</div>
+            )}
+          </div>
         ) : (
-          items.map((t) => (
+          filteredTransactions.map((t) => (
             <div
               key={t.id}
               className="grid grid-cols-5 gap-2 px-3 py-2 border-b text-sm"
