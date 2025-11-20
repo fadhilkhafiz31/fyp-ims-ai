@@ -14,6 +14,7 @@ import { PageReady } from "../components/NProgressBar";
 import TopNavigation from "../components/TopNavigation";
 import AnimatedBadge from "../components/ui/AnimatedBadge";
 import AnimatedIcon from "../components/ui/AnimatedIcon";
+import { useToast } from "../contexts/ToastContext";
 
 // ============================================
 // Constants
@@ -23,7 +24,7 @@ const LOW_STOCK_THRESHOLD = 5;
 // ============================================
 // Helper Components
 // ============================================
-function SideNavigation({ activeItemCount, onClose }) {
+function SideNavigation({ activeItemCount, onClose, toast }) {
   const location = useLocation();
   const isDashboardActive = location.pathname === "/dashboard";
   const isTransactionsActive = location.pathname === "/transactions";
@@ -97,7 +98,7 @@ function SideNavigation({ activeItemCount, onClose }) {
   const handleMockClick = (e, item) => {
     if (item.isMock) {
       e.preventDefault();
-      alert(`${item.label} - Coming soon!`);
+      toast.info(`${item.label} - Coming soon!`);
     }
   };
 
@@ -291,6 +292,7 @@ function QuickActions() {
 export default function DashboardStaff() {
   const { user } = useAuth();
   const { storeId, storeName } = useStore();
+  const { toast } = useToast();
   const [inventory, setInventory] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -352,6 +354,7 @@ export default function DashboardStaff() {
           <SideNavigation
             activeItemCount={lowStock.length}
             onClose={() => setSidebarOpen(false)}
+            toast={toast}
           />
         )}
 

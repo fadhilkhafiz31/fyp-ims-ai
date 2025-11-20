@@ -21,6 +21,9 @@ import { useRole } from "../hooks/useRole";
 import { useStore } from "../contexts/StoreContext";
 import { SkeletonTableRow, SkeletonKPI } from "../components/ui/SkeletonLoader";
 import { EnhancedSpinner } from "../components/ui/EnhancedSpinner";
+import AnimatedBadge from "../components/ui/AnimatedBadge";
+import AnimatedIcon from "../components/ui/AnimatedIcon";
+import { useToast } from "../contexts/ToastContext";
 
 const INVENTORY_COL = "inventory";
 const LOW_STOCK_THRESHOLD = 5;
@@ -275,7 +278,7 @@ function SideNavigation({ activeItemCount, onClose }) {
   const handleMockClick = (e, item) => {
     if (item.isMock) {
       e.preventDefault();
-      alert(`${item.label} - Coming soon!`);
+      toast.info(`${item.label} - Coming soon!`);
     }
   };
 
@@ -357,6 +360,7 @@ function SideNavigation({ activeItemCount, onClose }) {
 export default function Inventory() {
   const { role, ready: roleReady } = useRole();
   const { storeId, storeName, setStore, stores } = useStore();
+  const { toast } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const defaultFormState = {
@@ -627,8 +631,7 @@ export default function Inventory() {
     e.preventDefault();
     const errs = validate();
     if (errs.length) {
-      // eslint-disable-next-line no-alert
-      alert(errs.join("\n"));
+      toast.error(errs.join("\n"));
       return;
     }
 
@@ -664,11 +667,11 @@ export default function Inventory() {
         });
       }
       resetForm();
+      toast.success(editingId ? "Item updated successfully!" : "Item added successfully!");
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("save error:", err);
-      // eslint-disable-next-line no-alert
-      alert("Failed to save item.");
+      toast.error("Failed to save item. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -691,15 +694,14 @@ export default function Inventory() {
   };
 
   const handleDelete = async (id) => {
-    // eslint-disable-next-line no-alert
     if (!window.confirm("Delete this item?")) return;
     try {
       await deleteDoc(doc(db, INVENTORY_COL, id));
+      toast.success("Item deleted successfully!");
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("delete error:", err);
-      // eslint-disable-next-line no-alert
-      alert("Failed to delete item.");
+      toast.error("Failed to delete item. Please try again.");
     }
   };
 

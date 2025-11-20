@@ -12,6 +12,7 @@ import LocationSelector from "../components/LocationSelector";
 import TopNavigation from "../components/TopNavigation";
 import AnimatedBadge from "../components/ui/AnimatedBadge";
 import AnimatedIcon from "../components/ui/AnimatedIcon";
+import { useToast } from "../contexts/ToastContext";
 
 // ============================================
 // Constants
@@ -21,7 +22,7 @@ const LOW_STOCK_THRESHOLD = 5;
 // ============================================
 // Helper Components
 // ============================================
-function SideNavigation({ activeItemCount, onClose }) {
+function SideNavigation({ activeItemCount, onClose, toast }) {
   const location = useLocation();
   const isDashboardActive = location.pathname === "/dashboard";
   const isStockNotificationActive = location.pathname === "/stock-notification";
@@ -90,10 +91,10 @@ function SideNavigation({ activeItemCount, onClose }) {
     return icons[iconName] || icons.grid;
   };
 
-  const handleMockClick = (e, item) => {
+  const handleMockClick = (e, item, toast) => {
     if (item.isMock) {
       e.preventDefault();
-      alert(`${item.label} - Coming soon!`);
+      toast.info(`${item.label} - Coming soon!`);
     }
   };
 
@@ -264,6 +265,7 @@ export default function StockNotification() {
   const { user } = useAuth();
   const { role } = useRole();
   const { storeId } = useStore();
+  const { toast } = useToast();
   const [inventory, setInventory] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -363,6 +365,7 @@ useEffect(() => {
           <SideNavigation
             activeItemCount={lowStockItems.length}
             onClose={() => setSidebarOpen(false)}
+            toast={toast}
           />
         )}
 

@@ -1,6 +1,6 @@
 import { useLocation } from "react-router-dom";
 import * as motion from "motion/react-client";
-import { AnimatePresence } from "motion/react-client";
+import { AnimatePresence } from "motion/react";
 
 export default function PageTransition({ children }) {
   const location = useLocation();

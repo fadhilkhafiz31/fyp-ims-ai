@@ -11,6 +11,7 @@ import { useStore } from "../contexts/StoreContext";
 import ChatbotPanel from "../components/ChatbotPanel";
 import LocationSelector from "../components/LocationSelector";
 import { PageReady } from "../components/NProgressBar";
+import { useToast } from "../contexts/ToastContext";
 
 // ============================================
 // Constants
@@ -180,7 +181,7 @@ function TopNavigation({ isRestricted = false, onToggleSidebar }) {
   );
 }
 
-function SideNavigation({ activeItemCount, onClose }) {
+function SideNavigation({ activeItemCount, onClose, toast }) {
   const location = useLocation();
   const isDashboardActive = location.pathname === "/dashboard";
   const isChatbotActive = location.pathname === "/chatbot";
@@ -252,7 +253,7 @@ function SideNavigation({ activeItemCount, onClose }) {
   const handleMockClick = (e, item) => {
     if (item.isMock) {
       e.preventDefault();
-      alert(`${item.label} - Coming soon!`);
+      toast.info(`${item.label} - Coming soon!`);
     }
   };
 
@@ -335,6 +336,7 @@ export default function Chatbot() {
   const { user } = useAuth();
   const { role, ready: roleReady } = useRole();
   const { storeId } = useStore();
+  const { toast } = useToast();
   const [inventory, setInventory] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -405,6 +407,7 @@ export default function Chatbot() {
           <SideNavigation
             activeItemCount={lowStockItems.length}
             onClose={() => setSidebarOpen(false)}
+            toast={toast}
           />
         )}
 

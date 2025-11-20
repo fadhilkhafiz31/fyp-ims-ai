@@ -19,6 +19,7 @@ import LocationSelector from "../components/LocationSelector";
 import TopNavigation from "../components/TopNavigation";
 import AnimatedBadge from "../components/ui/AnimatedBadge";
 import AnimatedIcon from "../components/ui/AnimatedIcon";
+import { useToast } from "../contexts/ToastContext";
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -99,7 +100,7 @@ function SideNavigation({ activeItemCount, onClose }) {
   const handleMockClick = (e, item) => {
     if (item.isMock) {
       e.preventDefault();
-      alert(`${item.label} - Coming soon!`);
+      toast.info(`${item.label} - Coming soon!`);
     }
   };
 
@@ -181,6 +182,7 @@ function SideNavigation({ activeItemCount, onClose }) {
 export default function Transactions() {
   const { role } = useRole();
   const { storeId } = useStore();
+  const { toast } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [items, setItems] = useState([]);
   const [catalog, setCatalog] = useState([]);
@@ -281,10 +283,19 @@ export default function Transactions() {
   // transaction handler
   async function handleAdd(e) {
     e.preventDefault();
-    if (!storeId) return alert("Please select a location first");
-    if (!form.itemId) return alert("Choose an item");
+    if (!storeId) {
+      toast.warning("Please select a location first");
+      return;
+    }
+    if (!form.itemId) {
+      toast.warning("Choose an item");
+      return;
+    }
     const delta = Number(form.qty);
-    if (!Number.isFinite(delta) || delta <= 0) return alert("Qty must be > 0");
+    if (!Number.isFinite(delta) || delta <= 0) {
+      toast.warning("Qty must be > 0");
+      return;
+    }
 
     const invDocRef = doc(db, "inventory", form.itemId);
     const txDocRef = doc(txRef);
@@ -317,9 +328,10 @@ export default function Transactions() {
       });
 
       setForm({ type: "IN", itemId: "", qty: 1, note: "" });
+      toast.success("Transaction added successfully!");
     } catch (err) {
       console.error(err);
-      alert(err.message || "Failed to add transaction");
+      toast.error(err.message || "Failed to add transaction");
     }
   }
 
