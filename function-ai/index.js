@@ -1,5 +1,5 @@
 // --- SmartStockAI Dialogflow webhook (Firebase Functions v2) ---
-const { onRequest } = require("firebase-functions/v2/https");
+const { onRequest, onCall, HttpsError } = require("firebase-functions/v2/https");
 const { setGlobalOptions } = require("firebase-functions/v2");
 const admin = require("firebase-admin");
 const express = require("express");
@@ -1221,6 +1221,183 @@ app.post("/detect-intent", async (req, res) => {
   } catch (e) {
     console.error("detect-intent error", e);
     return res.status(500).json({ fulfillmentText: "Error calling Dialogflow." });
+  }
+});
+
+// ---------- Copy Inventory Function ----------
+/**
+ * Copy inventory from one store to another
+ * Only admin and staff can use this function
+ */
+exports.copyInventory = onCall(async (request) => {
+  // Security: Check authentication
+  if (!request.auth) {
+    throw new HttpsError(
+      'unauthenticated',
+      'User must be authenticated to copy inventory'
+    );
+  }
+
+  const userId = request.auth.uid;
+
+  // Check user role
+  const userDoc = await db.collection('users').doc(userId).get();
+  if (!userDoc.exists) {
+    throw new HttpsError(
+      'permission-denied',
+      'User profile not found'
+    );
+  }
+
+  const role = userDoc.data()?.role;
+  if (role !== 'admin' && role !== 'staff') {
+    throw new HttpsError(
+      'permission-denied',
+      'Only admin and staff can copy inventory'
+    );
+  }
+
+  // Validate input
+  const { fromStore, toStore, overwrite = false } = request.data;
+
+  if (!fromStore || !toStore) {
+    throw new HttpsError(
+      'invalid-argument',
+      'fromStore and toStore are required'
+    );
+  }
+
+  if (fromStore === toStore) {
+    throw new HttpsError(
+      'invalid-argument',
+      'Source and destination stores must be different'
+    );
+  }
+
+  try {
+    // Fetch the destination store's name from storeId collection
+    let destinationStoreName = toStore; // fallback
+    try {
+      const destStoreDoc = await db.collection("storeId").doc(toStore).get();
+      if (destStoreDoc.exists) {
+        const storeData = destStoreDoc.data();
+        destinationStoreName = storeData.storeName || storeData.name || toStore;
+      }
+    } catch (err) {
+      console.warn("Could not fetch destination store name:", err);
+      // Use toStore as fallback
+    }
+
+    // Fetch all items from source store
+    const sourceSnapshot = await db.collection("inventory")
+      .where("storeId", "==", fromStore)
+      .get();
+
+    if (sourceSnapshot.empty) {
+      return {
+        success: true,
+        count: 0,
+        message: `No items found in store "${fromStore}"`
+      };
+    }
+
+    // If overwrite is false, check for existing items in destination store
+    let existingItems = new Set();
+    if (!overwrite) {
+      const destSnapshot = await db.collection("inventory")
+        .where("storeId", "==", toStore)
+        .get();
+      destSnapshot.forEach(doc => {
+        const data = doc.data();
+        // Use SKU as unique identifier
+        if (data.sku) {
+          existingItems.add(data.sku);
+        }
+      });
+    }
+
+    // Prepare items to copy
+    const itemsToCopy = [];
+    let skippedCount = 0;
+
+    sourceSnapshot.forEach((doc) => {
+      const data = doc.data();
+      
+      // Skip if item already exists in destination (unless overwrite is true)
+      if (!overwrite && data.sku && existingItems.has(data.sku)) {
+        skippedCount++;
+        return;
+      }
+
+      // Create new item data
+      const newData = {
+        ...data,
+        storeId: toStore,
+        // Use the actual store name from storeId collection
+        storeName: destinationStoreName,
+        // Update legacy fields for compatibility
+        StoreId: toStore,
+        StoreName: destinationStoreName,
+        // Set new timestamps
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+
+      itemsToCopy.push(newData);
+    });
+
+    if (itemsToCopy.length === 0) {
+      return {
+        success: true,
+        count: 0,
+        skipped: skippedCount,
+        message: `All items already exist in destination store. ${skippedCount} items skipped.`
+      };
+    }
+
+    // Use batch writes (Firestore limit is 500 operations per batch)
+    const batches = [];
+    let currentBatch = db.batch();
+    let operationCount = 0;
+
+    for (const itemData of itemsToCopy) {
+      const newRef = db.collection("inventory").doc();
+      currentBatch.set(newRef, itemData);
+      operationCount++;
+
+      // Firestore batch limit is 500 operations
+      if (operationCount === 500) {
+        batches.push(currentBatch);
+        currentBatch = db.batch();
+        operationCount = 0;
+      }
+    }
+
+    // Add the last batch if it has operations
+    if (operationCount > 0) {
+      batches.push(currentBatch);
+    }
+
+    // Execute all batches
+    for (const batch of batches) {
+      await batch.commit();
+    }
+
+    return {
+      success: true,
+      count: itemsToCopy.length,
+      skipped: skippedCount,
+      message: `Successfully copied ${itemsToCopy.length} item${itemsToCopy.length !== 1 ? 's' : ''} from "${fromStore}" to "${toStore}"${skippedCount > 0 ? `. ${skippedCount} item${skippedCount !== 1 ? 's' : ''} skipped (already exist).` : ''}`
+    };
+  } catch (error) {
+    console.error("Error copying inventory:", error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError(
+      'internal',
+      `Failed to copy inventory: ${error.message}`
+    );
   }
 });
 

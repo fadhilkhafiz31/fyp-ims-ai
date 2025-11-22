@@ -25,6 +25,7 @@ import AnimatedBadge from "../components/ui/AnimatedBadge";
 import AnimatedIcon from "../components/ui/AnimatedIcon";
 import { useToast } from "../contexts/ToastContext";
 import { useSearch } from "../contexts/SearchContext";
+import CopyInventory from "../components/CopyInventory";
 
 const INVENTORY_COL = "inventory";
 const LOW_STOCK_THRESHOLD = 5;
@@ -760,9 +761,12 @@ export default function Inventory() {
 
       {/* Location Selector */}
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-        <label htmlFor="location-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Select Location:
-        </label>
+        <div className="flex items-center justify-between mb-4">
+          <label htmlFor="location-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Select Location:
+          </label>
+          <CopyInventory />
+        </div>
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           <select
             id="location-select"
