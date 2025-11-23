@@ -52,6 +52,7 @@ function formatTodayDate() {
 
 // Calculate product match score for ranking matches
 // Returns score: 100 (exact) > 50 (token match) > 30 (partial name) > 20 (SKU) > 10 (category)
+/*
 function calculateProductScore(item, productName, productTokens) {
   const nameNorm = norm(item.name || "");
   const skuNorm = norm(item.sku || "");
@@ -86,7 +87,7 @@ function calculateProductScore(item, productName, productTokens) {
   // No match
   return 0;
 }
-
+//
 // Calculate location match score for ranking matches
 // Returns score: 100 (exact) > 50 (starts-with) > 30 (token match) > 10 (contains/substring)
 function calculateLocationScore(item, locationName, locationTokens) {
@@ -122,7 +123,7 @@ function calculateLocationScore(item, locationName, locationTokens) {
   // No match
   return 0;
 }
-
+*/
 async function queryInventoryByStoreAndTerm({ term, storeId }) {
   const qNorm = norm(term);
   const qTokens = tokens(term);
@@ -172,6 +173,8 @@ async function queryInventoryByStoreAndTerm({ term, storeId }) {
 }
 
 // Query inventory by product and location names
+// BLOCKED: Intelligent matching disabled - ChatbotPanel now depends only on Dialogflow webhook
+/*
 async function queryInventoryByProductAndLocation({ productName, locationName }) {
   const productNorm = norm(productName);
   const productTokens = tokens(productName);
@@ -241,6 +244,7 @@ async function queryInventoryByProductAndLocation({ productName, locationName })
     scope: "found" 
   };
 }
+*/
 
 // Legacy function for backward compatibility
 async function searchInventory({ term, storeId }) {
@@ -256,6 +260,13 @@ async function dfHandler(req, res) {
     const qr = req.body?.queryResult || {};
     console.log("DF payload:", JSON.stringify(qr, null, 2));
 
+    // BLOCKED: All custom handlers disabled - return Dialogflow's fulfillment text directly
+    // This ensures ChatbotPanel shows the same responses as Dialogflow website
+    const fulfillmentText = qr.fulfillmentText || "Sorry, I didn't get that. Please specify the product you're looking for, or include a location for location-specific queries.";
+    return res.json(reply(fulfillmentText));
+    
+    // BLOCKED: All custom intent handlers disabled - code below is unreachable
+    if (false) { // This block is intentionally unreachable to disable custom handlers
     const intent = qr.intent?.displayName || "";
     const p = qr.parameters || {};
 
@@ -281,7 +292,13 @@ async function dfHandler(req, res) {
         return res.json(reply("What product are you looking for?"));
       }
       
-      // If location is provided, do location-specific search
+      // BLOCKED: Intelligent matching disabled - returning Dialogflow's fulfillment text directly
+      // If location is provided, return Dialogflow's response (no custom matching)
+      if (locationName) {
+        // Return Dialogflow's fulfillment text directly without custom matching
+        return res.json(reply(qr.fulfillmentText || `I'm checking availability of ${productName} at ${locationName}. Please configure Dialogflow fulfillment for detailed responses.`));
+      }
+      /*
       if (locationName) {
         const { items, scope } = await queryInventoryByProductAndLocation({ 
           productName, 
@@ -338,6 +355,7 @@ async function dfHandler(req, res) {
           `Sorry, ${it.name} is currently out of stock at ${locationName}.`
         ));
       }
+      */
       
       // If location is missing but product is detected, search all locations
       // This is why CheckStockAtLocation is better - it always extracts @product parameter
@@ -678,8 +696,9 @@ async function dfHandler(req, res) {
       }
     }
 
-    // If we reach here, the intent was not recognized and we couldn't extract a product
-    return res.json(reply("Sorry, I didn't get that. Please specify the product you're looking for, or include a location for location-specific queries."));
+    // OLD CODE (now blocked) - If we reach here, the intent was not recognized and we couldn't extract a product
+    // return res.json(reply("Sorry, I didn't get that. Please specify the product you're looking for, or include a location for location-specific queries."));
+    } // End of unreachable block
   } catch (e) {
     console.error(e);
     return res.json(reply("Something went wrong while checking stock."));
@@ -755,6 +774,14 @@ app.post("/detect-intent", async (req, res) => {
     const intentName = response.queryResult?.intent?.displayName || "";
     const p = response.queryResult?.parameters || {};
     
+    // BYPASS ALL CUSTOM HANDLERS - Return Dialogflow's fulfillment text directly
+    // This ensures ChatbotPanel shows the same responses as Dialogflow website
+    // All custom intent handlers are disabled - we use Dialogflow's fulfillment text as-is
+    const fulfillmentText = response.queryResult?.fulfillmentText || "Sorry, I didn't get that. Please specify the product you're looking for, or include a location for location-specific queries.";
+    return res.json({ fulfillmentText, raw: response.queryResult });
+    
+    // BLOCKED: All custom intent handlers disabled - code below is unreachable
+    if (false) { // This block is intentionally unreachable to disable custom handlers
       // Handle CheckStockAtLocation intent (primary handler - more accurate with @product parameter)
       if (intentName === "CheckStockAtLocation" || (p.product && p.location)) {
         // Extract parameters from Dialogflow queryResult.parameters
@@ -779,7 +806,16 @@ app.post("/detect-intent", async (req, res) => {
           });
         }
         
-        // If location is provided, do location-specific search
+        // BLOCKED: Intelligent matching disabled - returning Dialogflow's fulfillment text directly
+        // If location is provided, return Dialogflow's response (no custom matching)
+        if (locationName) {
+          // Return Dialogflow's fulfillment text directly without custom matching
+          return res.json({ 
+            fulfillmentText: response.queryResult?.fulfillmentText || `I'm checking availability of ${productName} at ${locationName}. Please configure Dialogflow fulfillment for detailed responses.`,
+            raw: response.queryResult 
+          });
+        }
+        /*
         if (locationName) {
           const { items, scope } = await queryInventoryByProductAndLocation({ 
             productName, 
@@ -843,6 +879,7 @@ app.post("/detect-intent", async (req, res) => {
             raw: response.queryResult 
           });
         }
+        */
         
         // If location is missing but product is detected, search all locations
         // This is why CheckStockAtLocation is better - it always extracts @product parameter
@@ -1214,10 +1251,7 @@ app.post("/detect-intent", async (req, res) => {
         }
       }
     }
-    
-    // If we reach here, the intent was not recognized and we couldn't extract a product
-    const fulfillmentText = response.queryResult?.fulfillmentText || "Sorry, I didn't get that. Please specify the product you're looking for, or include a location for location-specific queries.";
-    return res.json({ fulfillmentText, raw: response.queryResult });
+    } // End of unreachable block
   } catch (e) {
     console.error("detect-intent error", e);
     return res.status(500).json({ fulfillmentText: "Error calling Dialogflow." });
