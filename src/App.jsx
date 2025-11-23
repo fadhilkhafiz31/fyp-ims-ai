@@ -1,8 +1,9 @@
 import { Suspense, lazy } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RoleGuard from "./components/RoleGuard";
 import { RouteProgress, PageReady } from "./components/NProgressBar";
+import { AnimatePresence } from "motion/react";
 
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
@@ -13,6 +14,8 @@ const StockNotification = lazy(() => import("./pages/StockNotification"));
 const GuestChatbot = lazy(() => import("./pages/GuestChatbot"));
 
 export default function App() {
+  const location = useLocation();
+
   return (
     <>
       <RouteProgress />
@@ -24,68 +27,70 @@ export default function App() {
           </div>
         }
       >
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/guest-chatbot" element={<GuestChatbot />} />
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/guest-chatbot" element={<GuestChatbot />} />
 
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <PageReady />
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/inventory"
-            element={
-              <ProtectedRoute>
-                <RoleGuard allow={["admin", "staff"]}>
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
                   <PageReady />
-                  <Inventory />
-                </RoleGuard>
-              </ProtectedRoute>
-            }
-          />
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/transactions"
-            element={
-              <ProtectedRoute>
-                <RoleGuard allow={["admin", "staff"]}>
+            <Route
+              path="/inventory"
+              element={
+                <ProtectedRoute>
+                  <RoleGuard allow={["admin", "staff"]}>
+                    <PageReady />
+                    <Inventory />
+                  </RoleGuard>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/transactions"
+              element={
+                <ProtectedRoute>
+                  <RoleGuard allow={["admin", "staff"]}>
+                    <PageReady />
+                    <Transactions />
+                  </RoleGuard>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/stock-notification"
+              element={
+                <ProtectedRoute>
+                  <RoleGuard allow={["admin", "staff"]}>
+                    <PageReady />
+                    <StockNotification />
+                  </RoleGuard>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Default route */}
+            <Route
+              path="*"
+              element={
+                <ProtectedRoute>
                   <PageReady />
-                  <Transactions />
-                </RoleGuard>
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/stock-notification"
-            element={
-              <ProtectedRoute>
-                <RoleGuard allow={["admin", "staff"]}>
-                  <PageReady />
-                  <StockNotification />
-                </RoleGuard>
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Default route */}
-          <Route
-            path="*"
-            element={
-              <ProtectedRoute>
-                <PageReady />
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </AnimatePresence>
       </Suspense>
     </>
   );

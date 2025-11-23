@@ -258,12 +258,27 @@ const reply = (text) => ({ fulfillmentText: text });
 async function dfHandler(req, res) {
   try {
     const qr = req.body?.queryResult || {};
-    console.log("DF payload:", JSON.stringify(qr, null, 2));
+    const intent = qr.intent?.displayName || "";
+    const p = qr.parameters || {};
+    const queryText = qr.queryText || "";
+    const fulfillmentText = qr.fulfillmentText || "";
+    
+    // Log webhook call for debugging
+    console.log("=== dfHandler (Webhook) Called ===");
+    console.log("Query text:", queryText);
+    console.log("Intent:", intent);
+    console.log("Parameters:", JSON.stringify(p, null, 2));
+    console.log("Fulfillment text (from Dialogflow):", fulfillmentText);
+    console.log("=== End Webhook Call ===");
 
     // BLOCKED: All custom handlers disabled - return Dialogflow's fulfillment text directly
     // This ensures ChatbotPanel shows the same responses as Dialogflow website
-    const fulfillmentText = qr.fulfillmentText || "Sorry, I didn't get that. Please specify the product you're looking for, or include a location for location-specific queries.";
-    return res.json(reply(fulfillmentText));
+    // If Dialogflow has a fulfillmentText (from static responses), use it
+    // Otherwise, return a default message
+    // Note: When webhook is enabled, Dialogflow may pass empty fulfillmentText and expect webhook to provide it
+    // But since we want to use Dialogflow's static responses, we'll check if it exists first
+    const finalFulfillmentText = fulfillmentText || "Sorry, I didn't get that. Please specify the product you're looking for, or include a location for location-specific queries.";
+    return res.json(reply(finalFulfillmentText));
     
     // BLOCKED: All custom intent handlers disabled - code below is unreachable
     if (false) { // This block is intentionally unreachable to disable custom handlers
@@ -742,15 +757,26 @@ app.post("/detect-intent", async (req, res) => {
     const storeId = req.body?.storeId || "";
     if (!text.trim()) return res.status(400).json({ fulfillmentText: "What should I check?" });
 
+    // Log request details for debugging
+    console.log("=== /detect-intent Request ===");
+    console.log("Text:", text);
+    console.log("Language code:", languageCode);
+    console.log("Store ID:", storeId || "(not provided)");
+    console.log("Session ID:", sessionId);
+    console.log("=== End Request ===");
+
     const request = {
       session: sessionPath,
       queryInput: {
         text: { text, languageCode },
       },
       // Pass storeId as query parameter so it flows through to fulfillment
-      queryParams: {
-        parameters: storeId ? { store: storeId } : {},
-      },
+      // Only include parameters if storeId is provided to avoid interfering with Dialogflow's intent detection
+      ...(storeId && {
+        queryParams: {
+          parameters: { store: storeId },
+        },
+      }),
     };
 
     let response;
@@ -771,14 +797,32 @@ app.post("/detect-intent", async (req, res) => {
       // For other errors, fall through to fallback handler
       throw dialogflowError;
     }
+    
     const intentName = response.queryResult?.intent?.displayName || "";
     const p = response.queryResult?.parameters || {};
+    const queryText = response.queryResult?.queryText || "";
+    const fulfillmentText = response.queryResult?.fulfillmentText || "";
+    const webhookStatus = response.webhookStatus;
+    
+    // Log Dialogflow response for debugging
+    console.log("=== /detect-intent Dialogflow Response ===");
+    console.log("Query text:", queryText);
+    console.log("Intent:", intentName);
+    console.log("Parameters:", JSON.stringify(p, null, 2));
+    console.log("Fulfillment text:", fulfillmentText);
+    console.log("Webhook status:", webhookStatus ? JSON.stringify(webhookStatus, null, 2) : "No webhook called");
+    console.log("=== End Dialogflow Response ===");
     
     // BYPASS ALL CUSTOM HANDLERS - Return Dialogflow's fulfillment text directly
     // This ensures ChatbotPanel shows the same responses as Dialogflow website
     // All custom intent handlers are disabled - we use Dialogflow's fulfillment text as-is
-    const fulfillmentText = response.queryResult?.fulfillmentText || "Sorry, I didn't get that. Please specify the product you're looking for, or include a location for location-specific queries.";
-    return res.json({ fulfillmentText, raw: response.queryResult });
+    // If fulfillmentText is empty, use fallback message
+    const finalFulfillmentText = fulfillmentText || "Sorry, I didn't get that. Please specify the product you're looking for, or include a location for location-specific queries.";
+    
+    return res.json({ 
+      fulfillmentText: finalFulfillmentText, 
+      raw: response.queryResult 
+    });
     
     // BLOCKED: All custom intent handlers disabled - code below is unreachable
     if (false) { // This block is intentionally unreachable to disable custom handlers

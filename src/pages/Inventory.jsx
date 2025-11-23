@@ -26,6 +26,8 @@ import AnimatedIcon from "../components/ui/AnimatedIcon";
 import { useToast } from "../contexts/ToastContext";
 import { useSearch } from "../contexts/SearchContext";
 import CopyInventory from "../components/CopyInventory";
+import MotionWrapper from "../components/MotionWrapper";
+import ScrollReveal from "../components/ScrollReveal";
 
 const INVENTORY_COL = "inventory";
 const LOW_STOCK_THRESHOLD = 5;
@@ -109,9 +111,9 @@ function TopNavigation({ onToggleSidebar }) {
           <div className="flex items-center gap-3">
             {/* 99 Speedmart Logo */}
             <div className="hidden md:flex items-center border-r border-green-400/30 pr-4">
-              <img 
-                src="/99speedmart logo.png" 
-                alt="99 Speedmart Logo" 
+              <img
+                src="/99speedmart logo.png"
+                alt="99 Speedmart Logo"
                 className="h-8 w-auto"
               />
             </div>
@@ -334,11 +336,10 @@ function SideNavigation({ activeItemCount, onClose }) {
               <Link
                 to={item.path}
                 onClick={(e) => handleMockClick(e, item)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-                  item.active
-                    ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300"
-                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                }`}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${item.active
+                  ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300"
+                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  }`}
               >
                 <AnimatedIcon hoverRotate={item.icon === "gear"} hoverScale={true}>
                   {getIcon(item.icon)}
@@ -397,35 +398,35 @@ export default function Inventory() {
     setLoading(true);
     // eslint-disable-next-line no-console
     console.log("Inventory: Loading items for storeId:", storeId);
-    let cleanup = () => {};
-    
+    let cleanup = () => { };
+
     // Try query with orderBy first (requires composite index)
     const qRef = query(
       collection(db, INVENTORY_COL),
       where("storeId", "==", storeId),
       orderBy("updatedAt", "desc")
     );
-    
+
     const unsub = onSnapshot(
       qRef,
       (snap) => {
         const itemsData = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
         // eslint-disable-next-line no-console
         console.log(`Inventory: Loaded ${itemsData.length} items for storeId: ${storeId}`);
-        
+
         // Highlight newly added or updated items
         if (items.length > 0) {
           const newItemIds = new Set(itemsData.map(item => item.id));
           const oldItemIds = new Set(items.map(item => item.id));
           const changedItems = new Set();
-          
+
           // Find new items
           newItemIds.forEach(id => {
             if (!oldItemIds.has(id)) {
               changedItems.add(id);
             }
           });
-          
+
           // Find updated items (compare timestamps)
           itemsData.forEach(newItem => {
             const oldItem = items.find(item => item.id === newItem.id);
@@ -433,7 +434,7 @@ export default function Inventory() {
               changedItems.add(newItem.id);
             }
           });
-          
+
           if (changedItems.size > 0) {
             setHighlightedItems(changedItems);
             // Remove highlight after 2 seconds
@@ -442,14 +443,14 @@ export default function Inventory() {
             }, 2000);
           }
         }
-        
+
         setItems(itemsData);
         setLoading(false);
       },
       (err) => {
         // eslint-disable-next-line no-console
         console.error("onSnapshot error:", err);
-        
+
         // If composite index error, try without orderBy
         if (err.code === 'failed-precondition' || err.message?.includes('index')) {
           // eslint-disable-next-line no-console
@@ -458,7 +459,7 @@ export default function Inventory() {
             collection(db, INVENTORY_COL),
             where("storeId", "==", storeId)
           );
-          
+
           const fallbackUnsub = onSnapshot(
             fallbackRef,
             (snap) => {
@@ -471,20 +472,20 @@ export default function Inventory() {
               });
               // eslint-disable-next-line no-console
               console.log(`Inventory: Loaded ${itemsData.length} items (fallback) for storeId: ${storeId}`);
-              
+
               // Highlight newly added or updated items
               if (items.length > 0) {
                 const newItemIds = new Set(itemsData.map(item => item.id));
                 const oldItemIds = new Set(items.map(item => item.id));
                 const changedItems = new Set();
-                
+
                 // Find new items
                 newItemIds.forEach(id => {
                   if (!oldItemIds.has(id)) {
                     changedItems.add(id);
                   }
                 });
-                
+
                 // Find updated items (compare timestamps)
                 itemsData.forEach(newItem => {
                   const oldItem = items.find(item => item.id === newItem.id);
@@ -492,7 +493,7 @@ export default function Inventory() {
                     changedItems.add(newItem.id);
                   }
                 });
-                
+
                 if (changedItems.size > 0) {
                   setHighlightedItems(changedItems);
                   // Remove highlight after 2 seconds
@@ -501,7 +502,7 @@ export default function Inventory() {
                   }, 2000);
                 }
               }
-              
+
               setItems(itemsData);
               setLoading(false);
             },
@@ -519,7 +520,7 @@ export default function Inventory() {
         }
       }
     );
-    
+
     return () => {
       unsub();
       cleanup();
@@ -529,11 +530,11 @@ export default function Inventory() {
   // ---- load store options ----
   useEffect(() => {
     const ref = collection(db, "storeId");
-    
+
     // Log Firebase project for verification
     // eslint-disable-next-line no-console
     console.log("Firebase projectId:", db.app.options.projectId);
-    
+
     // Live listener with error callback
     const unsub = onSnapshot(
       ref,
@@ -555,7 +556,7 @@ export default function Inventory() {
         setStoreLoadError(err.message || "Failed to load stores");
       }
     );
-    
+
     // One-shot fallback for diagnostics
     (async () => {
       try {
@@ -567,7 +568,7 @@ export default function Inventory() {
         console.error("[storeId] getDocs error:", e);
       }
     })();
-    
+
     return () => unsub();
   }, []);
 
@@ -727,7 +728,7 @@ export default function Inventory() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <MotionWrapper className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <PageReady />
 
       {/* Top Navigation */}
@@ -759,308 +760,314 @@ export default function Inventory() {
             </p>
           </header>
 
-      {/* Location Selector */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-        <div className="flex items-center justify-between mb-4">
-          <label htmlFor="location-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Select Location:
-          </label>
-          <CopyInventory />
-        </div>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <select
-            id="location-select"
-            value={storeId || ""}
-            onChange={(e) => {
-              const selectedStoreId = e.target.value;
-              if (selectedStoreId && setStore) {
-                setStore(selectedStoreId);
-              }
-            }}
-            className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            {storeOptions.length === 0 ? (
-              <option value="" disabled>
-                {storeLoadError || "Loading stores..."}
-              </option>
+          {/* Location Selector */}
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+            <div className="flex items-center justify-between mb-4">
+              <label htmlFor="location-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Select Location:
+              </label>
+              <CopyInventory />
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <select
+                id="location-select"
+                value={storeId || ""}
+                onChange={(e) => {
+                  const selectedStoreId = e.target.value;
+                  if (selectedStoreId && setStore) {
+                    setStore(selectedStoreId);
+                  }
+                }}
+                className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                {storeOptions.length === 0 ? (
+                  <option value="" disabled>
+                    {storeLoadError || "Loading stores..."}
+                  </option>
+                ) : (
+                  <>
+                    <option value="">Select a location...</option>
+                    {storeOptions.map((s, index) => (
+                      <option key={s.id} value={s.id}>
+                        {s.id}{index === 0 ? " (Default)" : ""}
+                      </option>
+                    ))}
+                  </>
+                )}
+              </select>
+              {storeId && storeName && (
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">
+                    Current location: <span className="font-semibold text-gray-900 dark:text-gray-100">{storeName}</span>
+                  </span>
+                  <span className="text-gray-500 dark:text-gray-500">({storeId})</span>
+                </div>
+              )}
+            </div>
+            {storeId && items.length > 0 && (
+              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                Showing <span className="font-semibold">{items.length}</span> item{items.length !== 1 ? "s" : ""} from this location
+              </p>
+            )}
+            {storeId && items.length === 0 && !loading && (
+              <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
+                No items found for this location
+              </p>
+            )}
+          </div>
+
+          {/* KPIs */}
+          <section className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {loading ? (
+              <>
+                <SkeletonKPI />
+                <SkeletonKPI />
+                <SkeletonKPI />
+              </>
             ) : (
               <>
-                <option value="">Select a location...</option>
-                {storeOptions.map((s, index) => (
-                  <option key={s.id} value={s.id}>
-                    {s.id}{index === 0 ? " (Default)" : ""}
-                  </option>
-                ))}
+                <ScrollReveal delay={0.1}>
+                  <KPI label="Total Items" value={totals.totalItems} />
+                </ScrollReveal>
+                <ScrollReveal delay={0.2}>
+                  <KPI label="Total Stock Qty" value={totals.totalQty} />
+                </ScrollReveal>
+                <ScrollReveal delay={0.3}>
+                  <KPI label="Total Categories" value={totals.totalCategories} />
+                </ScrollReveal>
               </>
             )}
-          </select>
-          {storeId && storeName && (
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm">
-              <span className="text-gray-600 dark:text-gray-400">
-                Current location: <span className="font-semibold text-gray-900 dark:text-gray-100">{storeName}</span>
-              </span>
-              <span className="text-gray-500 dark:text-gray-500">({storeId})</span>
+          </section>
+
+          {/* Add / Edit form */}
+          <section className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-white dark:bg-gray-900">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-lg">{editingId ? "Edit Item" : "Add New Item"}</h2>
+              {storeName && (
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  Store: <span className="font-medium">{storeName}</span>
+                </span>
+              )}
             </div>
-          )}
-        </div>
-        {storeId && items.length > 0 && (
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Showing <span className="font-semibold">{items.length}</span> item{items.length !== 1 ? "s" : ""} from this location
-          </p>
-        )}
-        {storeId && items.length === 0 && !loading && (
-          <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
-            No items found for this location
-          </p>
-        )}
-      </div>
 
-      {/* KPIs */}
-      <section className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        {loading ? (
-          <>
-            <SkeletonKPI />
-            <SkeletonKPI />
-            <SkeletonKPI />
-          </>
-        ) : (
-          <>
-            <KPI label="Total Items" value={totals.totalItems} />
-            <KPI label="Total Stock Qty" value={totals.totalQty} />
-            <KPI label="Total Categories" value={totals.totalCategories} />
-          </>
-        )}
-      </section>
-
-      {/* Add / Edit form */}
-      <section className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-white dark:bg-gray-900">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-lg">{editingId ? "Edit Item" : "Add New Item"}</h2>
-          {storeName && (
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              Store: <span className="font-medium">{storeName}</span>
-            </span>
-          )}
-        </div>
-
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div>
-            <label htmlFor="name" className="block text-sm mb-1">
-              Name
-            </label>
-            <motion.input
-              id="name"
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              className="w-full border rounded px-3 py-2 focus:outline-none transition-colors"
-              placeholder="e.g., Spritzer 550ml"
-              autoComplete="off"
-              required
-              whileFocus={{
-                borderColor: "#3b82f6",
-                boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.1)",
-              }}
-              transition={{ duration: 0.2 }}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="sku" className="block text-sm mb-1">
-              SKU
-            </label>
-            <motion.input
-              id="sku"
-              name="sku"
-              value={form.sku}
-              onChange={handleChange}
-              className="w-full border rounded px-3 py-2 focus:outline-none transition-colors"
-              placeholder="e.g., SPR-550"
-              autoComplete="off"
-              required
-              whileFocus={{
-                borderColor: "#3b82f6",
-                boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.1)",
-              }}
-              transition={{ duration: 0.2 }}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="qty" className="block text-sm mb-1">
-              Qty
-            </label>
-            <motion.input
-              id="qty"
-              name="qty"
-              value={form.qty}
-              onChange={handleChange}
-              className="w-full border rounded px-3 py-2 focus:outline-none transition-colors"
-              placeholder="0"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              required
-              whileFocus={{
-                borderColor: "#3b82f6",
-                boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.1)",
-              }}
-              transition={{ duration: 0.2 }}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="reorderPoint" className="block text-sm mb-1">
-              Reorder Point
-            </label>
-            <motion.input
-              id="reorderPoint"
-              name="reorderPoint"
-              value={form.reorderPoint}
-              onChange={handleChange}
-              className="w-full border rounded px-3 py-2 focus:outline-none transition-colors"
-              placeholder="5"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              required
-              whileFocus={{
-                borderColor: "#3b82f6",
-                boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.1)",
-              }}
-              transition={{ duration: 0.2 }}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="category" className="block text-sm mb-1">
-              Category
-            </label>
-            <motion.input
-              id="category"
-              name="category"
-              value={form.category}
-              onChange={handleChange}
-              className="w-full border rounded px-3 py-2 focus:outline-none transition-colors"
-              placeholder="e.g., Beverages"
-              autoComplete="off"
-              required
-              whileFocus={{
-                borderColor: "#3b82f6",
-                boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.1)",
-              }}
-              transition={{ duration: 0.2 }}
-            />
-          </div>
-
-          {!storeId && (
-            <>
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
-                <label htmlFor="StoreId" className="block text-sm mb-1">
-                  Store ID
+                <label htmlFor="name" className="block text-sm mb-1">
+                  Name
                 </label>
-                {storeLoadError && (
-                  <p className="text-xs text-red-600 dark:text-red-400 mb-1">
-                    Stores error: {storeLoadError}
-                  </p>
-                )}
-                <select
-                  id="StoreId"
-                  name="StoreId"
-                  value={form.StoreId}
-                  onChange={(e) => handleSelectStore(e.target.value)}
-                  className="w-full border rounded px-3 py-2"
+                <motion.input
+                  id="name"
+                  name="name"
+                  value={form.name}
+                  onChange={handleChange}
+                  className="w-full border rounded px-3 py-2 focus:outline-none transition-colors"
+                  placeholder="e.g., Spritzer 550ml"
+                  autoComplete="off"
                   required
-                >
-                  {storeOptions.length === 0 ? (
-                    <option value="" disabled>
-                      No stores found
-                    </option>
-                  ) : (
-                    <>
-                      <option value="">Select a store…</option>
-                      {storeOptions.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.id}
+                  whileFocus={{
+                    borderColor: "#3b82f6",
+                    boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.1)",
+                  }}
+                  transition={{ duration: 0.2 }}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="sku" className="block text-sm mb-1">
+                  SKU
+                </label>
+                <motion.input
+                  id="sku"
+                  name="sku"
+                  value={form.sku}
+                  onChange={handleChange}
+                  className="w-full border rounded px-3 py-2 focus:outline-none transition-colors"
+                  placeholder="e.g., SPR-550"
+                  autoComplete="off"
+                  required
+                  whileFocus={{
+                    borderColor: "#3b82f6",
+                    boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.1)",
+                  }}
+                  transition={{ duration: 0.2 }}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="qty" className="block text-sm mb-1">
+                  Qty
+                </label>
+                <motion.input
+                  id="qty"
+                  name="qty"
+                  value={form.qty}
+                  onChange={handleChange}
+                  className="w-full border rounded px-3 py-2 focus:outline-none transition-colors"
+                  placeholder="0"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  required
+                  whileFocus={{
+                    borderColor: "#3b82f6",
+                    boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.1)",
+                  }}
+                  transition={{ duration: 0.2 }}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="reorderPoint" className="block text-sm mb-1">
+                  Reorder Point
+                </label>
+                <motion.input
+                  id="reorderPoint"
+                  name="reorderPoint"
+                  value={form.reorderPoint}
+                  onChange={handleChange}
+                  className="w-full border rounded px-3 py-2 focus:outline-none transition-colors"
+                  placeholder="5"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  required
+                  whileFocus={{
+                    borderColor: "#3b82f6",
+                    boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.1)",
+                  }}
+                  transition={{ duration: 0.2 }}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="category" className="block text-sm mb-1">
+                  Category
+                </label>
+                <motion.input
+                  id="category"
+                  name="category"
+                  value={form.category}
+                  onChange={handleChange}
+                  className="w-full border rounded px-3 py-2 focus:outline-none transition-colors"
+                  placeholder="e.g., Beverages"
+                  autoComplete="off"
+                  required
+                  whileFocus={{
+                    borderColor: "#3b82f6",
+                    boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.1)",
+                  }}
+                  transition={{ duration: 0.2 }}
+                />
+              </div>
+
+              {!storeId && (
+                <>
+                  <div>
+                    <label htmlFor="StoreId" className="block text-sm mb-1">
+                      Store ID
+                    </label>
+                    {storeLoadError && (
+                      <p className="text-xs text-red-600 dark:text-red-400 mb-1">
+                        Stores error: {storeLoadError}
+                      </p>
+                    )}
+                    <select
+                      id="StoreId"
+                      name="StoreId"
+                      value={form.StoreId}
+                      onChange={(e) => handleSelectStore(e.target.value)}
+                      className="w-full border rounded px-3 py-2"
+                      required
+                    >
+                      {storeOptions.length === 0 ? (
+                        <option value="" disabled>
+                          No stores found
                         </option>
-                      ))}
-                    </>
-                  )}
-                </select>
-              </div>
+                      ) : (
+                        <>
+                          <option value="">Select a store…</option>
+                          {storeOptions.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.id}
+                            </option>
+                          ))}
+                        </>
+                      )}
+                    </select>
+                  </div>
 
-              <div>
-                <label htmlFor="StoreName" className="block text-sm mb-1">
-                  Store Name
-                </label>
-                <input
-                  id="StoreName"
-                  name="StoreName"
-                  value={form.StoreName}
-                  onChange={handleChange}
-                  className="w-full border rounded px-3 py-2 bg-gray-50 dark:bg-gray-800"
-                  placeholder="Auto-filled"
-                  autoComplete="off"
-                  readOnly
-                />
-              </div>
-            </>
-          )}
-          {storeId && (
-            <>
-              <div>
-                <label htmlFor="StoreId" className="block text-sm mb-1">
-                  Store ID
-                </label>
-                {storeLoadError && (
-                  <p className="text-xs text-red-600 dark:text-red-400 mb-1">
-                    Stores error: {storeLoadError}
-                  </p>
-                )}
-                <select
-                  id="StoreId"
-                  name="StoreId"
-                  value={form.StoreId || storeId}
-                  onChange={(e) => handleSelectStore(e.target.value)}
-                  className="w-full border rounded px-3 py-2"
-                  required
-                >
-                  {storeOptions.length === 0 ? (
-                    <option value="" disabled>
-                      No stores found
-                    </option>
-                  ) : (
-                    <>
-                      <option value={storeId}>
-                        {storeId} (Default)
-                      </option>
-                      {storeOptions
-                        .filter((s) => s.id !== storeId)
-                        .map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.id}
+                  <div>
+                    <label htmlFor="StoreName" className="block text-sm mb-1">
+                      Store Name
+                    </label>
+                    <input
+                      id="StoreName"
+                      name="StoreName"
+                      value={form.StoreName}
+                      onChange={handleChange}
+                      className="w-full border rounded px-3 py-2 bg-gray-50 dark:bg-gray-800"
+                      placeholder="Auto-filled"
+                      autoComplete="off"
+                      readOnly
+                    />
+                  </div>
+                </>
+              )}
+              {storeId && (
+                <>
+                  <div>
+                    <label htmlFor="StoreId" className="block text-sm mb-1">
+                      Store ID
+                    </label>
+                    {storeLoadError && (
+                      <p className="text-xs text-red-600 dark:text-red-400 mb-1">
+                        Stores error: {storeLoadError}
+                      </p>
+                    )}
+                    <select
+                      id="StoreId"
+                      name="StoreId"
+                      value={form.StoreId || storeId}
+                      onChange={(e) => handleSelectStore(e.target.value)}
+                      className="w-full border rounded px-3 py-2"
+                      required
+                    >
+                      {storeOptions.length === 0 ? (
+                        <option value="" disabled>
+                          No stores found
+                        </option>
+                      ) : (
+                        <>
+                          <option value={storeId}>
+                            {storeId} (Default)
                           </option>
-                        ))}
-                    </>
-                  )}
-                </select>
-              </div>
+                          {storeOptions
+                            .filter((s) => s.id !== storeId)
+                            .map((s) => (
+                              <option key={s.id} value={s.id}>
+                                {s.id}
+                              </option>
+                            ))}
+                        </>
+                      )}
+                    </select>
+                  </div>
 
-              <div>
-                <label htmlFor="StoreName" className="block text-sm mb-1">
-                  Store Name
-                </label>
-                <input
-                  id="StoreName"
-                  name="StoreName"
-                  value={form.StoreName || storeName}
-                  onChange={handleChange}
-                  className="w-full border rounded px-3 py-2 bg-gray-50 dark:bg-gray-800"
-                  placeholder="Auto-filled"
-                  autoComplete="off"
-                  readOnly
-                />
-              </div>
-            </>
-          )}
+                  <div>
+                    <label htmlFor="StoreName" className="block text-sm mb-1">
+                      Store Name
+                    </label>
+                    <input
+                      id="StoreName"
+                      name="StoreName"
+                      value={form.StoreName || storeName}
+                      onChange={handleChange}
+                      className="w-full border rounded px-3 py-2 bg-gray-50 dark:bg-gray-800"
+                      placeholder="Auto-filled"
+                      autoComplete="off"
+                      readOnly
+                    />
+                  </div>
+                </>
+              )}
 
               <div>
                 <label htmlFor="Keywords" className="block text-sm mb-1">
@@ -1083,193 +1090,193 @@ export default function Inventory() {
                 />
               </div>
 
-          <div className="flex items-end gap-3">
-            <motion.button
-              type="submit"
-              disabled={saving}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg shadow-sm transition disabled:opacity-60"
-              whileHover={{ scale: 1.05, boxShadow: "0 4px 12px rgba(37, 99, 235, 0.4)" }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-            >
-              {saving ? (editingId ? "Saving..." : "Adding...") : editingId ? "Save" : "Add"}
-            </motion.button>
+              <div className="flex items-end gap-3">
+                <motion.button
+                  type="submit"
+                  disabled={saving}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg shadow-sm transition disabled:opacity-60"
+                  whileHover={{ scale: 1.05, boxShadow: "0 4px 12px rgba(37, 99, 235, 0.4)" }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {saving ? (editingId ? "Saving..." : "Adding...") : editingId ? "Save" : "Add"}
+                </motion.button>
 
-            {editingId && (
-              <motion.button
-                type="button"
-                onClick={() => {
-                  setEditingId(null);
-                  resetForm();
-                }}
-                className="border border-gray-400 px-4 py-2 rounded hover:bg-gray-700 hover:text-white"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                transition={{ duration: 0.2 }}
-              >
-                Cancel
-              </motion.button>
-            )}
-          </div>
-        </form>
-      </section>
-
-      {/* Table */}
-      <section className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden bg-white dark:bg-gray-900/50">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3">
-            <h2 className="font-semibold text-lg">Items</h2>
-            {hasSearch && (
-              <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-full">
-                Searching: "{searchQuery}"
-              </span>
-            )}
-          </div>
-          <div className="text-sm text-gray-500">
-            {hasSearch ? (
-              <span>
-                {filteredItems.length} of {items.length} items
-              </span>
-            ) : (
-              <span>{items.length} total</span>
-            )}
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <SkeletonTableRow key={i} />
-            ))}
-          </div>
-        ) : filteredItems.length === 0 ? (
-          <div className="px-4 py-5 text-center">
-            {hasSearch ? (
-              <div className="text-gray-600 dark:text-gray-400">
-                <p className="text-sm mb-2">No items found matching "{searchQuery}"</p>
-                <p className="text-xs text-gray-500 dark:text-gray-500">Try a different search term</p>
+                {editingId && (
+                  <motion.button
+                    type="button"
+                    onClick={() => {
+                      setEditingId(null);
+                      resetForm();
+                    }}
+                    className="border border-gray-400 px-4 py-2 rounded hover:bg-gray-700 hover:text-white"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    Cancel
+                  </motion.button>
+                )}
               </div>
-            ) : (
-              <div className="text-gray-600 dark:text-gray-400 text-sm">No items yet.</div>
-            )}
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {/* header */}
-            <div className="grid grid-cols-10 gap-2 px-4 py-2 text-xs uppercase tracking-wide text-gray-500">
-              <div>Name</div>
-              <div>SKU</div>
-              <div>Qty</div>
-              <div>Reorder</div>
-              <div>Category</div>
-              <div>Store Name</div>
-              <div>Store ID</div>
-              <div>Created</div>
-              <div>Keywords</div>
-              <div className="text-right">Actions</div>
+            </form>
+          </section>
+
+          {/* Table */}
+          <section className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden bg-white dark:bg-gray-900/50">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-3">
+                <h2 className="font-semibold text-lg">Items</h2>
+                {hasSearch && (
+                  <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-full">
+                    Searching: "{searchQuery}"
+                  </span>
+                )}
+              </div>
+              <div className="text-sm text-gray-500">
+                {hasSearch ? (
+                  <span>
+                    {filteredItems.length} of {items.length} items
+                  </span>
+                ) : (
+                  <span>{items.length} total</span>
+                )}
+              </div>
             </div>
 
-            {/* rows */}
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={{
-                visible: {
-                  transition: {
-                    staggerChildren: 0.03
-                  }
-                }
-              }}
-            >
-              {filteredItems.map((it, index) => {
-                const isHighlighted = highlightedItems.has(it.id);
-                return (
-                <motion.div
-                  key={it.id}
-                  className="grid grid-cols-10 gap-2 px-4 py-3 text-sm items-center"
-                  variants={{
-                    hidden: { opacity: 0, x: -20 },
-                    visible: { opacity: 1, x: 0 }
-                  }}
-                  transition={{
-                    duration: 0.3,
-                    ease: "easeOut"
-                  }}
-                  animate={{
-                    backgroundColor: isHighlighted 
-                      ? "rgba(59, 130, 246, 0.1)" 
-                      : "transparent",
-                  }}
-                  whileHover={{
-                    backgroundColor: "rgba(0, 0, 0, 0.02)",
-                    transition: { duration: 0.2 }
-                  }}
-                  style={{ willChange: 'transform, opacity' }}
-                >
-                  <div
-                    className="break-words whitespace-normal text-sm leading-tight"
-                    title={it.name || undefined}
-                  >
-                    {it.name || "—"}
+            {loading ? (
+              <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <SkeletonTableRow key={i} />
+                ))}
+              </div>
+            ) : filteredItems.length === 0 ? (
+              <div className="px-4 py-5 text-center">
+                {hasSearch ? (
+                  <div className="text-gray-600 dark:text-gray-400">
+                    <p className="text-sm mb-2">No items found matching "{searchQuery}"</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-500">Try a different search term</p>
                   </div>
-                  <div className="truncate">{it.sku || "—"}</div>
-                  <div>{Number(it.qty ?? 0)}</div>
-                  <div>{Number(it.reorderPoint ?? 0)}</div>
-                  <div
-                    className="break-words whitespace-normal text-sm leading-tight"
-                    title={it.category || undefined}
-                  >
-                    {it.category || "—"}
-                  </div>
-                  <div
-                    className="break-words whitespace-normal text-sm leading-tight"
-                    title={it.storeName || it.StoreName || undefined}
-                  >
-                    {it.storeName || it.StoreName || "—"}
-                  </div>
-                  <div className="truncate">{it.storeId || it.StoreId || "—"}</div>
-                  <div
-                    className="break-words whitespace-normal text-sm leading-tight"
-                    title={formatTimestamp(it.createdAt)}
-                  >
-                    {formatTimestamp(it.createdAt)}
-                  </div>
-                  <div className="truncate">
-                    {Array.isArray(it.Keywords) ? it.Keywords.join(", ") : it.Keywords || "—"}
-                  </div>
+                ) : (
+                  <div className="text-gray-600 dark:text-gray-400 text-sm">No items yet.</div>
+                )}
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                {/* header */}
+                <div className="grid grid-cols-10 gap-2 px-4 py-2 text-xs uppercase tracking-wide text-gray-500">
+                  <div>Name</div>
+                  <div>SKU</div>
+                  <div>Qty</div>
+                  <div>Reorder</div>
+                  <div>Category</div>
+                  <div>Store Name</div>
+                  <div>Store ID</div>
+                  <div>Created</div>
+                  <div>Keywords</div>
+                  <div className="text-right">Actions</div>
+                </div>
 
-                  {/* actions */}
-                  <div className="flex gap-2 justify-end">
-                    <motion.button
-                      type="button"
-                      onClick={() => handleEdit(it)}
-                      className="px-3 py-1 border rounded hover:bg-gray-100 dark:hover:bg-gray-800"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      Edit
-                    </motion.button>
-                    <motion.button
-                      type="button"
-                      onClick={() => handleDelete(it.id)}
-                      className="px-3 py-1 border rounded hover:bg-red-600 hover:text-white"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      Delete
-                    </motion.button>
-                  </div>
+                {/* rows */}
+                <motion.div
+                  initial="hidden"
+                  animate="visible"
+                  variants={{
+                    visible: {
+                      transition: {
+                        staggerChildren: 0.03
+                      }
+                    }
+                  }}
+                >
+                  {filteredItems.map((it, index) => {
+                    const isHighlighted = highlightedItems.has(it.id);
+                    return (
+                      <motion.div
+                        key={it.id}
+                        className="grid grid-cols-10 gap-2 px-4 py-3 text-sm items-center"
+                        variants={{
+                          hidden: { opacity: 0, x: -20 },
+                          visible: { opacity: 1, x: 0 }
+                        }}
+                        transition={{
+                          duration: 0.3,
+                          ease: "easeOut"
+                        }}
+                        animate={{
+                          backgroundColor: isHighlighted
+                            ? "rgba(59, 130, 246, 0.1)"
+                            : "transparent",
+                        }}
+                        whileHover={{
+                          backgroundColor: "rgba(0, 0, 0, 0.02)",
+                          transition: { duration: 0.2 }
+                        }}
+                        style={{ willChange: 'transform, opacity' }}
+                      >
+                        <div
+                          className="break-words whitespace-normal text-sm leading-tight"
+                          title={it.name || undefined}
+                        >
+                          {it.name || "—"}
+                        </div>
+                        <div className="truncate">{it.sku || "—"}</div>
+                        <div>{Number(it.qty ?? 0)}</div>
+                        <div>{Number(it.reorderPoint ?? 0)}</div>
+                        <div
+                          className="break-words whitespace-normal text-sm leading-tight"
+                          title={it.category || undefined}
+                        >
+                          {it.category || "—"}
+                        </div>
+                        <div
+                          className="break-words whitespace-normal text-sm leading-tight"
+                          title={it.storeName || it.StoreName || undefined}
+                        >
+                          {it.storeName || it.StoreName || "—"}
+                        </div>
+                        <div className="truncate">{it.storeId || it.StoreId || "—"}</div>
+                        <div
+                          className="break-words whitespace-normal text-sm leading-tight"
+                          title={formatTimestamp(it.createdAt)}
+                        >
+                          {formatTimestamp(it.createdAt)}
+                        </div>
+                        <div className="truncate">
+                          {Array.isArray(it.Keywords) ? it.Keywords.join(", ") : it.Keywords || "—"}
+                        </div>
+
+                        {/* actions */}
+                        <div className="flex gap-2 justify-end">
+                          <motion.button
+                            type="button"
+                            onClick={() => handleEdit(it)}
+                            className="px-3 py-1 border rounded hover:bg-gray-100 dark:hover:bg-gray-800"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            Edit
+                          </motion.button>
+                          <motion.button
+                            type="button"
+                            onClick={() => handleDelete(it.id)}
+                            className="px-3 py-1 border rounded hover:bg-red-600 hover:text-white"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            Delete
+                          </motion.button>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
                 </motion.div>
-              );
-              })}
-            </motion.div>
-          </div>
-        )}
-      </section>
+              </div>
+            )}
+          </section>
         </main>
       </div>
-    </div>
+    </MotionWrapper>
   );
 }

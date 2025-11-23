@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as motion from "motion/react-client";
 import { useStore } from "../contexts/StoreContext";
-import LocationSelector from "./LocationSelector";
 
 export default function ChatbotPanel() {
   const webhookUrl = useMemo(() => import.meta.env.VITE_AI_WEBHOOK_URL || "", []);
@@ -110,16 +109,6 @@ export default function ChatbotPanel() {
           )}
         </div>
 
-        <div className="space-y-2">
-          <LocationSelector label="Store Location:" />
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Selected branch:{" "}
-            <span className="font-semibold text-gray-900 dark:text-gray-100">
-              {storeName || "All locations"}
-            </span>{" "}
-            (include a location in your question for branch-specific answers)
-          </p>
-        </div>
       </div>
 
       <div className="h-80 overflow-y-auto p-4 space-y-3">

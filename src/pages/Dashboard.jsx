@@ -5,6 +5,7 @@ import TopNavigation from "../components/TopNavigation";
 import DashboardCustomer from "./DashboardCustomer";
 import DashboardStaff from "./DashboardStaff";
 import DashboardAdmin from "./DashboardAdmin";
+import MotionWrapper from "../components/MotionWrapper";
 
 // ============================================
 // Main Component - Routes to appropriate dashboard based on role
@@ -34,13 +35,29 @@ export default function Dashboard() {
   // ============================================
   switch (role) {
     case "customer":
-      return <DashboardCustomer />;
+      return (
+        <MotionWrapper>
+          <DashboardCustomer />
+        </MotionWrapper>
+      );
     case "staff":
-      return <DashboardStaff />;
+      return (
+        <MotionWrapper>
+          <DashboardStaff />
+        </MotionWrapper>
+      );
     case "admin":
-      return <DashboardAdmin />;
+      return (
+        <MotionWrapper>
+          <DashboardAdmin />
+        </MotionWrapper>
+      );
     default:
       // Fallback to customer dashboard if role is unknown
-      return <DashboardCustomer />;
+      return (
+        <MotionWrapper>
+          <DashboardCustomer />
+        </MotionWrapper>
+      );
   }
 }
