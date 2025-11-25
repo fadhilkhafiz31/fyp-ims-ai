@@ -1048,17 +1048,15 @@ export default function Inventory() {
                         key={it.id}
                         className="grid grid-cols-10 gap-2 px-4 py-3 text-sm items-center"
                         variants={{
-                          hidden: { opacity: 0, x: -20 },
-                          visible: { opacity: 1, x: 0 }
+                          hidden: { opacity: 0, x: -20, backgroundColor: "rgba(0,0,0,0)" },
+                          visible: { opacity: 1, x: 0, backgroundColor: "rgba(0,0,0,0)" },
+                          highlighted: { opacity: 1, x: 0, backgroundColor: "rgba(59, 130, 246, 0.1)" }
                         }}
+                        initial="hidden"
+                        animate={isHighlighted ? "highlighted" : "visible"}
                         transition={{
                           duration: 0.3,
                           ease: "easeOut"
-                        }}
-                        animate={{
-                          backgroundColor: isHighlighted
-                            ? "rgba(59, 130, 246, 0.1)"
-                            : "transparent",
                         }}
                         whileHover={{
                           backgroundColor: "rgba(0, 0, 0, 0.02)",
