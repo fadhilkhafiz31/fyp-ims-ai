@@ -177,6 +177,7 @@ export default function TopNavigation({ role = null, onToggleSidebar = null }) {
             <motion.button
               className="p-2 text-white hover:text-green-100 hover:bg-green-700/30 rounded-lg transition"
               type="button"
+              aria-label="Favorite"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               transition={{ duration: 0.2 }}

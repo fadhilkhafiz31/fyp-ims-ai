@@ -154,15 +154,15 @@ export default function Contact() {
               </h2>
               <div className="space-y-3 text-gray-700 dark:text-gray-300">
                 <p>
-                  <strong>Developer:</strong> Project Owner
+                  <strong>Developer:</strong> Fadhil Khafiz
                 </p>
                 <p>
                   <strong>Email:</strong>{" "}
                   <a
-                    href="mailto:contact@ims-ai.com"
+                    href="mailto:muhdfadhil199@gmail.com"
                     className="text-[#2E6A4E] dark:text-green-400 hover:underline"
                   >
-                    contact@ims-ai.com
+                    fadhilkhafiz31@gmail.com
                   </a>
                 </p>
               </div>

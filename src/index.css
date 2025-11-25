@@ -2,6 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ------------------------------------------------ */
+/* ✅ Fix Compatibility Warnings (Manual Patches)   */
+/* ------------------------------------------------ */
+
+/* Fix 1: Add standard 'text-size-adjust' for Chrome/Edge */
+html,
+:host {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Fix 2: Add '-webkit-' prefix for Safari Backdrop Blur */
+.backdrop-blur-sm {
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.backdrop-blur-md {
+  -webkit-backdrop-filter: var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);
+  backdrop-filter: var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);
+}
+
 /* ============================= */
 /* 🔹 NProgress Top Bar Styling  */
 /* ============================= */

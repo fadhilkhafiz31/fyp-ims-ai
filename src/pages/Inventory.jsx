@@ -448,13 +448,10 @@ export default function Inventory() {
         setLoading(false);
       },
       (err) => {
-        // eslint-disable-next-line no-console
-        console.error("onSnapshot error:", err);
-
-        // If composite index error, try without orderBy
+        // If composite index error, try without orderBy (this is expected and handled gracefully)
         if (err.code === 'failed-precondition' || err.message?.includes('index')) {
           // eslint-disable-next-line no-console
-          console.warn("Composite index missing, falling back to query without orderBy");
+          console.warn("Composite index missing, falling back to query without orderBy. To fix: create the index at the link provided in the error, or the app will continue using the fallback query.");
           const fallbackRef = query(
             collection(db, INVENTORY_COL),
             where("storeId", "==", storeId)
@@ -515,6 +512,9 @@ export default function Inventory() {
           );
           cleanup = () => fallbackUnsub();
         } else {
+          // Only log as error if it's not an expected index error
+          // eslint-disable-next-line no-console
+          console.error("onSnapshot error:", err);
           setItems([]);
           setLoading(false);
         }
