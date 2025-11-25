@@ -27,155 +27,7 @@ const LOW_STOCK_THRESHOLD = 5;
 // ============================================
 // Helper Components
 // ============================================
-function SideNavigation({ activeItemCount, onClose }) {
-  const location = useLocation();
-  const isDashboardActive = location.pathname === "/dashboard";
-  const isTransactionsActive = location.pathname === "/transactions";
-  const isInventoryActive = location.pathname === "/inventory";
-  const isChatbotActive = location.pathname === "/chatbot";
-
-  const menuItems = [
-    { icon: "grid", label: "Dashboard", path: "/dashboard", active: isDashboardActive },
-    { icon: "transaction", label: "Transaction", path: "/transactions", active: isTransactionsActive },
-    { icon: "bell", label: "Stock Notification", path: "/stock-notification", badge: activeItemCount || 0 },
-    { icon: "chatbot", label: "SmartStockAI Assistant", path: "/chatbot", active: isChatbotActive },
-    { icon: "inventory", label: "Inventory", path: "/inventory", active: isInventoryActive },
-    { icon: "user", label: "My Profile", path: "#", isMock: true },
-    { icon: "gear", label: "Settings", path: "#", isMock: true },
-    { icon: "logout", label: "Log Out", path: "/login" },
-    { icon: "question", label: "Help & Support", path: "#", isMock: true },
-  ];
-
-  const getIcon = (iconName) => {
-    const icons = {
-      grid: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-        </svg>
-      ),
-      transaction: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-        </svg>
-      ),
-      bell: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-        </svg>
-      ),
-      chatbot: (
-        <span className="text-xl">🤖</span>
-      ),
-      inventory: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-        </svg>
-      ),
-      user: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        </svg>
-      ),
-      gear: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-      ),
-      question: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
-      logout: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4-4-4" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12H9" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16v1a3 3 0 01-3 3H7a3 3 0 01-3-3V7a3 3 0 013-3h3a3 3 0 013 3v1" />
-        </svg>
-      ),
-    };
-    return icons[iconName] || icons.grid;
-  };
-
-  const handleMockClick = (e, item) => {
-    if (item.isMock) {
-      e.preventDefault();
-      toast.info(`${item.label} - Coming soon!`);
-    }
-  };
-
-  return (
-    <motion.aside
-      className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 h-[calc(100vh-4rem)] overflow-y-auto fixed left-0 top-16 z-40"
-      initial={{ x: -256, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      exit={{ x: -256, opacity: 0 }}
-      transition={{
-        type: "spring",
-        stiffness: 300,
-        damping: 30
-      }}
-    >
-      <nav className="p-4">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Admin Dashboard</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex items-center justify-center rounded-md p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-            aria-label="Close sidebar"
-          >
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <motion.ul
-          className="space-y-2"
-          initial="hidden"
-          animate="visible"
-          variants={{
-            visible: {
-              transition: {
-                staggerChildren: 0.05
-              }
-            }
-          }}
-        >
-          {menuItems.map((item, index) => (
-            <motion.li
-              key={`${item.icon}-${item.label}-${index}`}
-              variants={{
-                hidden: { opacity: 0, x: -20 },
-                visible: { opacity: 1, x: 0 }
-              }}
-              transition={{ duration: 0.3 }}
-            >
-              <Link
-                to={item.path}
-                onClick={(e) => handleMockClick(e, item)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-                  item.active
-                    ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300"
-                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                }`}
-              >
-                <AnimatedIcon hoverRotate={item.icon === "gear"} hoverScale={true}>
-                  {getIcon(item.icon)}
-                </AnimatedIcon>
-                <span className="font-medium">{item.label}</span>
-                {item.badge && item.badge > 0 && (
-                  <AnimatedBadge count={item.badge} />
-                )}
-              </Link>
-            </motion.li>
-          ))}
-        </motion.ul>
-      </nav>
-    </motion.aside>
-  );
-}
+import SideNavigation from "../components/SideNavigation";
 
 // ============================================
 // Main Component
@@ -374,192 +226,195 @@ export default function Transactions() {
             </p>
           </header>
 
-      {/* Last 7 Days Visual Summary */}
-      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-900 space-y-3">
-        <h2 className="font-semibold text-lg text-gray-900 dark:text-gray-100">📦 Last 7 Days Summary</h2>
+          {/* Last 7 Days Visual Summary */}
+          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-900 space-y-3">
+            <h2 className="font-semibold text-lg text-gray-900 dark:text-gray-100">📦 Last 7 Days Summary</h2>
 
-        <div className="text-sm leading-relaxed">
-          <p className="text-green-700 dark:text-green-400">
-            + IN: <b>{last7.inQty}</b> units ({last7.inTx.length} transactions)
-          </p>
-          <p className="text-red-700 dark:text-red-400">
-            – OUT: <b>{last7.outQty}</b> units ({last7.outTx.length} transactions)
-          </p>
-          <hr className="my-2 border-gray-300 dark:border-gray-700" />
-          <p
-            className={`font-medium ${
-              last7.net >= 0 ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"
-            }`}
-          >
-            {last7.net >= 0 ? "▲ Net Gain" : "▼ Net Loss"}:{" "}
-            {last7.net > 0 ? "+" : ""}
-            {last7.net} units
-          </p>
-        </div>
-
-        {/* Per-item breakdown */}
-        {last7.byItem.length > 0 && (
-          <div className="mt-3 border-t border-gray-300 dark:border-gray-700 pt-3">
-            <div className="text-sm font-semibold mb-1 text-gray-900 dark:text-gray-100">Per Item</div>
-            <div className="grid grid-cols-3 text-sm font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-300 dark:border-gray-700 pb-1">
-              <div>Item</div>
-              <div className="text-green-700 dark:text-green-400">IN Qty</div>
-              <div className="text-red-700 dark:text-red-400">OUT Qty</div>
-            </div>
-            {last7.byItem.map((it) => (
-              <div
-                key={it.id || it.name}
-                className="grid grid-cols-3 text-sm border-b border-gray-200 dark:border-gray-800 py-1"
+            <div className="text-sm leading-relaxed">
+              <p className="text-green-700 dark:text-green-400">
+                + IN: <b>{last7.inQty}</b> units ({last7.inTx.length} transactions)
+              </p>
+              <p className="text-red-700 dark:text-red-400">
+                – OUT: <b>{last7.outQty}</b> units ({last7.outTx.length} transactions)
+              </p>
+              <hr className="my-2 border-gray-300 dark:border-gray-700" />
+              <p
+                className={`font-medium ${last7.net >= 0 ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"
+                  }`}
               >
-                <div className="truncate text-gray-900 dark:text-gray-100">
-                  {displayNameById(it.id || it.name, it.name)}
-                  <span className="ml-2 text-xs text-gray-600 dark:text-gray-400">(current: {currentQtyByIdOrName(it.id, it.name)})</span>
+                {last7.net >= 0 ? "▲ Net Gain" : "▼ Net Loss"}:{" "}
+                {last7.net > 0 ? "+" : ""}
+                {last7.net} units
+              </p>
+            </div>
+
+            {/* Per-item breakdown */}
+            {last7.byItem.length > 0 && (
+              <div className="mt-3 border-t border-gray-300 dark:border-gray-700 pt-3">
+                <div className="text-sm font-semibold mb-1 text-gray-900 dark:text-gray-100">Per Item</div>
+                <div className="grid grid-cols-3 text-sm font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-300 dark:border-gray-700 pb-1">
+                  <div>Item</div>
+                  <div className="text-green-700 dark:text-green-400">IN Qty</div>
+                  <div className="text-red-700 dark:text-red-400">OUT Qty</div>
                 </div>
-                <div className="text-green-700 dark:text-green-400">
-                  ➕ {it.inQty} <span className="text-xs text-gray-600 dark:text-gray-400">IN</span>
-                </div>
-                <div className="text-red-700 dark:text-red-400">
-                  ➖ {it.outQty} <span className="text-xs text-gray-600 dark:text-gray-400">OUT</span>
-                </div>
+                {last7.byItem.map((it) => (
+                  <div
+                    key={it.id || it.name}
+                    className="grid grid-cols-3 text-sm border-b border-gray-200 dark:border-gray-800 py-1"
+                  >
+                    <div className="truncate text-gray-900 dark:text-gray-100">
+                      {displayNameById(it.id || it.name, it.name)}
+                      <span className="ml-2 text-xs text-gray-600 dark:text-gray-400">(current: {currentQtyByIdOrName(it.id, it.name)})</span>
+                    </div>
+                    <div className="text-green-700 dark:text-green-400">
+                      ➕ {it.inQty} <span className="text-xs text-gray-600 dark:text-gray-400">IN</span>
+                    </div>
+                    <div className="text-red-700 dark:text-red-400">
+                      ➖ {it.outQty} <span className="text-xs text-gray-600 dark:text-gray-400">OUT</span>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
-        )}
-      </div>
 
-      {/* Location Selector */}
-      <LocationSelector />
+          {/* Location Selector */}
+          <LocationSelector />
 
-      {/* Entry form */}
-      <form onSubmit={handleAdd} className="grid grid-cols-1 md:grid-cols-5 gap-3">
-        <select
-          className="border rounded px-3 py-2"
-          value={form.type}
-          onChange={(e) => setForm((s) => ({ ...s, type: e.target.value }))}
-        >
-          <option value="IN">IN (add stock)</option>
-          <option value="OUT">OUT (remove stock)</option>
-        </select>
+          {/* Entry form */}
+          <form onSubmit={handleAdd} className="grid grid-cols-1 md:grid-cols-5 gap-3">
+            <select
+              className="border rounded px-3 py-2"
+              value={form.type}
+              onChange={(e) => setForm((s) => ({ ...s, type: e.target.value }))}
+            >
+              <option value="IN">IN (add stock)</option>
+              <option value="OUT">OUT (remove stock)</option>
+            </select>
 
-        <select
-          className="border rounded px-3 py-2"
-          value={form.itemId}
-          onChange={(e) => setForm((s) => ({ ...s, itemId: e.target.value }))}
-          disabled={!storeId}
-        >
-          <option value="">
-            {storeId ? "Select item…" : "Please select a location first"}
-          </option>
-          {filteredCatalog
-            .sort((a, b) => {
-              const nameA = (a.name || "").toLowerCase();
-              const nameB = (b.name || "").toLowerCase();
-              return nameA.localeCompare(nameB);
-            })
-            .map((it) => (
-              <option key={it.id} value={it.id}>
-                {displayNameById(it.id, it.name || it.title || it.id)}
+            <select
+              className="border rounded px-3 py-2"
+              value={form.itemId}
+              onChange={(e) => setForm((s) => ({ ...s, itemId: e.target.value }))}
+              disabled={!storeId}
+            >
+              <option value="">
+                {storeId ? "Select item…" : "Please select a location first"}
               </option>
-            ))}
-        </select>
+              {filteredCatalog
+                .sort((a, b) => {
+                  const nameA = (a.name || "").toLowerCase();
+                  const nameB = (b.name || "").toLowerCase();
+                  return nameA.localeCompare(nameB);
+                })
+                .map((it) => (
+                  <option key={it.id} value={it.id}>
+                    {displayNameById(it.id, it.name || it.title || it.id)}
+                  </option>
+                ))}
+            </select>
 
-        <input
-          type="number"
-          className="border rounded px-3 py-2"
-          placeholder="Qty"
-          value={form.qty}
-          min={1}
-          onChange={(e) => setForm((s) => ({ ...s, qty: e.target.value }))}
-        />
+            <input
+              type="number"
+              className="border rounded px-3 py-2"
+              placeholder="Qty"
+              value={form.qty}
+              min={1}
+              onChange={(e) => setForm((s) => ({ ...s, qty: e.target.value }))}
+            />
 
-        <input
-          className="border rounded px-3 py-2"
-          placeholder="Note (optional)"
-          value={form.note}
-          onChange={(e) => setForm((s) => ({ ...s, note: e.target.value }))}
-        />
+            <input
+              className="border rounded px-3 py-2"
+              placeholder="Note (optional)"
+              value={form.note}
+              onChange={(e) => setForm((s) => ({ ...s, note: e.target.value }))}
+            />
 
-        <button className="bg-black text-white rounded px-4 py-2">
-          Add Transaction
-        </button>
-      </form>
+            <button className="bg-black text-white rounded px-4 py-2">
+              Add Transaction
+            </button>
+          </form>
 
-      {/* Full transaction list */}
-      <div className="border rounded">
-        <div className="flex items-center justify-between px-3 py-2 border-b">
-          <div className="flex items-center gap-3">
-            <div className="grid grid-cols-5 gap-2 font-semibold flex-1">
+          {/* Full transaction list */}
+          <div className="border rounded">
+            {/* Header row with search info and total count */}
+            <div className="flex items-center justify-between px-3 py-2 border-b">
+              <div className="flex items-center gap-3">
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Transactions</h3>
+                {hasSearch && (
+                  <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-full">
+                    Searching: "{searchQuery}"
+                  </span>
+                )}
+              </div>
+              <div className="text-xs text-gray-500">
+                {hasSearch ? (
+                  <span>
+                    {filteredTransactions.length} of {items.length}
+                  </span>
+                ) : (
+                  <span>{items.length} total</span>
+                )}
+              </div>
+            </div>
+
+            {/* Table header row - aligned with data rows */}
+            <div className="grid grid-cols-5 gap-2 px-3 py-2 border-b bg-gray-50 dark:bg-gray-800/50 font-semibold text-sm text-gray-700 dark:text-gray-300">
               <div>Time</div>
               <div>Type</div>
               <div>Item</div>
               <div>Qty</div>
               <div>Note</div>
             </div>
-            {hasSearch && (
-              <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-full">
-                Searching: "{searchQuery}"
-              </span>
-            )}
-          </div>
-          <div className="text-xs text-gray-500 ml-4">
-            {hasSearch ? (
-              <span>
-                {filteredTransactions.length} of {items.length}
-              </span>
-            ) : (
-              <span>{items.length} total</span>
-            )}
-          </div>
-        </div>
 
-        {filteredTransactions.length === 0 ? (
-          <div className="px-3 py-4 text-center">
-            {hasSearch ? (
-              <div className="text-gray-500">
-                <p className="text-sm mb-1">No transactions found matching "{searchQuery}"</p>
-                <p className="text-xs text-gray-400">Try a different search term</p>
+            {filteredTransactions.length === 0 ? (
+              <div className="px-3 py-4 text-center">
+                {hasSearch ? (
+                  <div className="text-gray-500">
+                    <p className="text-sm mb-1">No transactions found matching "{searchQuery}"</p>
+                    <p className="text-xs text-gray-400">Try a different search term</p>
+                  </div>
+                ) : (
+                  <div className="text-gray-500">No transactions yet.</div>
+                )}
               </div>
             ) : (
-              <div className="text-gray-500">No transactions yet.</div>
+              filteredTransactions.map((t) => (
+                <div
+                  key={t.id}
+                  className="grid grid-cols-5 gap-2 px-3 py-2 border-b text-sm"
+                >
+                  <div>
+                    {t.createdAt?.toDate
+                      ? t.createdAt.toDate().toLocaleString()
+                      : "—"}
+                  </div>
+                  <div
+                    className={
+                      t.type === "OUT"
+                        ? "text-red-600 font-medium"
+                        : "text-green-600 font-medium"
+                    }
+                  >
+                    {t.type}
+                  </div>
+                  <div>
+                    {displayNameById(t.itemId, t.itemName)}
+                    {typeof t.balanceAfter === "number"
+                      ? ` (stock after: ${t.balanceAfter})`
+                      : ""}
+                  </div>
+                  <div>{t.qty}</div>
+                  <div className="truncate">
+                    {t.note ||
+                      (typeof t.balanceBefore === "number"
+                        ? `prev: ${t.balanceBefore}`
+                        : "—")}
+                  </div>
+                </div>
+              ))
             )}
           </div>
-        ) : (
-          filteredTransactions.map((t) => (
-            <div
-              key={t.id}
-              className="grid grid-cols-5 gap-2 px-3 py-2 border-b text-sm"
-            >
-              <div>
-                {t.createdAt?.toDate
-                  ? t.createdAt.toDate().toLocaleString()
-                  : "—"}
-              </div>
-              <div
-                className={
-                  t.type === "OUT"
-                    ? "text-red-600 font-medium"
-                    : "text-green-600 font-medium"
-                }
-              >
-                {t.type}
-              </div>
-              <div>
-                {displayNameById(t.itemId, t.itemName)}
-                {typeof t.balanceAfter === "number"
-                  ? ` (stock after: ${t.balanceAfter})`
-                  : ""}
-              </div>
-              <div>{t.qty}</div>
-              <div className="truncate">
-                {t.note ||
-                  (typeof t.balanceBefore === "number"
-                    ? `prev: ${t.balanceBefore}`
-                    : "—")}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
         </main>
       </div>
     </div>
