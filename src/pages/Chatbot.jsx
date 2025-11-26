@@ -412,7 +412,9 @@ export default function Chatbot() {
         )}
 
         {/* Main Content Area */}
-        <main className={`flex-1 ${isRestricted ? 'p-6' : sidebarOpen ? 'ml-64 p-6' : 'p-6'}`}>
+        <main
+          className={`flex-1 ${isRestricted ? "p-6" : sidebarOpen ? "ml-64 p-6" : "p-6"} flex flex-col min-h-[calc(100vh-4rem)]`}
+        >
           {/* Location Selector - Show for guests and authenticated users */}
           {isRestricted && (
             <div className="mb-6">
@@ -421,12 +423,14 @@ export default function Chatbot() {
           )}
           
           {/* Chatbot Section */}
-          <section>
-            <div className="flex items-center gap-2 mb-4">
+          <section className="flex-1 flex flex-col gap-4 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm p-4 sm:p-6">
+            <div className="flex items-center gap-2">
               <span className="text-2xl">🤖</span>
               <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">SmartStockAI Assistant</h2>
             </div>
-            <ChatbotPanel />
+            <div className="flex-1 min-h-0">
+              <ChatbotPanel fullHeight />
+            </div>
           </section>
         </main>
       </div>

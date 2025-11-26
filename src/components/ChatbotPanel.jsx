@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as motion from "motion/react-client";
 import { useStore } from "../contexts/StoreContext";
 
-export default function ChatbotPanel() {
+export default function ChatbotPanel({ fullHeight = false }) {
   const webhookUrl = useMemo(() => import.meta.env.VITE_AI_WEBHOOK_URL || "", []);
   const { storeName, storeId } = useStore();
   const [messages, setMessages] = useState([
@@ -99,8 +99,10 @@ export default function ChatbotPanel() {
     }
   }
 
+  const containerClasses =
+    "border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-900 overflow-hidden flex flex-col";
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-900 overflow-hidden">
+    <div className={`${containerClasses} ${fullHeight ? "h-full" : ""}`}>
       <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold">SmartStock Assistant</h2>
@@ -111,7 +113,10 @@ export default function ChatbotPanel() {
 
       </div>
 
-      <div className="h-80 overflow-y-auto p-4 space-y-3">
+      <div
+        className={`space-y-3 overflow-y-auto p-4 ${fullHeight ? "flex-1" : "h-80"}`}
+        style={fullHeight ? { minHeight: 0 } : undefined}
+      >
         {messages.map((m, i) => (
           <motion.div
             key={i}

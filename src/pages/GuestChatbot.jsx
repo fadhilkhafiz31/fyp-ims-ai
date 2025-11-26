@@ -34,8 +34,8 @@ export default function GuestChatbot() {
         </div>
       </header>
 
-      <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto space-y-6">
+      <main className="flex-1 flex flex-col px-4 py-6 sm:px-6 lg:px-8">
+        <div className="flex-1 flex flex-col gap-6 w-full max-w-5xl mx-auto">
           <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4 sm:p-6">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
@@ -58,8 +58,8 @@ export default function GuestChatbot() {
             </div>
           </section>
 
-          <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4 sm:p-6">
-            <div className="flex items-center gap-3 mb-4">
+          <section className="flex-1 flex flex-col gap-4 bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4 sm:p-6">
+            <div className="flex items-center gap-3">
               <span className="text-2xl" role="img" aria-label="Chatbot">
                 🤖
               </span>
@@ -72,7 +72,9 @@ export default function GuestChatbot() {
                 </p>
               </div>
             </div>
-            <ChatbotPanel />
+            <div className="flex-1 min-h-0">
+              <ChatbotPanel fullHeight />
+            </div>
           </section>
         </div>
       </main>
