@@ -243,12 +243,6 @@ export default function TopNavigation({ role = null, onToggleSidebar = null }) {
             {/* Menu Links */}
             <div className="hidden sm:flex items-center gap-4 border-l border-green-400/30 pl-4 ml-2">
               <AnimatedLink
-                to="/dashboard"
-                className="text-sm font-medium text-white hover:text-green-100 transition"
-              >
-                HOME
-              </AnimatedLink>
-              <AnimatedLink
                 to="/about"
                 className="text-sm font-medium text-white hover:text-green-100 transition"
               >

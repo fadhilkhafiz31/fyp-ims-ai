@@ -1,7 +1,7 @@
 // src/pages/Chatbot.jsx
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
 import * as motion from "motion/react-client";
 
 import { db } from "../lib/firebase";
@@ -344,28 +344,31 @@ export default function Chatbot() {
   // Effects
   // ============================================
   useEffect(() => {
-    // Don't fetch if role is not ready yet
     if (!roleReady) {
       return;
     }
-    
-    // Only fetch inventory for admin/staff (not guests)
-    if (role === "guest") {
+
+    if (role === "guest" || !storeId) {
       setInventory([]);
       return;
     }
-    
-    // Get inventory items for badge count (only for admin/staff)
-    const invRef = collection(db, "inventory");
-    const unsubscribe = onSnapshot(invRef, (snapshot) => {
+
+    const baseRef = collection(db, "inventory");
+    const storeScopedRef = query(
+      baseRef,
+      where("storeId", "==", storeId)
+    );
+
+    const unsubscribe = onSnapshot(storeScopedRef, (snapshot) => {
       const items = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
       setInventory(items);
     });
+
     return () => unsubscribe();
-  }, [role, roleReady]);
+  }, [role, roleReady, storeId]);
 
   // ============================================
   // Computed Values

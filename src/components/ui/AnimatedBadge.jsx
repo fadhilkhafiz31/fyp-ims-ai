@@ -24,9 +24,8 @@ export default function AnimatedBadge({ count, className = "" }) {
         scale: isAnimating ? [1, 1.3, 1] : 1,
       }}
       transition={{
-        type: "spring",
-        stiffness: 500,
-        damping: 15,
+        duration: 0.35,
+        ease: "easeOut",
       }}
     >
       <motion.span
