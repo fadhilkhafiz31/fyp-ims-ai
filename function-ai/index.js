@@ -8,6 +8,10 @@ const cors = require("cors");
 // Dialogflow detectIntent client (uses default creds in Functions)
 const dialogflow = require('@google-cloud/dialogflow');
 
+// Gemini AI client
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { defineSecret } = require("firebase-functions/params");
+
 // Initialize Dialogflow client with explicit project configuration
 // This ensures it uses Application Default Credentials from Firebase Functions
 let sessionClient;
@@ -26,11 +30,16 @@ try {
 }
 
 // Global defaults (optional but recommended)
-setGlobalOptions({ region: "asia-southeast1", timeoutSeconds: 10, memory: "256MiB" });
+setGlobalOptions({ region: "asia-southeast1", timeoutSeconds: 60, memory: "256MiB" });
 
 // Init Admin SDK once
 if (!admin.apps.length) admin.initializeApp();
 const db = admin.firestore();
+
+// Gemini API configuration - using Firebase Secrets (with fallback to env var)
+// IMPORTANT: "GEMINI_API_KEY" is the NAME of the secret, NOT the actual key value!
+// The actual API key value should be set in Firebase Console → Functions → Configuration → Secrets
+const geminiApiKeySecret = defineSecret("GEMINI_API_KEY");
 
 const app = express();
 app.use(cors({ origin: true }));
@@ -251,7 +260,110 @@ async function searchInventory({ term, storeId }) {
   return items;
 }
 
+// Helper function to fetch all inventory items and format them into a context string
+async function getInventoryContext() {
+  try {
+    const snap = await db.collection("inventory").get();
+    const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    
+    if (items.length === 0) {
+      return "No inventory items found.";
+    }
+    
+    // Format each item as a readable string
+    const formattedItems = items.map(item => {
+      const name = item.name || "Unknown";
+      const sku = item.sku || "N/A";
+      const category = item.category || "Uncategorized";
+      const qty = Number(item.qty ?? 0);
+      const storeName = item.storeName || item.storeId || "Unknown Store";
+      const storeId = item.storeId || "N/A";
+      const reorderPoint = Number(item.reorderPoint ?? 5);
+      
+      return `- Name: ${name}, SKU: ${sku}, Category: ${category}, Quantity: ${qty}, Store: ${storeName} (ID: ${storeId}), Reorder Point: ${reorderPoint}`;
+    }).join("\n");
+    
+    return `Inventory Items (Total: ${items.length}):\n${formattedItems}`;
+  } catch (error) {
+    console.error("Error fetching inventory context:", error);
+    return "Error fetching inventory data.";
+  }
+}
+
 const reply = (text) => ({ fulfillmentText: text });
+
+// ---------- Gemini AI Handler ----------
+async function geminiHandler(req, res) {
+  try {
+    const message = req.body?.message || req.body?.text || "";
+    
+    if (!message.trim()) {
+      return res.status(400).json({ 
+        error: "Message is required",
+        response: "Please provide a message to chat with the AI." 
+      });
+    }
+    
+    // Get API key from secret (with fallback to environment variable for local dev)
+    const GEMINI_API_KEY = geminiApiKeySecret.value() || process.env.GEMINI_API_KEY;
+    
+    // Validate API key
+    if (!GEMINI_API_KEY || GEMINI_API_KEY === "YOUR_GEMINI_API_KEY_HERE") {
+      console.error("Gemini API key not configured");
+      return res.status(500).json({ 
+        error: "API key not configured",
+        response: "Gemini AI is not configured. Please set the GEMINI_API_KEY secret in Firebase Console or environment variable." 
+      });
+    }
+    
+    // Fetch inventory context
+    console.log("Fetching inventory context for Gemini...");
+    const inventoryContext = await getInventoryContext();
+    
+    // Initialize Gemini
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    
+    // Create system prompt with inventory context
+    const systemPrompt = `You are SmartStockAI, an intelligent inventory management assistant. You help users check stock levels, find products, and manage inventory.
+
+Current Inventory Information:
+${inventoryContext}
+
+Today's Date: ${formatTodayDate()}
+
+Instructions:
+- Answer questions about inventory, stock levels, product availability, and store locations
+- Use the inventory information provided above to give accurate, specific answers
+- If a product is not found, suggest similar items if available
+- Be helpful, concise, and professional
+- If asked about something not related to inventory, politely redirect to inventory-related topics
+
+User Question: ${message}`;
+    
+    console.log("Sending request to Gemini...");
+    
+    // Generate response
+    const result = await model.generateContent(systemPrompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    console.log("Gemini response received");
+    
+    return res.json({
+      response: text,
+      model: "gemini-1.5-flash",
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error("Gemini handler error:", error);
+    return res.status(500).json({ 
+      error: "Internal server error",
+      response: "Sorry, I encountered an error while processing your request. Please try again later." 
+    });
+  }
+}
 
 // ---------- one handler for Dialogflow ----------
 async function dfHandler(req, res) {
@@ -701,6 +813,7 @@ app.get("/", (_req, res) => res.status(200).send("SmartStockAI webhook is runnin
 app.post("/", dfHandler);
 app.post("/webhook", dfHandler);
 app.post("/df", dfHandler);
+app.post("/chat", geminiHandler);
 
 // ---------- Dialogflow detectIntent passthrough ----------
 app.post("/detect-intent", async (req, res) => {
@@ -1489,4 +1602,12 @@ exports.copyInventory = onCall(async (request) => {
 });
 
 // ---------- export ----------
-exports.webhook = onRequest(app);
+// Note: Temporarily removed secrets binding to allow deployment
+// After adding GEMINI_API_KEY secret in Firebase Console, add it back:
+// secrets: [geminiApiKeySecret],
+exports.webhook = onRequest(
+  {
+    region: "asia-southeast1",
+  },
+  app
+);
