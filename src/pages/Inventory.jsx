@@ -947,8 +947,8 @@ export default function Inventory() {
                           <motion.button
                             type="button"
                             onClick={() => handleEdit(it)}
-                            className="px-3 py-1 border rounded hover:bg-gray-100 dark:hover:bg-gray-800"
-                            whileHover={{ scale: 1.05 }}
+                            className="px-3 py-1 border border-blue-500 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-600 hover:text-white transition-colors"
+                            whileHover={{ scale: 1.05, boxShadow: "0 4px 12px rgba(37, 99, 235, 0.3)" }}
                             whileTap={{ scale: 0.95 }}
                             transition={{ duration: 0.2 }}
                           >
@@ -957,8 +957,8 @@ export default function Inventory() {
                           <motion.button
                             type="button"
                             onClick={() => handleDelete(it.id)}
-                            className="px-3 py-1 border rounded hover:bg-red-600 hover:text-white"
-                            whileHover={{ scale: 1.05 }}
+                            className="px-3 py-1 border border-red-500 text-red-600 dark:text-red-400 rounded hover:bg-red-600 hover:text-white transition-colors"
+                            whileHover={{ scale: 1.05, boxShadow: "0 4px 12px rgba(220, 38, 38, 0.3)" }}
                             whileTap={{ scale: 0.95 }}
                             transition={{ duration: 0.2 }}
                           >
