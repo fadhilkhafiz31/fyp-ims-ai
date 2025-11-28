@@ -54,10 +54,16 @@ export default function Transactions() {
     );
   }, []);
 
-  // Filter transactions based on search
+  // Filter transactions by location first
+  const locationFilteredTransactions = useMemo(() => {
+    if (!storeId) return [];
+    return items.filter((t) => t.storeId === storeId);
+  }, [items, storeId]);
+
+  // Filter transactions based on location and search
   const filteredTransactions = useMemo(() => {
-    return filterItems(items, ["itemName", "note", "type"]);
-  }, [items, filterItems]);
+    return filterItems(locationFilteredTransactions, ["itemName", "note", "type"]);
+  }, [locationFilteredTransactions, filterItems]);
 
   // load inventory - Both staff and admin see all inventory from all stores
   // This allows staff to help customers find items at other locations
@@ -98,17 +104,17 @@ export default function Transactions() {
     return unit ? `${base} ${unit}` : base;
   };
 
-  // --- Last 7 Days summary ---
-  const last7 = useMemo(() => {
+  // --- Last 30 Days summary ---
+  const last30 = useMemo(() => {
     const since = new Date();
-    since.setDate(since.getDate() - 7);
+    since.setDate(since.getDate() - 30);
 
-    const within7 = items.filter(
+    const within30 = locationFilteredTransactions.filter(
       (t) => t.createdAt?.toDate && t.createdAt.toDate() >= since
     );
 
-    const inTx = within7.filter((t) => t.type === "IN");
-    const outTx = within7.filter((t) => t.type === "OUT");
+    const inTx = within30.filter((t) => t.type === "IN");
+    const outTx = within30.filter((t) => t.type === "OUT");
 
     const inQty = inTx.reduce((s, t) => s + Number(t.qty ?? 0), 0);
     const outQty = outTx.reduce((s, t) => s + Number(t.qty ?? 0), 0);
@@ -116,7 +122,7 @@ export default function Transactions() {
 
     // per-item breakdown (carry id and name)
     const byItemMap = new Map();
-    for (const t of within7) {
+    for (const t of within30) {
       const key = t.itemId || t.itemName || "unknown";
       const prev = byItemMap.get(key) || { id: t.itemId || null, name: t.itemName || key, inQty: 0, outQty: 0 };
       if (t.itemId && !prev.id) prev.id = t.itemId;
@@ -130,7 +136,7 @@ export default function Transactions() {
     );
 
     return { inTx, outTx, inQty, outQty, net, byItem };
-  }, [items]);
+  }, [locationFilteredTransactions]);
 
   const currentQtyByIdOrName = (id, name) => {
     let it = null;
@@ -226,30 +232,30 @@ export default function Transactions() {
             </p>
           </header>
 
-          {/* Last 7 Days Visual Summary */}
+          {/* Last 30 Days Visual Summary */}
           <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-900 space-y-3">
-            <h2 className="font-semibold text-lg text-gray-900 dark:text-gray-100">📦 Last 7 Days Summary</h2>
+            <h2 className="font-semibold text-lg text-gray-900 dark:text-gray-100">📦 Last 30 Days Summary</h2>
 
             <div className="text-sm leading-relaxed">
               <p className="text-green-700 dark:text-green-400">
-                + IN: <b>{last7.inQty}</b> units ({last7.inTx.length} transactions)
+                + IN: <b>{last30.inQty}</b> units ({last30.inTx.length} transactions)
               </p>
               <p className="text-red-700 dark:text-red-400">
-                – OUT: <b>{last7.outQty}</b> units ({last7.outTx.length} transactions)
+                – OUT: <b>{last30.outQty}</b> units ({last30.outTx.length} transactions)
               </p>
               <hr className="my-2 border-gray-300 dark:border-gray-700" />
               <p
-                className={`font-medium ${last7.net >= 0 ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"
+                className={`font-medium ${last30.net >= 0 ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"
                   }`}
               >
-                {last7.net >= 0 ? "▲ Net Gain" : "▼ Net Loss"}:{" "}
-                {last7.net > 0 ? "+" : ""}
-                {last7.net} units
+                {last30.net >= 0 ? "▲ Net Gain" : "▼ Net Loss"}:{" "}
+                {last30.net > 0 ? "+" : ""}
+                {last30.net} units
               </p>
             </div>
 
             {/* Per-item breakdown */}
-            {last7.byItem.length > 0 && (
+            {last30.byItem.length > 0 && (
               <div className="mt-3 border-t border-gray-300 dark:border-gray-700 pt-3">
                 <div className="text-sm font-semibold mb-1 text-gray-900 dark:text-gray-100">Per Item</div>
                 <div className="grid grid-cols-3 text-sm font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-300 dark:border-gray-700 pb-1">
@@ -257,7 +263,7 @@ export default function Transactions() {
                   <div className="text-green-700 dark:text-green-400">IN Qty</div>
                   <div className="text-red-700 dark:text-red-400">OUT Qty</div>
                 </div>
-                {last7.byItem.map((it) => (
+                {last30.byItem.map((it) => (
                   <div
                     key={it.id || it.name}
                     className="grid grid-cols-3 text-sm border-b border-gray-200 dark:border-gray-800 py-1"
@@ -348,12 +354,14 @@ export default function Transactions() {
                 )}
               </div>
               <div className="text-xs text-gray-500">
-                {hasSearch ? (
+                {!storeId ? (
+                  <span>Select location to view transactions</span>
+                ) : hasSearch ? (
                   <span>
-                    {filteredTransactions.length} of {items.length}
+                    {filteredTransactions.length} of {locationFilteredTransactions.length}
                   </span>
                 ) : (
-                  <span>{items.length} total</span>
+                  <span>{locationFilteredTransactions.length} transaction{locationFilteredTransactions.length !== 1 ? 's' : ''}</span>
                 )}
               </div>
             </div>
@@ -369,13 +377,18 @@ export default function Transactions() {
 
             {filteredTransactions.length === 0 ? (
               <div className="px-3 py-4 text-center">
-                {hasSearch ? (
+                {!storeId ? (
+                  <div className="text-gray-500">
+                    <p className="text-sm mb-1">Please select a location to view transactions</p>
+                    <p className="text-xs text-gray-400">Use the location selector above to filter transactions</p>
+                  </div>
+                ) : hasSearch ? (
                   <div className="text-gray-500">
                     <p className="text-sm mb-1">No transactions found matching "{searchQuery}"</p>
                     <p className="text-xs text-gray-400">Try a different search term</p>
                   </div>
                 ) : (
-                  <div className="text-gray-500">No transactions yet.</div>
+                  <div className="text-gray-500">No transactions found for this location.</div>
                 )}
               </div>
             ) : (

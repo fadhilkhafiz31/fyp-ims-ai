@@ -1329,8 +1329,9 @@ exports.copyInventory = onCall(async (request) => {
   }
 
   try {
-    // Fetch the destination store's name from storeId collection
+    // Fetch store names from storeId collection
     let destinationStoreName = toStore; // fallback
+    let sourceStoreName = fromStore; // fallback
     try {
       const destStoreDoc = await db.collection("storeId").doc(toStore).get();
       if (destStoreDoc.exists) {
@@ -1340,6 +1341,16 @@ exports.copyInventory = onCall(async (request) => {
     } catch (err) {
       console.warn("Could not fetch destination store name:", err);
       // Use toStore as fallback
+    }
+    try {
+      const sourceStoreDoc = await db.collection("storeId").doc(fromStore).get();
+      if (sourceStoreDoc.exists) {
+        const storeData = sourceStoreDoc.data();
+        sourceStoreName = storeData.storeName || storeData.name || fromStore;
+      }
+    } catch (err) {
+      console.warn("Could not fetch source store name:", err);
+      // Use fromStore as fallback
     }
 
     // Fetch all items from source store
@@ -1410,17 +1421,39 @@ exports.copyInventory = onCall(async (request) => {
     }
 
     // Use batch writes (Firestore limit is 500 operations per batch)
+    // Note: Each item copy requires 2 operations (inventory + transaction), so max 250 items per batch
     const batches = [];
     let currentBatch = db.batch();
     let operationCount = 0;
+    const maxOperationsPerBatch = 500;
+    const maxItemsPerBatch = Math.floor(maxOperationsPerBatch / 2); // 2 operations per item (inventory + transaction)
 
     for (const itemData of itemsToCopy) {
-      const newRef = db.collection("inventory").doc();
-      currentBatch.set(newRef, itemData);
+      // Create new inventory item
+      const newInventoryRef = db.collection("inventory").doc();
+      currentBatch.set(newInventoryRef, itemData);
+      operationCount++;
+
+      // Create "IN" transaction for this copied item
+      const qty = Number(itemData.qty || 0);
+      const transactionData = {
+        type: "IN",
+        itemId: newInventoryRef.id,
+        itemName: itemData.name || null,
+        storeId: toStore,
+        qty: qty,
+        note: `Copied from "${sourceStoreName}" (${fromStore})`,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        balanceBefore: 0, // New item, so balance before is 0
+        balanceAfter: qty, // Balance after is the copied quantity
+      };
+      const transactionRef = db.collection("transactions").doc();
+      currentBatch.set(transactionRef, transactionData);
       operationCount++;
 
       // Firestore batch limit is 500 operations
-      if (operationCount === 500) {
+      // Since we're doing 2 operations per item, we need to check if we've reached the limit
+      if (operationCount >= maxOperationsPerBatch) {
         batches.push(currentBatch);
         currentBatch = db.batch();
         operationCount = 0;
