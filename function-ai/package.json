@@ -1,7 +1,9 @@
 {
   "name": "function-ai",
   "private": true,
-  "engines": { "node": "20" },
+  "engines": {
+    "node": "20"
+  },
   "main": "index.js",
   "scripts": {
     "serve": "firebase emulators:start --only functions",
@@ -11,7 +13,7 @@
   },
   "dependencies": {
     "@google-cloud/dialogflow": "^6",
-    "@google/generative-ai": "^0.21.0",
+    "@google/generative-ai": "^0.24.1",
     "cors": "^2",
     "express": "^4",
     "firebase-admin": "^12",

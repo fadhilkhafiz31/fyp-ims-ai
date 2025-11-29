@@ -10,7 +10,8 @@ const dialogflow = require('@google-cloud/dialogflow');
 
 // Gemini AI client
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { defineSecret } = require("firebase-functions/params");
+// Temporarily commented out - uncomment after adding GEMINI_API_KEY secret in Firebase Console
+// const { defineSecret } = require("firebase-functions/params");
 
 // Initialize Dialogflow client with explicit project configuration
 // This ensures it uses Application Default Credentials from Firebase Functions
@@ -36,10 +37,11 @@ setGlobalOptions({ region: "asia-southeast1", timeoutSeconds: 60, memory: "256Mi
 if (!admin.apps.length) admin.initializeApp();
 const db = admin.firestore();
 
-// Gemini API configuration - using Firebase Secrets (with fallback to env var)
-// IMPORTANT: "GEMINI_API_KEY" is the NAME of the secret, NOT the actual key value!
-// The actual API key value should be set in Firebase Console → Functions → Configuration → Secrets
-const geminiApiKeySecret = defineSecret("GEMINI_API_KEY");
+// Gemini API configuration - using environment variable for now
+// TODO: After adding GEMINI_API_KEY secret in Firebase Console, uncomment below and use:
+// const { defineSecret } = require("firebase-functions/params");
+// const geminiApiKeySecret = defineSecret("GEMINI_API_KEY");
+// Then update exports.webhook to include: secrets: [geminiApiKeySecret]
 
 const app = express();
 app.use(cors({ origin: true }));
@@ -304,8 +306,10 @@ async function geminiHandler(req, res) {
       });
     }
     
-    // Get API key from secret (with fallback to environment variable for local dev)
-    const GEMINI_API_KEY = geminiApiKeySecret.value() || process.env.GEMINI_API_KEY;
+    // Get API key from environment variable
+    // Set this in Firebase Console → Functions → Configuration → Environment variables
+    // Or use: firebase functions:secrets:set GEMINI_API_KEY
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
     
     // Validate API key
     if (!GEMINI_API_KEY || GEMINI_API_KEY === "YOUR_GEMINI_API_KEY_HERE") {

@@ -21,6 +21,7 @@ const Inventory = lazy(() => import("./pages/Inventory"));
 const Transactions = lazy(() => import("./pages/Transactions"));
 const StockNotification = lazy(() => import("./pages/StockNotification"));
 const Chatbot = lazy(() => import("./pages/Chatbot"));
+const GeminiChatTest = lazy(() => import("./pages/GeminiChatTest"));
 const About = lazy(() => import("./pages/About"));
 const Contact = lazy(() => import("./pages/Contact"));
 
@@ -185,6 +186,25 @@ function AnimatedRoutes() {
                   <ProtectedRoute allowGuest={true}>
                     <PageReady />
                     <Chatbot />
+                  </ProtectedRoute>
+                </motion.div>
+              }
+            />
+
+            {/* ✅ Gemini AI Chat Test — dedicated test page for Gemini AI */}
+            <Route
+              path="/gemini-chat-test"
+              element={
+                <motion.div
+                  key="gemini-chat-test"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <ProtectedRoute>
+                    <PageReady />
+                    <GeminiChatTest />
                   </ProtectedRoute>
                 </motion.div>
               }

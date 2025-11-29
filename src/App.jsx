@@ -12,6 +12,7 @@ const Inventory = lazy(() => import("./pages/Inventory"));
 const Transactions = lazy(() => import("./pages/Transactions"));
 const StockNotification = lazy(() => import("./pages/StockNotification"));
 const GuestChatbot = lazy(() => import("./pages/GuestChatbot"));
+const GeminiChatTest = lazy(() => import("./pages/GeminiChatTest"));
 
 export default function App() {
   const location = useLocation();
@@ -75,6 +76,16 @@ export default function App() {
                     <PageReady />
                     <StockNotification />
                   </RoleGuard>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/gemini-chat-test"
+              element={
+                <ProtectedRoute>
+                  <PageReady />
+                  <GeminiChatTest />
                 </ProtectedRoute>
               }
             />
