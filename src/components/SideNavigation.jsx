@@ -1,12 +1,14 @@
 import { Link, useLocation } from "react-router-dom";
 import * as motion from "motion/react-client";
 import { useToast } from "../contexts/ToastContext";
+import { useDarkMode } from "../contexts/DarkModeContext";
 import AnimatedBadge from "./ui/AnimatedBadge";
 import AnimatedIcon from "./ui/AnimatedIcon";
 
 export default function SideNavigation({ activeItemCount, onClose }) {
     const location = useLocation();
     const { toast } = useToast();
+    const { isDarkMode, toggleDarkMode } = useDarkMode();
 
     const isDashboardActive = location.pathname === "/dashboard";
     const isTransactionsActive = location.pathname === "/transactions";
@@ -98,7 +100,21 @@ export default function SideNavigation({ activeItemCount, onClose }) {
         >
             <nav className="p-4">
                 <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Admin Dashboard</h2>
+                    <div className="flex items-center gap-3">
+                        {/* Dark Mode Button */}
+                        <button
+                            type="button"
+                            onClick={toggleDarkMode}
+                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                            aria-label="Toggle dark mode"
+                            title={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+                        >
+                            <span className="text-xl">
+                                {isDarkMode ? '☀️' : '🌙'}
+                            </span>
+                        </button>
+                        <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Admin Dashboard</h2>
+                    </div>
                     <button
                         type="button"
                         onClick={onClose}

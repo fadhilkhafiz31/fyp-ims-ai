@@ -64,7 +64,7 @@ export default function Inventory() {
   const { storeId, storeName, setStore, stores } = useStore();
   const { toast } = useToast();
   const { searchQuery, filterItems, hasSearch } = useSearch();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 1024);
 
   const defaultFormState = {
     name: "",
@@ -866,9 +866,10 @@ export default function Inventory() {
                 )}
               </div>
             ) : (
-              <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                {/* header */}
-                <div className="grid grid-cols-10 gap-2 px-4 py-2 text-xs uppercase tracking-wide text-gray-500">
+              <div className="overflow-x-auto">
+                <div className="divide-y divide-gray-200 dark:divide-gray-700 min-w-[1000px]">
+                  {/* header */}
+                  <div className="grid grid-cols-10 gap-2 px-4 py-2 text-xs uppercase tracking-wide text-gray-500">
                   <div>Name</div>
                   <div>SKU</div>
                   <div>Qty</div>
@@ -975,6 +976,7 @@ export default function Inventory() {
                     );
                   })}
                 </motion.div>
+                </div>
               </div>
             )}
           </section>

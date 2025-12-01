@@ -6,6 +6,7 @@ import { EnhancedSpinner } from "./components/ui/EnhancedSpinner";
 import "./index.css";
 import { AuthProvider } from "./contexts/AuthContext";
 import { StoreProvider } from "./contexts/StoreContext";
+import { DarkModeProvider } from "./contexts/DarkModeContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { RouteProgress, PageReady } from "./components/NProgressBar";
 import RoleGuard from "./components/RoleGuard";
@@ -255,11 +256,12 @@ function AnimatedRoutes() {
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
-      <AuthProvider>
-        <StoreProvider>
-          <ToastProvider>
-            <SearchProvider>
-              <ErrorBoundary>
+      <DarkModeProvider>
+        <AuthProvider>
+          <StoreProvider>
+            <ToastProvider>
+              <SearchProvider>
+                <ErrorBoundary>
                 <RouteProgress />
                 <Suspense
                   fallback={
@@ -278,6 +280,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           </ToastProvider>
         </StoreProvider>
       </AuthProvider>
+      </DarkModeProvider>
     </BrowserRouter>
   </React.StrictMode>
 );

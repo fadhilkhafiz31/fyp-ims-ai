@@ -8,6 +8,7 @@ import { db } from "../lib/firebase";
 import { useAuth } from "../contexts/AuthContext";
 import { useRole } from "../hooks/useRole";
 import { useStore } from "../contexts/StoreContext";
+import { useDarkMode } from "../contexts/DarkModeContext";
 import ChatbotPanel from "../components/ChatbotPanel";
 import LocationSelector from "../components/LocationSelector";
 import TopNavigation from "../components/TopNavigation";
@@ -21,6 +22,7 @@ const LOW_STOCK_THRESHOLD = 5;
 
 function SideNavigation({ activeItemCount, onClose, toast }) {
   const location = useLocation();
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
   const isDashboardActive = location.pathname === "/dashboard";
   const isChatbotActive = location.pathname === "/chatbot";
 
@@ -109,7 +111,21 @@ function SideNavigation({ activeItemCount, onClose, toast }) {
     >
       <nav className="p-4">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Admin Dashboard</h2>
+          <div className="flex items-center gap-3">
+            {/* Dark Mode Button */}
+            <button
+              type="button"
+              onClick={toggleDarkMode}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Toggle dark mode"
+              title={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              <span className="text-xl">
+                {isDarkMode ? '☀️' : '🌙'}
+              </span>
+            </button>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Admin Dashboard</h2>
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -176,7 +192,7 @@ export default function Chatbot() {
   const { storeId } = useStore();
   const { toast } = useToast();
   const [inventory, setInventory] = useState([]);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 1024);
 
   // ============================================
   // Effects
