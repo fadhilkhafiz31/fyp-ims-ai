@@ -42,6 +42,8 @@ export default function Transactions() {
   const [catalog, setCatalog] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [form, setForm] = useState({ type: "IN", itemId: "", qty: 1, note: "" });
+  const [transactionsError, setTransactionsError] = useState(null);
+  const [inventoryError, setInventoryError] = useState(null);
 
   const txRef = collection(db, "transactions");
   const invRef = collection(db, "inventory");
@@ -49,8 +51,26 @@ export default function Transactions() {
   // realtime transactions - Both staff and admin see all transactions
   useEffect(() => {
     const q = query(txRef, orderBy("createdAt", "desc"));
-    return onSnapshot(q, (snap) =>
-      setItems(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    return onSnapshot(
+      q,
+      (snap) => {
+        setTransactionsError(null);
+        setItems(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      },
+      (error) => {
+        console.error("Transactions query error:", error);
+        setTransactionsError(error);
+        // Show user-friendly error message
+        if (error.code === "failed-precondition") {
+          toast.error(
+            "Firestore index missing. Please create the required index in Firebase Console."
+          );
+        } else if (error.code === "permission-denied") {
+          toast.error("You don't have permission to view transactions.");
+        } else {
+          toast.error("Failed to load transactions. Please try again.");
+        }
+      }
     );
   }, []);
 
@@ -68,11 +88,25 @@ export default function Transactions() {
   // load inventory - Both staff and admin see all inventory from all stores
   // This allows staff to help customers find items at other locations
   useEffect(() => {
-    return onSnapshot(invRef, (snap) => {
-      const invItems = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setCatalog(invItems);
-      setInventory(invItems);
-    });
+    return onSnapshot(
+      invRef,
+      (snap) => {
+        setInventoryError(null);
+        const invItems = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        setCatalog(invItems);
+        setInventory(invItems);
+      },
+      (error) => {
+        console.error("Inventory query error:", error);
+        setInventoryError(error);
+        // Show user-friendly error message
+        if (error.code === "permission-denied") {
+          toast.error("You don't have permission to view inventory.");
+        } else {
+          toast.error("Failed to load inventory. Please try again.");
+        }
+      }
+    );
   }, []);
 
   // Clear selected item when location changes
@@ -287,6 +321,35 @@ export default function Transactions() {
           {/* Location Selector */}
           <LocationSelector />
 
+          {/* Error Messages */}
+          {transactionsError && (
+            <div className="border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="text-red-600 dark:text-red-400 font-semibold">⚠️ Error Loading Transactions</div>
+              </div>
+              <p className="text-sm text-red-700 dark:text-red-300 mt-2">
+                {transactionsError.code === "failed-precondition"
+                  ? "A Firestore index is required. Please check the Firebase Console for index creation instructions."
+                  : transactionsError.code === "permission-denied"
+                  ? "You don't have permission to view transactions."
+                  : transactionsError.message || "Failed to load transactions. Please refresh the page."}
+              </p>
+            </div>
+          )}
+
+          {inventoryError && (
+            <div className="border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="text-red-600 dark:text-red-400 font-semibold">⚠️ Error Loading Inventory</div>
+              </div>
+              <p className="text-sm text-red-700 dark:text-red-300 mt-2">
+                {inventoryError.code === "permission-denied"
+                  ? "You don't have permission to view inventory."
+                  : inventoryError.message || "Failed to load inventory. The item dropdown may not work correctly."}
+              </p>
+            </div>
+          )}
+
           {/* Entry form */}
           <form onSubmit={handleAdd} className="grid grid-cols-1 md:grid-cols-5 gap-3">
             <select
@@ -375,7 +438,18 @@ export default function Transactions() {
               <div>Note</div>
             </div>
 
-            {filteredTransactions.length === 0 ? (
+            {transactionsError ? (
+              <div className="px-3 py-4 text-center">
+                <div className="text-red-600 dark:text-red-400">
+                  <p className="text-sm mb-1 font-semibold">Unable to load transactions</p>
+                  <p className="text-xs text-red-500 dark:text-red-500">
+                    {transactionsError.code === "failed-precondition"
+                      ? "Please create the required Firestore index."
+                      : "Please check your connection and try again."}
+                  </p>
+                </div>
+              </div>
+            ) : filteredTransactions.length === 0 ? (
               <div className="px-3 py-4 text-center">
                 {!storeId ? (
                   <div className="text-gray-500">
