@@ -10,8 +10,9 @@ const dialogflow = require('@google-cloud/dialogflow');
 
 // Gemini AI client
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-// Temporarily commented out - uncomment after adding GEMINI_API_KEY secret in Firebase Console
-// const { defineSecret } = require("firebase-functions/params");
+// Define secret for Gemini API key
+const { defineSecret } = require("firebase-functions/params");
+const geminiApiKeySecret = defineSecret("GEMINI_API_KEY");
 
 // Initialize Dialogflow client with explicit project configuration
 // This ensures it uses Application Default Credentials from Firebase Functions
@@ -267,11 +268,11 @@ async function getInventoryContext() {
   try {
     const snap = await db.collection("inventory").get();
     const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    
+
     if (items.length === 0) {
       return "No inventory items found.";
     }
-    
+
     // Format each item as a readable string
     const formattedItems = items.map(item => {
       const name = item.name || "Unknown";
@@ -281,10 +282,10 @@ async function getInventoryContext() {
       const storeName = item.storeName || item.storeId || "Unknown Store";
       const storeId = item.storeId || "N/A";
       const reorderPoint = Number(item.reorderPoint ?? 5);
-      
+
       return `- Name: ${name}, SKU: ${sku}, Category: ${category}, Quantity: ${qty}, Store: ${storeName} (ID: ${storeId}), Reorder Point: ${reorderPoint}`;
     }).join("\n");
-    
+
     return `Inventory Items (Total: ${items.length}):\n${formattedItems}`;
   } catch (error) {
     console.error("Error fetching inventory context:", error);
@@ -298,36 +299,33 @@ const reply = (text) => ({ fulfillmentText: text });
 async function geminiHandler(req, res) {
   try {
     const message = req.body?.message || req.body?.text || "";
-    
+
     if (!message.trim()) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: "Message is required",
-        response: "Please provide a message to chat with the AI." 
+        response: "Please provide a message to chat with the AI."
       });
     }
-    
-    // Get API key from environment variable
-    // Set this in Firebase Console → Functions → Configuration → Environment variables
-    // Or use: firebase functions:secrets:set GEMINI_API_KEY
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-    
+
+    // Get API key from Firebase secret
+    const GEMINI_API_KEY = geminiApiKeySecret.value();
+
     // Validate API key
-    if (!GEMINI_API_KEY || GEMINI_API_KEY === "YOUR_GEMINI_API_KEY_HERE") {
+    if (!GEMINI_API_KEY) {
       console.error("Gemini API key not configured");
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: "API key not configured",
-        response: "Gemini AI is not configured. Please set the GEMINI_API_KEY secret in Firebase Console or environment variable." 
+        response: "Gemini AI is not configured. Please set the GEMINI_API_KEY secret using: firebase functions:secrets:set GEMINI_API_KEY"
       });
     }
-    
+
     // Fetch inventory context
     console.log("Fetching inventory context for Gemini...");
     const inventoryContext = await getInventoryContext();
-    
+
     // Initialize Gemini
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    
+
     // Create system prompt with inventory context
     const systemPrompt = `You are SmartStockAI, an intelligent inventory management assistant. You help users check stock levels, find products, and manage inventory.
 
@@ -344,27 +342,57 @@ Instructions:
 - If asked about something not related to inventory, politely redirect to inventory-related topics
 
 User Question: ${message}`;
-    
+
     console.log("Sending request to Gemini...");
-    
-    // Generate response
-    const result = await model.generateContent(systemPrompt);
-    const response = await result.response;
-    const text = response.text();
-    
+
+    // Try models in order of preference with fallback
+    // Start with more stable/available models first
+    const modelsToTry = [
+      "gemini-pro",
+      "gemini-1.5-pro",
+      "gemini-1.5-pro-latest",
+      "gemini-1.5-flash-latest",
+      "gemini-1.5-flash"
+    ];
+
+    let lastError = null;
+    let successfulModel = null;
+    let text = null;
+
+    for (const modelName of modelsToTry) {
+      try {
+        console.log(`Trying model: ${modelName}`);
+        const model = genAI.getGenerativeModel({ model: modelName });
+        const result = await model.generateContent(systemPrompt);
+        const response = await result.response;
+        text = response.text();
+        successfulModel = modelName;
+        console.log(`Successfully used model: ${modelName}`);
+        break;
+      } catch (modelError) {
+        console.error(`Model ${modelName} failed:`, modelError.message);
+        lastError = modelError;
+        // Continue to next model
+      }
+    }
+
+    if (!text) {
+      throw new Error(`All models (${modelsToTry.join(", ")}) failed. Last error: ${lastError?.message || "Unknown error"}`);
+    }
+
     console.log("Gemini response received");
-    
+
     return res.json({
       response: text,
-      model: "gemini-1.5-flash",
+      model: successfulModel,
       timestamp: new Date().toISOString()
     });
-    
+
   } catch (error) {
     console.error("Gemini handler error:", error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: "Internal server error",
-      response: "Sorry, I encountered an error while processing your request. Please try again later." 
+      response: `Sorry, I encountered an error while processing your request: ${error.message || "Unknown error"}. Please try again later.`
     });
   }
 }
@@ -818,6 +846,40 @@ app.post("/", dfHandler);
 app.post("/webhook", dfHandler);
 app.post("/df", dfHandler);
 app.post("/chat", geminiHandler);
+
+// Temporary test endpoint to verify secret (REMOVE AFTER VERIFICATION)
+app.get("/test-secret", (req, res) => {
+  try {
+    const apiKey = geminiApiKeySecret.value();
+    if (!apiKey) {
+      return res.json({ 
+        error: "Secret is empty or not set",
+        length: 0 
+      });
+    }
+    // Show partial info for verification (first 4, last 4, length)
+    const first4 = apiKey.substring(0, 4);
+    const last4 = apiKey.substring(apiKey.length - 4);
+    const length = apiKey.length;
+    
+    return res.json({
+      success: true,
+      message: "Secret is set",
+      verification: {
+        startsWith: first4,
+        endsWith: last4,
+        length: length,
+        expectedStart: "AIza", // Gemini API keys usually start with AIza
+        isValidFormat: first4 === "AIza" && length > 30
+      }
+    });
+  } catch (error) {
+    return res.json({
+      error: "Failed to read secret",
+      message: error.message
+    });
+  }
+});
 
 // ---------- Dialogflow detectIntent passthrough ----------
 app.post("/detect-intent", async (req, res) => {
@@ -1606,12 +1668,14 @@ exports.copyInventory = onCall(async (request) => {
 });
 
 // ---------- export ----------
-// Note: Temporarily removed secrets binding to allow deployment
-// After adding GEMINI_API_KEY secret in Firebase Console, add it back:
-// secrets: [geminiApiKeySecret],
+// Secret binding is optional - will fallback to environment variable if secret is not set
+// Option 1 (Recommended): Set via Firebase CLI: firebase functions:secrets:set GEMINI_API_KEY
+// Option 2: Set in Firebase Console → Functions → Configuration → Environment variables
 exports.webhook = onRequest(
   {
     region: "asia-southeast1",
+    // Include secret - if not set, code will fallback to environment variable
+    secrets: [geminiApiKeySecret],
   },
   app
 );
