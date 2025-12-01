@@ -77,7 +77,7 @@ export default function Transactions() {
   // Filter transactions by location first
   const locationFilteredTransactions = useMemo(() => {
     if (!storeId) return [];
-    return items.filter((t) => t.storeId === storeId);
+    return items.filter((t) => t && t.storeId === storeId);
   }, [items, storeId]);
 
   // Filter transactions based on location and search
@@ -144,19 +144,20 @@ export default function Transactions() {
     since.setDate(since.getDate() - 30);
 
     const within30 = locationFilteredTransactions.filter(
-      (t) => t.createdAt?.toDate && t.createdAt.toDate() >= since
+      (t) => t && t.createdAt?.toDate && t.createdAt.toDate() >= since
     );
 
-    const inTx = within30.filter((t) => t.type === "IN");
-    const outTx = within30.filter((t) => t.type === "OUT");
+    const inTx = within30.filter((t) => t && t.type === "IN");
+    const outTx = within30.filter((t) => t && t.type === "OUT");
 
-    const inQty = inTx.reduce((s, t) => s + Number(t.qty ?? 0), 0);
-    const outQty = outTx.reduce((s, t) => s + Number(t.qty ?? 0), 0);
+    const inQty = inTx.reduce((s, t) => s + Number(t?.qty ?? 0), 0);
+    const outQty = outTx.reduce((s, t) => s + Number(t?.qty ?? 0), 0);
     const net = inQty - outQty;
 
     // per-item breakdown (carry id and name)
     const byItemMap = new Map();
     for (const t of within30) {
+      if (!t) continue;
       const key = t.itemId || t.itemName || "unknown";
       const prev = byItemMap.get(key) || { id: t.itemId || null, name: t.itemName || key, inQty: 0, outQty: 0 };
       if (t.itemId && !prev.id) prev.id = t.itemId;
@@ -297,23 +298,25 @@ export default function Transactions() {
                   <div className="text-green-700 dark:text-green-400">IN Qty</div>
                   <div className="text-red-700 dark:text-red-400">OUT Qty</div>
                 </div>
-                {last30.byItem.map((it) => (
-                  <div
-                    key={it.id || it.name}
-                    className="grid grid-cols-3 text-sm border-b border-gray-200 dark:border-gray-800 py-1"
-                  >
-                    <div className="truncate text-gray-900 dark:text-gray-100">
-                      {displayNameById(it.id || it.name, it.name)}
-                      <span className="ml-2 text-xs text-gray-600 dark:text-gray-400">(current: {currentQtyByIdOrName(it.id, it.name)})</span>
+                {last30.byItem
+                  .filter((it) => it) // Filter out invalid items
+                  .map((it) => (
+                    <div
+                      key={it.id || it.name || "unknown"}
+                      className="grid grid-cols-3 text-sm border-b border-gray-200 dark:border-gray-800 py-1"
+                    >
+                      <div className="truncate text-gray-900 dark:text-gray-100">
+                        {displayNameById(it.id || null, it.name || "Unknown Item")}
+                        <span className="ml-2 text-xs text-gray-600 dark:text-gray-400">(current: {currentQtyByIdOrName(it.id || null, it.name || null)})</span>
+                      </div>
+                      <div className="text-green-700 dark:text-green-400">
+                        ➕ {it.inQty ?? 0} <span className="text-xs text-gray-600 dark:text-gray-400">IN</span>
+                      </div>
+                      <div className="text-red-700 dark:text-red-400">
+                        ➖ {it.outQty ?? 0} <span className="text-xs text-gray-600 dark:text-gray-400">OUT</span>
+                      </div>
                     </div>
-                    <div className="text-green-700 dark:text-green-400">
-                      ➕ {it.inQty} <span className="text-xs text-gray-600 dark:text-gray-400">IN</span>
-                    </div>
-                    <div className="text-red-700 dark:text-red-400">
-                      ➖ {it.outQty} <span className="text-xs text-gray-600 dark:text-gray-400">OUT</span>
-                    </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             )}
           </div>
@@ -466,40 +469,42 @@ export default function Transactions() {
                 )}
               </div>
             ) : (
-              filteredTransactions.map((t) => (
-                <div
-                  key={t.id}
-                  className="grid grid-cols-5 gap-2 px-3 py-2 border-b text-sm"
-                >
-                  <div>
-                    {t.createdAt?.toDate
-                      ? t.createdAt.toDate().toLocaleString()
-                      : "—"}
-                  </div>
+              filteredTransactions
+                .filter((t) => t && t.id) // Filter out invalid transactions
+                .map((t) => (
                   <div
-                    className={
-                      t.type === "OUT"
-                        ? "text-red-600 font-medium"
-                        : "text-green-600 font-medium"
-                    }
+                    key={t.id}
+                    className="grid grid-cols-5 gap-2 px-3 py-2 border-b text-sm"
                   >
-                    {t.type}
+                    <div>
+                      {t.createdAt?.toDate
+                        ? t.createdAt.toDate().toLocaleString()
+                        : "—"}
+                    </div>
+                    <div
+                      className={
+                        (t.type || "IN") === "OUT"
+                          ? "text-red-600 font-medium"
+                          : "text-green-600 font-medium"
+                      }
+                    >
+                      {t.type || "IN"}
+                    </div>
+                    <div>
+                      {displayNameById(t.itemId || null, t.itemName || "Unknown Item")}
+                      {typeof t.balanceAfter === "number"
+                        ? ` (stock after: ${t.balanceAfter})`
+                        : ""}
+                    </div>
+                    <div>{t.qty ?? 0}</div>
+                    <div className="truncate">
+                      {t.note ||
+                        (typeof t.balanceBefore === "number"
+                          ? `prev: ${t.balanceBefore}`
+                          : "—")}
+                    </div>
                   </div>
-                  <div>
-                    {displayNameById(t.itemId, t.itemName)}
-                    {typeof t.balanceAfter === "number"
-                      ? ` (stock after: ${t.balanceAfter})`
-                      : ""}
-                  </div>
-                  <div>{t.qty}</div>
-                  <div className="truncate">
-                    {t.note ||
-                      (typeof t.balanceBefore === "number"
-                        ? `prev: ${t.balanceBefore}`
-                        : "—")}
-                  </div>
-                </div>
-              ))
+                ))
             )}
           </div>
         </main>
