@@ -4,12 +4,14 @@ import * as motion from "motion/react-client";
 import { useAuth } from "../contexts/AuthContext";
 import { useStore } from "../contexts/StoreContext";
 import { useSearch } from "../contexts/SearchContext";
+import { useToast } from "../contexts/ToastContext";
 import AnimatedLink from "./ui/AnimatedLink";
 
 export default function TopNavigation({ role = null, onToggleSidebar = null }) {
   const { user } = useAuth();
   const { storeName, storeId } = useStore();
   const { searchQuery, updateSearch, clearSearch, hasSearch } = useSearch();
+  const { toast } = useToast();
   const [localSearch, setLocalSearch] = useState(searchQuery);
 
   const effectiveRole = typeof role === "string" ? role.toLowerCase() : null;
@@ -178,6 +180,7 @@ export default function TopNavigation({ role = null, onToggleSidebar = null }) {
               className="p-2 text-white hover:text-green-100 hover:bg-green-700/30 rounded-lg transition"
               type="button"
               aria-label="Favorite"
+              onClick={() => toast.info("Favorites - Coming soon!")}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               transition={{ duration: 0.2 }}
