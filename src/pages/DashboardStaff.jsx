@@ -7,6 +7,7 @@ import * as motion from "motion/react-client";
 
 import { auth, db } from "../lib/firebase";
 import { useAuth } from "../contexts/AuthContext";
+import { useLowStockCount } from "../hooks/useLowStockCount";
 import { useStore } from "../contexts/StoreContext";
 import ChatbotPanel from "../components/ChatbotPanel";
 import LocationSelector from "../components/LocationSelector";
@@ -293,6 +294,7 @@ export default function DashboardStaff() {
   const { user } = useAuth();
   const { storeId, storeName } = useStore();
   const { toast } = useToast();
+  const { globalLowStockCount } = useLowStockCount(); // Use shared hook for consistent count
   const [inventory, setInventory] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -352,7 +354,7 @@ export default function DashboardStaff() {
       <div className="flex">
         {sidebarOpen && (
           <SideNavigation
-            activeItemCount={lowStock.length}
+            activeItemCount={globalLowStockCount}
             onClose={() => setSidebarOpen(false)}
             toast={toast}
           />

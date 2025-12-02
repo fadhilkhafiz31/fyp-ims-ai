@@ -8,6 +8,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useStore } from "../contexts/StoreContext";
 import { useDarkMode } from "../contexts/DarkModeContext";
 import { useRole } from "../hooks/useRole";
+import { useLowStockCount } from "../hooks/useLowStockCount";
 import { PageReady } from "../components/NProgressBar";
 import LocationSelector from "../components/LocationSelector";
 import TopNavigation from "../components/TopNavigation";
@@ -284,6 +285,7 @@ export default function StockNotification() {
   const { storeId } = useStore();
   const { toast } = useToast();
   const { filterItems, searchQuery, hasSearch } = useSearch();
+  const { globalLowStockCount } = useLowStockCount(storeId); // Pass storeId to filter by selected store
   const [inventory, setInventory] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -334,6 +336,7 @@ useEffect(() => {
     return filterItems(inventory, ["name", "sku", "category"]);
   }, [inventory, filterItems]);
 
+  // Low stock items for the current page (filtered by storeId if selected)
   const lowStockItems = useMemo(
     () =>
       filteredInventory.filter(
@@ -341,6 +344,9 @@ useEffect(() => {
       ),
     [filteredInventory]
   );
+
+  // Note: Global low stock count is now provided by useLowStockCount hook
+  // This ensures consistency across all pages
 
   // ============================================
   // Handlers
@@ -386,7 +392,7 @@ useEffect(() => {
         {/* Side Navigation */}
         {sidebarOpen && (
           <SideNavigation
-            activeItemCount={lowStockItems.length}
+            activeItemCount={globalLowStockCount}
             onClose={() => setSidebarOpen(false)}
             toast={toast}
           />

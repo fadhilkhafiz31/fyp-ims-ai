@@ -8,6 +8,7 @@ export default function GeminiChatTest() {
   const [messages, setMessages] = useState([
     { role: "assistant", text: "Hi! I'm the Gemini AI test chatbot. I can help you check inventory and answer questions about stock levels." },
   ]);
+  const [currentModel, setCurrentModel] = useState(null);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -65,10 +66,25 @@ export default function GeminiChatTest() {
       const data = await res.json().catch(() => ({}));
       
       if (!res.ok) {
-        throw new Error(data.error || data.response || `HTTP ${res.status}`);
+        // Show more detailed error information
+        const errorMsg = data.error || data.response || `HTTP ${res.status}`;
+        const errorCode = data.errorCode || "";
+        const errorDetails = data.errorDetails || "";
+        const fullError = errorCode 
+          ? `${errorMsg} (Code: ${errorCode}${errorDetails ? ` - ${errorDetails}` : ""})`
+          : errorMsg;
+        throw new Error(fullError);
       }
       
       const reply = data?.response || data?.fulfillmentText || "Sorry, I couldn't process that.";
+      const modelUsed = data?.model || null;
+      
+      // Update the model name if provided
+      if (modelUsed) {
+        setCurrentModel(modelUsed);
+        console.log("Model used:", modelUsed);
+      }
+      
       setMessages((m) => [...m, { role: "assistant", text: reply }]);
     } catch (error) {
       console.error("Gemini chat error:", error);
@@ -136,7 +152,11 @@ export default function GeminiChatTest() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="font-semibold text-white">Gemini AI Assistant</h2>
-                <p className="text-xs text-blue-100">Powered by Google Gemini 1.5 Flash</p>
+                <p className="text-xs text-blue-100">
+                  {currentModel 
+                    ? `Using: ${currentModel}` 
+                    : "Powered by Google Gemini 2.5 Flash"}
+                </p>
               </div>
               {webhookUrl && (
                 <span className="text-xs bg-white/20 text-white px-2 py-1 rounded">
@@ -227,7 +247,7 @@ export default function GeminiChatTest() {
           <h3 className="font-semibold text-blue-900 dark:text-blue-200 mb-2">About This Test</h3>
           <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1 list-disc list-inside">
             <li>This component directly calls the /chat endpoint (not Dialogflow)</li>
-            <li>Uses Google Gemini 1.5 Flash model</li>
+            <li>Uses Google Gemini 2.5 Flash model</li>
             <li>Has access to all inventory data through context injection</li>
             <li>This is a test component - it can be replaced with the main chatbot later</li>
           </ul>

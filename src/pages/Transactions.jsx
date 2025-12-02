@@ -13,6 +13,7 @@ import {
 import * as motion from "motion/react-client";
 import { db } from "../lib/firebase";
 import { useRole } from "../hooks/useRole";
+import { useLowStockCount } from "../hooks/useLowStockCount";
 import { PageReady } from "../components/NProgressBar";
 import { useStore } from "../contexts/StoreContext";
 import LocationSelector from "../components/LocationSelector";
@@ -37,6 +38,7 @@ export default function Transactions() {
   const { storeId } = useStore();
   const { toast } = useToast();
   const { filterItems, searchQuery, hasSearch } = useSearch();
+  const { globalLowStockCount } = useLowStockCount(storeId); // Pass storeId to filter by selected store
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [items, setItems] = useState([]);
   const [catalog, setCatalog] = useState([]);
@@ -114,13 +116,20 @@ export default function Transactions() {
     setForm((prev) => ({ ...prev, itemId: "" }));
   }, [storeId]);
 
-  // Calculate low stock items for badge
+  // Calculate low stock items for page display (filtered by selected store if applicable)
+  // Note: For sidebar badge, we use globalLowStockCount from useLowStockCount hook
   const lowStockItems = useMemo(
-    () =>
-      inventory.filter(
+    () => {
+      let filtered = inventory.filter(
         (item) => Number(item.qty ?? 0) <= LOW_STOCK_THRESHOLD
-      ),
-    [inventory]
+      );
+      // If a store is selected, filter by that store for page display
+      if (storeId) {
+        filtered = filtered.filter((item) => item.storeId === storeId);
+      }
+      return filtered;
+    },
+    [inventory, storeId]
   );
 
   // Filter catalog by selected location
@@ -247,7 +256,7 @@ export default function Transactions() {
         {/* Side Navigation */}
         {sidebarOpen && (
           <SideNavigation
-            activeItemCount={lowStockItems.length}
+            activeItemCount={globalLowStockCount}
             onClose={() => setSidebarOpen(false)}
           />
         )}

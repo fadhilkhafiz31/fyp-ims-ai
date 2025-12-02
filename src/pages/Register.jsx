@@ -101,7 +101,7 @@ export default function Register() {
         <motion.form
           key={location.pathname}
           onSubmit={submit}
-          className="w-full max-w-md bg-white rounded-lg shadow-2xl p-8"
+          className="w-full max-w-md !bg-white rounded-lg shadow-2xl p-8"
           initial={{ opacity: 0, x: -100, scale: 0.95 }}
           animate={{ opacity: 1, x: 0, scale: 1 }}
           exit={{ opacity: 0, x: 100, scale: 0.95 }}
@@ -126,7 +126,7 @@ export default function Register() {
 
           {/* Heading */}
           <motion.h1
-            className="text-3xl font-bold text-black mb-8 text-center"
+            className="text-3xl font-bold !text-black mb-8 text-center"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.4 }}
@@ -164,7 +164,7 @@ export default function Register() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Full name"
-                className="w-full pl-10 pr-4 py-3 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400"
+                className="w-full pl-10 pr-4 py-3 !bg-gray-100 !border-gray-300 !text-gray-900 border rounded-lg focus:outline-none focus:!border-gray-400"
                 required
               />
             </div>
@@ -188,7 +188,7 @@ export default function Register() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email"
-                className="w-full pl-10 pr-4 py-3 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400"
+                className="w-full pl-10 pr-4 py-3 !bg-gray-100 !border-gray-300 !text-gray-900 border rounded-lg focus:outline-none focus:!border-gray-400"
                 required
               />
             </div>
@@ -220,7 +220,7 @@ export default function Register() {
                 value={pass}
                 onChange={(e) => setPass(e.target.value)}
                 placeholder="Password"
-                className="w-full pl-10 pr-10 py-3 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400"
+                className="w-full pl-10 pr-10 py-3 !bg-gray-100 !border-gray-300 !text-gray-900 border rounded-lg focus:outline-none focus:!border-gray-400"
                 required
               />
               <button
@@ -257,7 +257,7 @@ export default function Register() {
                 value={confirmPass}
                 onChange={(e) => setConfirmPass(e.target.value)}
                 placeholder="Confirm Password"
-                className="w-full pl-10 pr-10 py-3 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400"
+                className="w-full pl-10 pr-10 py-3 !bg-gray-100 !border-gray-300 !text-gray-900 border rounded-lg focus:outline-none focus:!border-gray-400"
                 required
               />
               <button
@@ -312,12 +312,12 @@ export default function Register() {
 
           {/* Login Link */}
           <motion.p
-            className="text-center text-sm text-gray-700"
+            className="text-center text-sm !text-gray-700"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4, delay: 1.0 }}
           >
-            Have an account? <Link to="/login" className="text-gray-900 hover:underline font-medium">Login</Link>
+            Have an account? <Link to="/login" className="!text-gray-900 hover:underline font-medium">Login</Link>
           </motion.p>
         </motion.form>
       </div>

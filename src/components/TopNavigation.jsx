@@ -41,7 +41,7 @@ export default function TopNavigation({ role = null, onToggleSidebar = null }) {
   }, [searchQuery, localSearch]);
 
   return (
-    <nav className="w-full bg-[#2E6A4E] border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
+    <nav className="w-full bg-[#0F5132] border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
       <div className="flex items-center h-16">
         {/* Left: Hamburger button (if provided) and SmartStockAI Logo */}
         <div className="flex items-center pl-2">

@@ -7,6 +7,7 @@ import * as motion from "motion/react-client";
 import { db } from "../lib/firebase";
 import { useAuth } from "../contexts/AuthContext";
 import { useRole } from "../hooks/useRole";
+import { useLowStockCount } from "../hooks/useLowStockCount";
 import { useStore } from "../contexts/StoreContext";
 import { useDarkMode } from "../contexts/DarkModeContext";
 import ChatbotPanel from "../components/ChatbotPanel";
@@ -273,6 +274,7 @@ export default function DashboardAdmin() {
   const { role } = useRole();
   const { storeId } = useStore();
   const { toast } = useToast();
+  const { globalLowStockCount } = useLowStockCount(storeId); // Pass storeId to filter by selected store
   const [inventory, setInventory] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -341,7 +343,7 @@ export default function DashboardAdmin() {
         {/* Side Navigation */}
         {sidebarOpen && (
           <SideNavigation
-            activeItemCount={lowStockItems.length}
+            activeItemCount={globalLowStockCount}
             onClose={() => setSidebarOpen(false)}
             toast={toast}
           />

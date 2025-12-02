@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import * as motion from "motion/react-client";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { login, loginAsGuest } from "../lib/firebase";
@@ -12,8 +12,69 @@ export default function Login() {
   const [err, setErr] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const canvasRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Particle animation effect
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+
+    const setSize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+
+    setSize();
+
+    let ps = [];
+    let raf = 0;
+
+    const make = () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      v: Math.random() * 0.25 + 0.05,
+      o: Math.random() * 0.35 + 0.15,
+    });
+
+    const init = () => {
+      ps = [];
+      const count = Math.floor((canvas.width * canvas.height) / 9000);
+      for (let i = 0; i < count; i++) ps.push(make());
+    };
+
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ps.forEach((p) => {
+        p.y -= p.v;
+        if (p.y < 0) {
+          p.x = Math.random() * canvas.width;
+          p.y = canvas.height + Math.random() * 40;
+          p.v = Math.random() * 0.25 + 0.05;
+          p.o = Math.random() * 0.35 + 0.15;
+        }
+        ctx.fillStyle = `rgba(250,250,250,${p.o})`;
+        ctx.fillRect(p.x, p.y, 0.7, 2.2);
+      });
+      raf = requestAnimationFrame(draw);
+    };
+
+    const onResize = () => {
+      setSize();
+      init();
+    };
+
+    window.addEventListener("resize", onResize);
+    init();
+    raf = requestAnimationFrame(draw);
+
+    return () => {
+      window.removeEventListener("resize", onResize);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -53,21 +114,84 @@ export default function Login() {
   }
 
   return (
-    <MotionWrapper className="min-h-screen bg-[#2E6A4E] relative overflow-hidden">
-      {/* Diagonal Stripes Background Pattern */}
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundImage: `repeating-linear-gradient(
-            45deg,
-            transparent,
-            transparent 20px,
-            rgba(255, 255, 255, 0.05) 20px,
-            rgba(255, 255, 255, 0.05) 22px
-          )`,
-          backgroundSize: '28.28px 28.28px'
-        }}
-      ></div>
+    <MotionWrapper className="min-h-screen bg-[#0F5132] relative overflow-hidden">
+      <style>{`
+        .accent-lines{position:absolute;inset:0;pointer-events:none;opacity:.7}
+        .hline,.vline{position:absolute;background:rgba(255,255,255,0.1);will-change:transform,opacity}
+        .hline{left:0;right:0;height:1px;transform:scaleX(0);transform-origin:50% 50%;animation:drawX .8s cubic-bezier(.22,.61,.36,1) forwards}
+        .vline{top:0;bottom:0;width:1px;transform:scaleY(0);transform-origin:50% 0%;animation:drawY .9s cubic-bezier(.22,.61,.36,1) forwards}
+        .hline:nth-child(1){top:18%;animation-delay:.12s}
+        .hline:nth-child(2){top:50%;animation-delay:.22s}
+        .hline:nth-child(3){top:82%;animation-delay:.32s}
+        .vline:nth-child(4){left:22%;animation-delay:.42s}
+        .vline:nth-child(5){left:50%;animation-delay:.54s}
+        .vline:nth-child(6){left:78%;animation-delay:.66s}
+        .hline::after,.vline::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.24),transparent);opacity:0;animation:shimmer .9s ease-out forwards}
+        .hline:nth-child(1)::after{animation-delay:.12s}
+        .hline:nth-child(2)::after{animation-delay:.22s}
+        .hline:nth-child(3)::after{animation-delay:.32s}
+        .vline:nth-child(4)::after{animation-delay:.42s}
+        .vline:nth-child(5)::after{animation-delay:.54s}
+        .vline:nth-child(6)::after{animation-delay:.66s}
+        @keyframes drawX{0%{transform:scaleX(0);opacity:0}60%{opacity:.95}100%{transform:scaleX(1);opacity:.7}}
+        @keyframes drawY{0%{transform:scaleY(0);opacity:0}60%{opacity:.95}100%{transform:scaleY(1);opacity:.7}}
+        @keyframes shimmer{0%{opacity:0}35%{opacity:.25}100%{opacity:0}}
+        .nav-button {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 16px;
+          border-radius: 9999px;
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          background: rgba(30, 30, 30, 0.3);
+          backdrop-filter: blur(10px);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          cursor: pointer;
+        }
+        .nav-button:hover {
+          border-color: rgba(255, 255, 255, 0.5);
+          background: rgba(40, 40, 40, 1);
+          transform: translateY(-1px);
+        }
+        .nav-button:active {
+          transform: translateY(0);
+        }
+        .nav-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: white;
+          flex-shrink: 0;
+        }
+        .nav-link {
+          position: relative;
+          z-index: 1;
+          font-size: 0.875rem;
+          letter-spacing: 0.025em;
+          color: white;
+          font-weight: 500;
+        }
+      `}</style>
+
+      {/* Subtle vignette */}
+      <div className="absolute inset-0 pointer-events-none [background:radial-gradient(80%_60%_at_50%_30%,rgba(255,255,255,0.06),transparent_60%)]" />
+
+      {/* Animated accent lines */}
+      <div className="accent-lines">
+        <div className="hline" />
+        <div className="hline" />
+        <div className="hline" />
+        <div className="vline" />
+        <div className="vline" />
+        <div className="vline" />
+      </div>
+
+      {/* Particles Canvas */}
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 w-full h-full opacity-50 mix-blend-screen pointer-events-none"
+      />
 
       {/* Header - Static, no motion */}
       <header className="relative z-10 flex items-center justify-between px-6 py-4">
@@ -78,9 +202,33 @@ export default function Login() {
             className="h-12 w-auto"
           />
         </div>
-        <nav className="flex items-center gap-8">
-          <Link to="/about" className="text-white uppercase text-sm font-medium hover:opacity-80">ABOUT US</Link>
-          <Link to="/contact" className="text-white uppercase text-sm font-medium hover:opacity-80">CONTACT</Link>
+        <nav className="flex items-center gap-4">
+          <motion.div
+            className="nav-button"
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <div className="nav-dot"></div>
+            <Link to="/about" className="nav-link">
+              ABOUT US
+            </Link>
+          </motion.div>
+          <motion.div
+            className="nav-button"
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <div className="nav-dot"></div>
+            <Link to="/contact" className="nav-link">
+              CONTACT
+            </Link>
+          </motion.div>
         </nav>
       </header>
 
@@ -89,7 +237,7 @@ export default function Login() {
         <motion.form
           key={location.pathname}
           onSubmit={onSubmit}
-          className="w-full max-w-md bg-white rounded-lg shadow-2xl p-8"
+          className="w-full max-w-md !bg-white rounded-lg shadow-2xl p-8"
           initial={{ opacity: 0, x: 100, scale: 0.95 }}
           animate={{ opacity: 1, x: 0, scale: 1 }}
           exit={{ opacity: 0, x: -100, scale: 0.95 }}
@@ -114,7 +262,7 @@ export default function Login() {
 
           {/* Heading */}
           <motion.h1
-            className="text-3xl font-bold text-black mb-8 text-center"
+            className="text-3xl font-bold !text-black mb-8 text-center"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.4 }}
@@ -152,7 +300,7 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email"
-                className="w-full pl-10 pr-4 py-3 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400"
+                className="w-full pl-10 pr-4 py-3 !bg-gray-100 !border-gray-300 !text-gray-900 border rounded-lg focus:outline-none focus:!border-gray-400"
                 required
               />
             </div>
@@ -176,7 +324,7 @@ export default function Login() {
                 value={pw}
                 onChange={(e) => setPw(e.target.value)}
                 placeholder="Password"
-                className="w-full pl-10 pr-10 py-3 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400"
+                className="w-full pl-10 pr-10 py-3 !bg-gray-100 !border-gray-300 !text-gray-900 border rounded-lg focus:outline-none focus:!border-gray-400"
                 required
               />
               <button
@@ -209,9 +357,9 @@ export default function Login() {
                 onChange={(e) => setRememberMe(e.target.checked)}
                 className="w-4 h-4 border-gray-300 rounded"
               />
-              <span className="text-sm text-gray-700">Remember Me</span>
+              <span className="text-sm !text-gray-700">Remember Me</span>
             </label>
-            <Link to="/forgot-password" className="text-sm text-gray-700 hover:underline whitespace-nowrap">
+            <Link to="/forgot-password" className="text-sm !text-gray-700 hover:underline whitespace-nowrap">
               Forgot Password?
             </Link>
           </motion.div>
@@ -235,7 +383,7 @@ export default function Login() {
             type="button"
             onClick={handleGuestLogin}
             disabled={loading}
-            className="w-full bg-[#2E6A4E] text-white font-semibold py-3 rounded-lg hover:bg-[#235a43] transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+            className="w-full bg-[#0F5132] text-white font-semibold py-3 rounded-lg hover:bg-[#235a43] transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-4"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.9 }}
@@ -247,12 +395,12 @@ export default function Login() {
 
           {/* Sign up Link */}
           <motion.p
-            className="text-center text-sm text-gray-700"
+            className="text-center text-sm !text-gray-700"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4, delay: 1.0 }}
           >
-            or <Link to="/register" className="text-gray-900 hover:underline font-medium">Sign up</Link>
+            or <Link to="/register" className="!text-gray-900 hover:underline font-medium">Sign up</Link>
           </motion.p>
         </motion.form>
       </div>

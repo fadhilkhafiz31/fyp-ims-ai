@@ -7,6 +7,7 @@ import * as motion from "motion/react-client";
 import { db } from "../lib/firebase";
 import { useAuth } from "../contexts/AuthContext";
 import { useRole } from "../hooks/useRole";
+import { useLowStockCount } from "../hooks/useLowStockCount";
 import { useStore } from "../contexts/StoreContext";
 import { useDarkMode } from "../contexts/DarkModeContext";
 import ChatbotPanel from "../components/ChatbotPanel";
@@ -191,6 +192,7 @@ export default function Chatbot() {
   const { role, ready: roleReady } = useRole();
   const { storeId } = useStore();
   const { toast } = useToast();
+  const { globalLowStockCount } = useLowStockCount(storeId); // Pass storeId to filter by selected store
   const [inventory, setInventory] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 1024);
 
@@ -262,7 +264,7 @@ export default function Chatbot() {
         {/* Side Navigation - Only show for admin/staff */}
         {!isRestricted && sidebarOpen && (
           <SideNavigation
-            activeItemCount={lowStockItems.length}
+            activeItemCount={globalLowStockCount}
             onClose={() => setSidebarOpen(false)}
             toast={toast}
           />

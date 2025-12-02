@@ -18,6 +18,7 @@ import * as motion from "motion/react-client";
 import { db } from "../lib/firebase";
 import TopNavigation from "../components/TopNavigation";
 import { PageReady } from "../components/NProgressBar";
+import { useLowStockCount } from "../hooks/useLowStockCount";
 import { useRole } from "../hooks/useRole";
 import { useStore } from "../contexts/StoreContext";
 import { SkeletonTableRow, SkeletonKPI } from "../components/ui/SkeletonLoader";
@@ -64,6 +65,7 @@ export default function Inventory() {
   const { storeId, storeName, setStore, stores } = useStore();
   const { toast } = useToast();
   const { searchQuery, filterItems, hasSearch } = useSearch();
+  const { globalLowStockCount } = useLowStockCount(storeId); // Pass storeId to filter by selected store
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 1024);
 
   const defaultFormState = {
@@ -438,7 +440,7 @@ export default function Inventory() {
         {/* Side Navigation */}
         {sidebarOpen && (
           <SideNavigation
-            activeItemCount={lowStockItems.length}
+            activeItemCount={globalLowStockCount}
             onClose={() => setSidebarOpen(false)}
           />
         )}
