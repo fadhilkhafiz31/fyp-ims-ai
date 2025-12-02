@@ -18,6 +18,7 @@ import { PageReady } from "../components/NProgressBar";
 import { useStore } from "../contexts/StoreContext";
 import LocationSelector from "../components/LocationSelector";
 import TopNavigation from "../components/TopNavigation";
+import ChatbotPanel from "../components/ChatbotPanel";
 import AnimatedBadge from "../components/ui/AnimatedBadge";
 import AnimatedIcon from "../components/ui/AnimatedIcon";
 import { useToast } from "../contexts/ToastContext";
@@ -40,6 +41,7 @@ export default function Transactions() {
   const { filterItems, searchQuery, hasSearch } = useSearch();
   const { globalLowStockCount } = useLowStockCount(storeId); // Pass storeId to filter by selected store
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [chatWidgetOpen, setChatWidgetOpen] = useState(false);
   const [items, setItems] = useState([]);
   const [catalog, setCatalog] = useState([]);
   const [inventory, setInventory] = useState([]);
@@ -552,6 +554,43 @@ export default function Transactions() {
           </div>
         </main>
       </div>
+
+      {/* Floating Chat Widget */}
+      {chatWidgetOpen ? (
+        <motion.div
+          className="fixed bottom-4 right-4 z-50 w-96 h-[600px] shadow-2xl"
+          initial={{ opacity: 0, scale: 0.8, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.8, y: 20 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+        >
+          <ChatbotPanel fullHeight={true} />
+          <button
+            onClick={() => setChatWidgetOpen(false)}
+            className="absolute top-2 right-2 p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
+            aria-label="Minimize chat"
+            title="Minimize chat"
+          >
+            <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </motion.div>
+      ) : (
+        <motion.button
+          onClick={() => setChatWidgetOpen(true)}
+          className="fixed bottom-4 right-4 z-50 w-16 h-16 bg-[#0F5132] hover:bg-[#0d4528] text-white rounded-full shadow-lg flex items-center justify-center transition-colors"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+          aria-label="Open chat"
+          title="Open SmartStockAI Assistant"
+        >
+          <span className="text-2xl">🤖</span>
+        </motion.button>
+      )}
     </div>
   );
 }

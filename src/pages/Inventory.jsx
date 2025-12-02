@@ -17,6 +17,7 @@ import {
 import * as motion from "motion/react-client";
 import { db } from "../lib/firebase";
 import TopNavigation from "../components/TopNavigation";
+import ChatbotPanel from "../components/ChatbotPanel";
 import { PageReady } from "../components/NProgressBar";
 import { useLowStockCount } from "../hooks/useLowStockCount";
 import { useRole } from "../hooks/useRole";
@@ -67,6 +68,7 @@ export default function Inventory() {
   const { searchQuery, filterItems, hasSearch } = useSearch();
   const { globalLowStockCount } = useLowStockCount(storeId); // Pass storeId to filter by selected store
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 1024);
+  const [chatWidgetOpen, setChatWidgetOpen] = useState(false);
 
   const defaultFormState = {
     name: "",
@@ -859,19 +861,19 @@ export default function Inventory() {
             ) : filteredItems.length === 0 ? (
               <div className="px-4 py-5 text-center">
                 {hasSearch ? (
-                  <div className="text-gray-600 dark:text-gray-400">
+                  <div className="text-gray-600 dark:text-gray-300">
                     <p className="text-sm mb-2">No items found matching "{searchQuery}"</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-500">Try a different search term</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Try a different search term</p>
                   </div>
                 ) : (
-                  <div className="text-gray-600 dark:text-gray-400 text-sm">No items yet.</div>
+                  <div className="text-gray-600 dark:text-gray-300 text-sm">No items yet.</div>
                 )}
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <div className="divide-y divide-gray-200 dark:divide-gray-700 min-w-[1000px]">
                   {/* header */}
-                  <div className="grid grid-cols-10 gap-2 px-4 py-2 text-xs uppercase tracking-wide text-gray-500">
+                  <div className="grid grid-cols-10 gap-2 px-4 py-2 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
                   <div>Name</div>
                   <div>SKU</div>
                   <div>Qty</div>
@@ -901,7 +903,7 @@ export default function Inventory() {
                     return (
                       <motion.div
                         key={it.id}
-                        className="grid grid-cols-10 gap-2 px-4 py-3 text-sm items-center"
+                        className="grid grid-cols-10 gap-2 px-4 py-3 text-sm items-center text-gray-900 dark:text-white"
                         variants={{
                           hidden: { opacity: 0, x: -20, backgroundColor: "rgba(0,0,0,0)" },
                           visible: { opacity: 1, x: 0, backgroundColor: "rgba(0,0,0,0)" },
@@ -984,6 +986,43 @@ export default function Inventory() {
           </section>
         </main>
       </div>
+
+      {/* Floating Chat Widget */}
+      {chatWidgetOpen ? (
+        <motion.div
+          className="fixed bottom-4 right-4 z-50 w-96 h-[600px] shadow-2xl"
+          initial={{ opacity: 0, scale: 0.8, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.8, y: 20 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+        >
+          <ChatbotPanel fullHeight={true} />
+          <button
+            onClick={() => setChatWidgetOpen(false)}
+            className="absolute top-2 right-2 p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
+            aria-label="Minimize chat"
+            title="Minimize chat"
+          >
+            <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </motion.div>
+      ) : (
+        <motion.button
+          onClick={() => setChatWidgetOpen(true)}
+          className="fixed bottom-4 right-4 z-50 w-16 h-16 bg-[#0F5132] hover:bg-[#0d4528] text-white rounded-full shadow-lg flex items-center justify-center transition-colors"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+          aria-label="Open chat"
+          title="Open SmartStockAI Assistant"
+        >
+          <span className="text-2xl">🤖</span>
+        </motion.button>
+      )}
     </MotionWrapper>
   );
 }
