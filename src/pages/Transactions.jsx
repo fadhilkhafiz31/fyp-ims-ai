@@ -147,6 +147,42 @@ export default function Transactions() {
     return unit ? `${base} ${unit}` : base;
   };
 
+  // Format transaction timestamp (time first, then date)
+  const formatTransactionTime = (timestamp) => {
+    if (!timestamp) return "—";
+    
+    let date;
+    if (timestamp?.toDate) {
+      // Firestore Timestamp
+      date = timestamp.toDate();
+    } else if (timestamp instanceof Date) {
+      // Regular Date object
+      date = timestamp;
+    } else if (typeof timestamp === "number" || typeof timestamp === "string") {
+      // Unix timestamp or date string
+      date = new Date(timestamp);
+    } else {
+      return "—";
+    }
+
+    // Check if date is valid
+    if (isNaN(date.getTime())) return "—";
+
+    // Format: HH:MM:SS AM/PM, MM/DD/YYYY
+    const time = date.toLocaleString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+    const dateStr = date.toLocaleString("en-US", {
+      month: "2-digit",
+      day: "2-digit",
+      year: "numeric",
+    });
+    return `${time}, ${dateStr}`;
+  };
+
   // --- Last 30 Days summary ---
   const last30 = useMemo(() => {
     const since = new Date();
@@ -276,6 +312,9 @@ export default function Transactions() {
             </p>
           </header>
 
+          {/* Location Selector */}
+          <LocationSelector />
+
           {/* Last 30 Days Visual Summary */}
           <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-900 space-y-3">
             <h2 className="font-semibold text-lg text-gray-900 dark:text-gray-100">📦 Last 30 Days Summary</h2>
@@ -329,9 +368,6 @@ export default function Transactions() {
               </div>
             )}
           </div>
-
-          {/* Location Selector */}
-          <LocationSelector />
 
           {/* Error Messages */}
           {transactionsError && (
@@ -443,9 +479,9 @@ export default function Transactions() {
 
             {/* Table header row - aligned with data rows */}
             <div className="grid grid-cols-5 gap-2 px-3 py-2 border-b bg-gray-50 dark:bg-gray-800/50 font-semibold text-sm text-gray-700 dark:text-gray-300">
-              <div>Time</div>
-              <div>Type</div>
               <div>Item</div>
+              <div className="text-center">Type</div>
+              <div>Time</div>
               <div>Qty</div>
               <div>Note</div>
             </div>
@@ -486,24 +522,22 @@ export default function Transactions() {
                     className="grid grid-cols-5 gap-2 px-3 py-2 border-b border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white"
                   >
                     <div>
-                      {t.createdAt?.toDate
-                        ? t.createdAt.toDate().toLocaleString()
-                        : "—"}
+                      {displayNameById(t.itemId || null, t.itemName || "Unknown Item")}
+                      {typeof t.balanceAfter === "number"
+                        ? ` (stock after: ${t.balanceAfter})`
+                        : ""}
                     </div>
                     <div
                       className={
                         (t.type || "IN") === "OUT"
-                          ? "text-red-600 dark:text-red-400 font-medium"
-                          : "text-green-600 dark:text-green-400 font-medium"
+                          ? "text-red-600 dark:text-red-400 font-medium text-center"
+                          : "text-green-600 dark:text-green-400 font-medium text-center"
                       }
                     >
                       {t.type || "IN"}
                     </div>
                     <div>
-                      {displayNameById(t.itemId || null, t.itemName || "Unknown Item")}
-                      {typeof t.balanceAfter === "number"
-                        ? ` (stock after: ${t.balanceAfter})`
-                        : ""}
+                      {formatTransactionTime(t.createdAt)}
                     </div>
                     <div>{t.qty ?? 0}</div>
                     <div className="truncate">

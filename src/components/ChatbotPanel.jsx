@@ -129,7 +129,7 @@ export default function ChatbotPanel({ fullHeight = false }) {
               className={
                 "inline-block max-w-[85%] px-3 py-2 rounded-lg text-sm " +
                 (m.role === "user"
-                  ? "bg-blue-600 text-white"
+                  ? "bg-[#0F5132] text-white"
                   : "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white")
               }
               style={{ whiteSpace: "pre-line" }}
@@ -176,12 +176,12 @@ export default function ChatbotPanel({ fullHeight = false }) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask about an item, e.g., 'Do you have Beras Faiza 5KG?'"
-          className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500 dark:placeholder-gray-400"
+          className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0F5132] placeholder-gray-500 dark:placeholder-gray-400"
         />
         <motion.button
           type="submit"
           disabled={sending}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-md flex items-center gap-2"
+          className="px-4 py-2 bg-[#0F5132] hover:bg-[#0d4528] disabled:opacity-50 text-white rounded-md flex items-center gap-2"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           transition={{ duration: 0.2 }}

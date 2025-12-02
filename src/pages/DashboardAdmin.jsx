@@ -277,6 +277,7 @@ export default function DashboardAdmin() {
   const { globalLowStockCount } = useLowStockCount(storeId); // Pass storeId to filter by selected store
   const [inventory, setInventory] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [chatWidgetOpen, setChatWidgetOpen] = useState(false);
 
   // ============================================
   // Effects
@@ -444,17 +445,45 @@ export default function DashboardAdmin() {
           <section>
             <LocationSelector />
           </section>
-
-          {/* Chatbot Section */}
-          <section id="chatbot">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-2xl">🤖</span>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">SmartStockAI Assistant</h2>
-            </div>
-            <ChatbotPanel />
-          </section>
         </main>
       </div>
+
+      {/* Floating Chat Widget */}
+      {chatWidgetOpen ? (
+        <motion.div
+          className="fixed bottom-4 right-4 z-50 w-96 h-[600px] shadow-2xl"
+          initial={{ opacity: 0, scale: 0.8, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.8, y: 20 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+        >
+          <ChatbotPanel fullHeight={true} />
+          <button
+            onClick={() => setChatWidgetOpen(false)}
+            className="absolute top-2 right-2 p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
+            aria-label="Minimize chat"
+            title="Minimize chat"
+          >
+            <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </motion.div>
+      ) : (
+        <motion.button
+          onClick={() => setChatWidgetOpen(true)}
+          className="fixed bottom-4 right-4 z-50 w-16 h-16 bg-[#0F5132] hover:bg-[#0d4528] text-white rounded-full shadow-lg flex items-center justify-center transition-colors"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+          aria-label="Open chat"
+          title="Open SmartStockAI Assistant"
+        >
+          <span className="text-2xl">🤖</span>
+        </motion.button>
+      )}
     </div>
   );
 }
