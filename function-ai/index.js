@@ -14,6 +14,11 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { defineSecret } = require("firebase-functions/params");
 const geminiApiKeySecret = defineSecret("GEMINI_API_KEY");
 
+// ============================================
+// API Key is stored securely in Firebase Secrets
+// Set it using: firebase functions:secrets:set GEMINI_API_KEY
+// ============================================
+
 // Initialize Dialogflow client with explicit project configuration
 // This ensures it uses Application Default Credentials from Firebase Functions
 let sessionClient;
@@ -273,20 +278,59 @@ async function getInventoryContext() {
       return "No inventory items found.";
     }
 
-    // Format each item as a readable string
-    const formattedItems = items.map(item => {
+    // Group items by product (name + SKU combination)
+    const productMap = new Map();
+    
+    items.forEach(item => {
       const name = item.name || "Unknown";
       const sku = item.sku || "N/A";
-      const category = item.category || "Uncategorized";
+      const productKey = `${name}|${sku}`;
       const qty = Number(item.qty ?? 0);
-      const storeName = item.storeName || item.storeId || "Unknown Store";
+      const storeName = item.storeName || "Unknown Store";
       const storeId = item.storeId || "N/A";
+      const category = item.category || "Uncategorized";
       const reorderPoint = Number(item.reorderPoint ?? 5);
 
-      return `- Name: ${name}, SKU: ${sku}, Category: ${category}, Quantity: ${qty}, Store: ${storeName} (ID: ${storeId}), Reorder Point: ${reorderPoint}`;
-    }).join("\n");
+      if (!productMap.has(productKey)) {
+        productMap.set(productKey, {
+          name,
+          sku,
+          category,
+          locations: []
+        });
+      }
 
-    return `Inventory Items (Total: ${items.length}):\n${formattedItems}`;
+      // Add location info for this product
+      productMap.get(productKey).locations.push({
+        storeName: storeName.trim(),
+        storeId: storeId.trim(),
+        qty,
+        reorderPoint
+      });
+    });
+
+    // Format grouped products
+    const formattedProducts = Array.from(productMap.values()).map(product => {
+      // Sort locations by quantity (highest first)
+      const sortedLocations = product.locations.sort((a, b) => b.qty - a.qty);
+      
+      // Calculate total quantity
+      const totalQty = sortedLocations.reduce((sum, loc) => sum + loc.qty, 0);
+      
+      // Format locations list
+      const locationsList = sortedLocations.map(loc => {
+        // Ensure store name and ID match - if they don't, use the storeId to derive name
+        const displayStoreName = loc.storeName || loc.storeId || "Unknown Store";
+        return `  - ${displayStoreName} (ID: ${loc.storeId}): ${loc.qty} units`;
+      }).join("\n");
+
+      return `Product: ${product.name} (SKU: ${product.sku}, Category: ${product.category})
+Total Quantity: ${totalQty} units across ${sortedLocations.length} location(s)
+Locations:
+${locationsList}`;
+    }).join("\n\n");
+
+    return `Inventory Items (${productMap.size} unique products, ${items.length} total entries):\n\n${formattedProducts}`;
   } catch (error) {
     console.error("Error fetching inventory context:", error);
     return "Error fetching inventory data.";
@@ -319,6 +363,11 @@ async function geminiHandler(req, res) {
       });
     }
 
+    // Log API key for debugging (first 10 chars only for security)
+    const apiKeyPreview = GEMINI_API_KEY.substring(0, 10) + "...";
+    console.log(`Using Gemini API key: ${apiKeyPreview} (length: ${GEMINI_API_KEY.length})`);
+    console.log(`API key source: SECRET`);
+
     // Fetch inventory context
     console.log("Fetching inventory context for Gemini...");
     const inventoryContext = await getInventoryContext();
@@ -337,22 +386,31 @@ Today's Date: ${formatTodayDate()}
 Instructions:
 - Answer questions about inventory, stock levels, product availability, and store locations
 - Use the inventory information provided above to give accurate, specific answers
+- When listing locations for a product, ensure the store name matches the store ID correctly
+- Do not show the Store ID in the response
+- Group all locations for the same product together
+- Calculate and show total quantities when relevant
 - If a product is not found, suggest similar items if available
 - Be helpful, concise, and professional
 - If asked about something not related to inventory, politely redirect to inventory-related topics
+- Always verify that store names and store IDs match correctly before reporting them
+- Format your responses in plain text without markdown formatting (no asterisks, no bold, no special formatting)
+- Use simple, clean text with clear line breaks and bullet points using dashes (-) instead of markdown
+- Keep the response natural and readable
 
 User Question: ${message}`;
 
     console.log("Sending request to Gemini...");
 
     // Try models in order of preference with fallback
-    // Start with more stable/available models first
+    // Prioritize Gemini 2.5 Flash as requested
     const modelsToTry = [
-      "gemini-pro",
-      "gemini-1.5-pro",
-      "gemini-1.5-pro-latest",
-      "gemini-1.5-flash-latest",
-      "gemini-1.5-flash"
+      "gemini-2.5-flash",      // Primary: Gemini 2.5 Flash (stable)
+      "gemini-2.5-flash-exp",  // Fallback: 2.5 experimental if stable not available
+      "gemini-2.0-flash-exp",  // Fallback: 2.0 experimental
+      "gemini-2.0-flash",      // Fallback: 2.0 stable
+      "gemini-1.5-flash-latest", // Last resort: 1.5 latest
+      "gemini-1.5-flash"        // Final fallback: 1.5 stable
     ];
 
     let lastError = null;
@@ -371,13 +429,17 @@ User Question: ${message}`;
         break;
       } catch (modelError) {
         console.error(`Model ${modelName} failed:`, modelError.message);
+        console.error(`Full error:`, JSON.stringify(modelError, null, 2));
         lastError = modelError;
         // Continue to next model
       }
     }
 
     if (!text) {
-      throw new Error(`All models (${modelsToTry.join(", ")}) failed. Last error: ${lastError?.message || "Unknown error"}`);
+      const errorDetails = lastError?.message || "Unknown error";
+      const errorCode = lastError?.code || "NO_ERROR_CODE";
+      console.error(`All models failed. Last error: ${errorDetails} (Code: ${errorCode})`);
+      throw new Error(`All models (${modelsToTry.join(", ")}) failed. Last error: ${errorDetails}. Error code: ${errorCode}`);
     }
 
     console.log("Gemini response received");
@@ -390,9 +452,18 @@ User Question: ${message}`;
 
   } catch (error) {
     console.error("Gemini handler error:", error);
+    console.error("Error stack:", error.stack);
+    console.error("Error details:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    
+    // Provide more detailed error message
+    const errorMessage = error.message || "Unknown error";
+    const errorCode = error.code || "UNKNOWN";
+    
     return res.status(500).json({
       error: "Internal server error",
-      response: `Sorry, I encountered an error while processing your request: ${error.message || "Unknown error"}. Please try again later.`
+      errorCode: errorCode,
+      errorDetails: errorMessage,
+      response: `Sorry, I encountered an error while processing your request: ${errorMessage}. Please try again later. If the issue persists, the model may not be available in your region or account.`
     });
   }
 }
