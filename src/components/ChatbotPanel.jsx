@@ -1,16 +1,82 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as motion from "motion/react-client";
 import { useStore } from "../contexts/StoreContext";
+import { useRole } from "../hooks/useRole";
+
+// Helper function to get localStorage key for a specific role
+const getStorageKey = (role) => {
+  if (!role) return null;
+  return `messages_${role}`;
+};
+
+// Helper function to load messages for a specific role
+const loadMessages = (role) => {
+  const storageKey = getStorageKey(role);
+  if (!storageKey) {
+    // No role, return default welcome message
+    return [{ role: "assistant", text: "Hi! I can help check item availability and stock levels." }];
+  }
+
+  const saved = localStorage.getItem(storageKey);
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      // Validate that parsed data is an array
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    } catch (error) {
+      console.warn(`Failed to parse saved chat messages for role ${role}:`, error);
+    }
+  }
+  // Default welcome message if no saved messages for this role
+  return [{ role: "assistant", text: "Hi! I can help check item availability and stock levels." }];
+};
+
+// Helper function to save messages for a specific role
+const saveMessages = (role, messages) => {
+  const storageKey = getStorageKey(role);
+  if (!storageKey) {
+    // No role, don't save (user is logged out)
+    return;
+  }
+  localStorage.setItem(storageKey, JSON.stringify(messages));
+};
 
 export default function ChatbotPanel({ fullHeight = false }) {
   const webhookUrl = useMemo(() => import.meta.env.VITE_AI_WEBHOOK_URL || "", []);
   const { storeName, storeId } = useStore();
+  const { role, ready } = useRole();
+  
+  // Initialize messages state - will be updated when role is ready
   const [messages, setMessages] = useState([
     { role: "assistant", text: "Hi! I can help check item availability and stock levels." },
   ]);
+  
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const endRef = useRef(null);
+
+  // Load messages when role changes or becomes ready
+  useEffect(() => {
+    if (!ready) return; // Wait for role to be ready
+    
+    if (!role) {
+      // User logged out - clear messages but don't delete other roles' messages
+      setMessages([{ role: "assistant", text: "Hi! I can help check item availability and stock levels." }]);
+      return;
+    }
+    
+    // Load messages for the current role
+    const roleMessages = loadMessages(role);
+    setMessages(roleMessages);
+  }, [role, ready]);
+
+  // Save messages to localStorage whenever they change (only if role is available)
+  useEffect(() => {
+    if (!ready || !role) return; // Don't save if no role (logged out)
+    saveMessages(role, messages);
+  }, [messages, role, ready]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
