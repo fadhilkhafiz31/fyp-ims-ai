@@ -200,7 +200,7 @@ function OutOfStockCard({ item, index }) {
 
   return (
     <motion.div
-      className="relative border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-white dark:bg-gray-900 hover:shadow-lg transition-shadow"
+      className="relative border-2 border-gray-300 dark:border-gray-500 rounded-lg overflow-hidden bg-white dark:bg-gray-900 hover:shadow-lg transition-shadow"
       initial={{ opacity: 0, scale: 0.9, y: 20 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={{
@@ -373,7 +373,7 @@ export default function DashboardAdmin() {
             {lowStockItems.length === 0 ? (
               <motion.div
                 key={`all-in-stock-${storeId || 'all'}-${lowStockItems.length}`}
-                className="bg-white dark:bg-gray-900 rounded-xl p-12 text-center border border-gray-200 dark:border-gray-700"
+                className="bg-white dark:bg-gray-900 rounded-xl p-12 text-center border border-gray-200 dark:border-gray-600"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, ease: "easeOut" }}

@@ -78,19 +78,15 @@ export default function ChatbotPanel({ fullHeight = false }) {
 
     setSending(true);
     try {
-      // Try Dialogflow detect-intent passthrough first (ensure no double slash)
-      const detectUrl = `${webhookUrl.replace(/\/$/, "")}/detect-intent`;
-      const res = await fetch(detectUrl, {
+      // Call Gemini /chat endpoint (ensure no double slash)
+      const chatUrl = `${webhookUrl.replace(/\/$/, "")}/chat`;
+      const res = await fetch(chatUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          text, 
-          languageCode: "en",
-          storeId: storeId || "",
-        }),
+        body: JSON.stringify({ message: text }),
       });
       const data = await res.json().catch(() => ({}));
-      const reply = data?.fulfillmentText || "Sorry, I couldn't process that.";
+      const reply = data?.response || data?.fulfillmentText || "Sorry, I couldn't process that.";
       setMessages((m) => [...m, { role: "assistant", text: reply }]);
     } catch (_e) {
       setMessages((m) => [...m, { role: "assistant", text: "Network error. Please try again." }]);
@@ -100,12 +96,12 @@ export default function ChatbotPanel({ fullHeight = false }) {
   }
 
   const containerClasses =
-    "border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-900 overflow-hidden flex flex-col";
+    "border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-900 overflow-hidden flex flex-col";
   return (
     <div className={`${containerClasses} ${fullHeight ? "h-full" : ""}`}>
-      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 space-y-3">
+      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-600 space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold">SmartStock Assistant</h2>
+          <h2 className="font-semibold text-gray-900 dark:text-white">SmartStock Assistant</h2>
           {!import.meta.env.VITE_AI_WEBHOOK_URL && import.meta.env.DEV && (
             <span className="text-xs text-amber-600 dark:text-amber-400">Demo mode</span>
           )}
@@ -134,7 +130,7 @@ export default function ChatbotPanel({ fullHeight = false }) {
                 "inline-block max-w-[85%] px-3 py-2 rounded-lg text-sm " +
                 (m.role === "user"
                   ? "bg-blue-600 text-white"
-                  : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100")
+                  : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100")
               }
               style={{ whiteSpace: "pre-line" }}
               whileHover={{ scale: 1.02 }}
@@ -174,13 +170,13 @@ export default function ChatbotPanel({ fullHeight = false }) {
         <div ref={endRef} />
       </div>
 
-      <form onSubmit={handleSend} className="p-3 border-t border-gray-200 dark:border-gray-700 flex gap-2">
+      <form onSubmit={handleSend} className="p-3 border-t border-gray-200 dark:border-gray-600 flex gap-2">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask about an item, e.g., 'Do you have Beras Faiza 5KG?'"
-          className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500 dark:placeholder-gray-400"
         />
         <motion.button
           type="submit"
