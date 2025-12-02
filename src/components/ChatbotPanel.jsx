@@ -130,7 +130,7 @@ export default function ChatbotPanel({ fullHeight = false }) {
                 "inline-block max-w-[85%] px-3 py-2 rounded-lg text-sm " +
                 (m.role === "user"
                   ? "bg-blue-600 text-white"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100")
+                  : "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white")
               }
               style={{ whiteSpace: "pre-line" }}
               whileHover={{ scale: 1.02 }}

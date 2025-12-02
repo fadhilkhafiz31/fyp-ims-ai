@@ -417,9 +417,9 @@ export default function Transactions() {
           </form>
 
           {/* Full transaction list */}
-          <div className="border rounded">
+          <div className="border border-gray-200 dark:border-gray-700 rounded">
             {/* Header row with search info and total count */}
-            <div className="flex items-center justify-between px-3 py-2 border-b">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-3">
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100">Transactions</h3>
                 {hasSearch && (
@@ -483,7 +483,7 @@ export default function Transactions() {
                 .map((t) => (
                   <div
                     key={t.id}
-                    className="grid grid-cols-5 gap-2 px-3 py-2 border-b text-sm"
+                    className="grid grid-cols-5 gap-2 px-3 py-2 border-b border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white"
                   >
                     <div>
                       {t.createdAt?.toDate
@@ -493,8 +493,8 @@ export default function Transactions() {
                     <div
                       className={
                         (t.type || "IN") === "OUT"
-                          ? "text-red-600 font-medium"
-                          : "text-green-600 font-medium"
+                          ? "text-red-600 dark:text-red-400 font-medium"
+                          : "text-green-600 dark:text-green-400 font-medium"
                       }
                     >
                       {t.type || "IN"}

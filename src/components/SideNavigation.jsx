@@ -88,7 +88,7 @@ export default function SideNavigation({ activeItemCount, onClose }) {
 
     return (
         <motion.aside
-            className="w-64 bg-white dark:!bg-gray-700 border-r border-gray-200 dark:border-gray-700 h-[calc(100vh-4rem)] overflow-y-auto fixed left-0 top-16 z-40"
+            className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 h-[calc(100vh-4rem)] overflow-y-auto fixed left-0 top-16 z-40"
             initial={{ x: -256, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -256, opacity: 0 }}
