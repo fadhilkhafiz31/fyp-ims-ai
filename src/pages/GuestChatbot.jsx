@@ -30,16 +30,12 @@ const LOW_STOCK_THRESHOLD = 5;
 function SideNavigation({ activeItemCount, onClose, toast }) {
   const location = useLocation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
-  const isDashboardActive = location.pathname === "/dashboard";
+  const isDashboardActive = location.pathname === "/guest-chatbot";
+  const isChatbotActive = location.pathname === "/guest-chatbot-full";
 
   const menuItems = [
-    { icon: "grid", label: "Dashboard", path: "/dashboard", active: isDashboardActive },
-    { icon: "transaction", label: "Transaction", path: "/transactions" },
-    { icon: "bell", label: "Stock Notification", path: "/stock-notification", badge: activeItemCount || 0 },
-    { icon: "chatbot", label: "SmartStockAI Assistant", path: "/chatbot" },
-    { icon: "inventory", label: "Inventory", path: "/inventory" },
-    { icon: "user", label: "My Profile", path: "#", isMock: true },
-    { icon: "gear", label: "Settings", path: "#", isMock: true },
+    { icon: "grid", label: "Dashboard", path: "/guest-chatbot", active: isDashboardActive },
+    { icon: "chatbot", label: "SmartStockAI Assistant", path: "/guest-chatbot-full", active: isChatbotActive },
     { icon: "logout", label: "Log Out", path: "/login" },
     { icon: "question", label: "Help & Support", path: "#", isMock: true },
   ];
@@ -271,10 +267,6 @@ function OutOfStockCard({ item, index }) {
 // Main Component
 // ============================================
 export default function GuestChatbot() {
-  // Debug: Verify component is loading
-  console.log('🔵 GuestChatbot component loaded!', new Date().toISOString());
-  console.log('🔵 Current URL:', window.location.pathname);
-  
   // Hooks must be called unconditionally
   const { user } = useAuth();
   const { role } = useRole();
@@ -284,8 +276,11 @@ export default function GuestChatbot() {
   const [inventory, setInventory] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [chatWidgetOpen, setChatWidgetOpen] = useState(false);
+  const [stockNotificationsExpanded, setStockNotificationsExpanded] = useState(false);
   
   // Debug: Log state values
+  console.log('🔵 GuestChatbot component loaded!', new Date().toISOString());
+  console.log('🔵 Current URL:', window.location.pathname);
   console.log('🔵 GuestChatbot state:', { 
     sidebarOpen, 
     storeId, 
@@ -377,110 +372,112 @@ export default function GuestChatbot() {
         )}
 
         {/* Main Content Area */}
-        <main className={`flex-1 ${sidebarOpen ? "ml-64" : ""} p-6 space-y-8`}>
-          {/* Header */}
-          <header className="space-y-1">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Guest Chatbot</h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Welcome, <span className="font-medium text-gray-900 dark:text-gray-200">Guest</span>
-            </p>
-          </header>
-
-          {/* Stock Notification Section */}
-          <section>
-            <div className="flex items-center gap-2 mb-4">
-              <svg
-                className="w-6 h-6 text-yellow-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                />
-              </svg>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Stock Notification</h2>
+        <main className={`flex-1 ${sidebarOpen ? "ml-64" : ""} p-6 flex flex-col min-h-[calc(100vh-4rem)]`}>
+          {/* Compact Location Selector - Top */}
+          <section className="mb-4">
+            <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
+              <LocationSelector />
             </div>
+          </section>
 
-            {lowStockItems.length === 0 ? (
-              <motion.div
-                key={`all-in-stock-${storeId || 'all'}-${lowStockItems.length}`}
-                className="bg-white dark:bg-gray-900 rounded-xl p-12 text-center border border-gray-200 dark:border-gray-600"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
+          {/* Large Chat Interface - Main Focus */}
+          <section className="flex-1 flex flex-col min-h-0 mb-4">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg flex flex-col flex-1 min-h-0">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-3">
+                  <span className="text-3xl">🤖</span>
+              <div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">SmartStockAI Assistant</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Ask me about product availability and stock levels</p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex-1 min-h-0 p-4">
+                <ChatbotPanel fullHeight={true} />
+              </div>
+            </div>
+          </section>
+
+          {/* Collapsible Stock Notifications - Bottom */}
+          <section>
+            <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+              <button
+                onClick={() => setStockNotificationsExpanded(!stockNotificationsExpanded)}
+                className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
-                <motion.div
-                  className="inline-block p-4 bg-green-100 dark:bg-green-900/40 rounded-full mb-4"
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{
-                    duration: 0.6,
-                    delay: 0.2,
-                    type: "spring",
-                    stiffness: 200,
-                    damping: 15
-                  }}
-                >
+                <div className="flex items-center gap-2">
                   <svg
-                    className="w-12 h-12 text-green-600 dark:text-green-400"
+                    className="w-5 h-5 text-yellow-500"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <motion.path
+                    <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                      initial={{ pathLength: 0, opacity: 0 }}
-                      animate={{ pathLength: 1, opacity: 1 }}
-                      transition={{
-                        duration: 0.8,
-                        delay: 0.5,
-                        ease: "easeInOut"
-                      }}
+                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                     />
                   </svg>
-                </motion.div>
-                <motion.h3
-                  className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.4, delay: 0.6 }}
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    Stock Notifications
+                  </h3>
+                  {lowStockItems.length > 0 && (
+                    <span className="px-2 py-1 text-xs font-semibold bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded-full">
+                      {lowStockItems.length}
+                    </span>
+                  )}
+                </div>
+                <svg
+                  className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${stockNotificationsExpanded ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  All Items In Stock
-                </motion.h3>
-                <motion.p
-                  className="text-sm text-gray-600 dark:text-gray-400"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.4, delay: 0.7 }}
-                >
-                  No items require restocking at this time.
-                </motion.p>
-              </motion.div>
-            ) : (
-              <div
-                key={`grid-${lowStockItems.length}-${lowStockItems.map(i => i.id).join('-')}`}
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4"
-              >
-                {lowStockItems.map((item, index) => (
-                  <OutOfStockCard key={item.id} item={item} index={index} />
-                ))}
-              </div>
-            )}
-          </section>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
 
-          {/* Choose Location Section */}
-          <section>
-            <LocationSelector />
+              {stockNotificationsExpanded && (
+                <motion.div
+                  className="px-4 pb-4"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  {lowStockItems.length === 0 ? (
+                    <div className="py-8 text-center">
+                      <div className="inline-block p-3 bg-green-100 dark:bg-green-900/40 rounded-full mb-3">
+                        <svg
+                          className="w-8 h-8 text-green-600 dark:text-green-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">All items are in stock</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 pt-2">
+                      {lowStockItems.map((item, index) => (
+                        <OutOfStockCard key={item.id} item={item} index={index} />
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </div>
           </section>
         </main>
-      </div>
+        </div>
 
       {/* Floating Chat Widget */}
       {chatWidgetOpen ? (

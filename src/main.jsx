@@ -23,6 +23,8 @@ const Inventory = lazy(() => import("./pages/Inventory"));
 const Transactions = lazy(() => import("./pages/Transactions"));
 const StockNotification = lazy(() => import("./pages/StockNotification"));
 const Chatbot = lazy(() => import("./pages/Chatbot"));
+const GuestChatbot = lazy(() => import("./pages/GuestChatbot"));
+const GuestChatbotFull = lazy(() => import("./pages/GuestChatbotFull"));
 const GeminiChatTest = lazy(() => import("./pages/GeminiChatTest"));
 const About = lazy(() => import("./pages/About"));
 const Contact = lazy(() => import("./pages/Contact"));
@@ -59,6 +61,40 @@ function AnimatedRoutes() {
                   <Register />
                 </motion.div>
               } 
+            />
+
+            {/* Guest Chatbot - public route */}
+            <Route
+              path="/guest-chatbot"
+              element={
+                <motion.div
+                  key="guest-chatbot"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <PageReady />
+                  <GuestChatbot />
+                </motion.div>
+              }
+            />
+
+            {/* Guest Chatbot Full - Full page chatbot for guests */}
+            <Route
+              path="/guest-chatbot-full"
+              element={
+                <motion.div
+                  key="guest-chatbot-full"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <PageReady />
+                  <GuestChatbotFull />
+                </motion.div>
+              }
             />
 
             {/* Public routes with AppLayout - accessible without authentication */}
