@@ -103,7 +103,7 @@ function SideNavigation({ activeItemCount, onClose, toast }) {
   const handleMockClick = (e, item) => {
     if (item.isMock) {
       e.preventDefault();
-      toast.info(`${item.label} - Coming soon!`);
+      toast.info(`${item.label} - Coming late!`);
     }
   };
 
