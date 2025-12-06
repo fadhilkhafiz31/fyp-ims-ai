@@ -358,7 +358,7 @@ export default function GuestChatbot() {
       <PageReady />
 
       {/* Top Navigation */}
-      <TopNavigation role="guest" onToggleSidebar={() => setSidebarOpen((v) => !v)} />
+      <TopNavigation role={role || "guest"} onToggleSidebar={() => setSidebarOpen((v) => !v)} />
 
       {/* Sidebar + Main Content */}
       <div className="flex">
@@ -373,33 +373,15 @@ export default function GuestChatbot() {
 
         {/* Main Content Area */}
         <main className={`flex-1 ${sidebarOpen ? "ml-64" : ""} p-6 flex flex-col min-h-[calc(100vh-4rem)]`}>
-          {/* Compact Location Selector - Top */}
+          {/* Location Selector - Top */}
           <section className="mb-4">
             <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
               <LocationSelector />
             </div>
           </section>
 
-          {/* Large Chat Interface - Main Focus */}
-          <section className="flex-1 flex flex-col min-h-0 mb-4">
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg flex flex-col flex-1 min-h-0">
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-3">
-                  <span className="text-3xl">🤖</span>
-              <div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">SmartStockAI Assistant</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Ask me about product availability and stock levels</p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex-1 min-h-0 p-4">
-                <ChatbotPanel fullHeight={true} />
-              </div>
-            </div>
-          </section>
-
-          {/* Collapsible Stock Notifications - Bottom */}
-          <section>
+          {/* Collapsible Stock Notifications - Middle */}
+          <section className="mb-4">
             <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
               <button
                 onClick={() => setStockNotificationsExpanded(!stockNotificationsExpanded)}
@@ -474,6 +456,24 @@ export default function GuestChatbot() {
                   )}
                 </motion.div>
               )}
+            </div>
+          </section>
+
+          {/* Large Chat Interface - Bottom (takes remaining space) */}
+          <section className="flex-1 flex flex-col min-h-0">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg flex flex-col flex-1 min-h-0">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">🤖</span>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">SmartStockAI Assistant</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Ask me about product availability and stock levels</p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex-1 min-h-0 p-4">
+                <ChatbotPanel fullHeight={true} />
+              </div>
             </div>
           </section>
         </main>

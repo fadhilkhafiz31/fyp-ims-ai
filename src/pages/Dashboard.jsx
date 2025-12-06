@@ -1,8 +1,8 @@
 // src/pages/Dashboard.jsx (Router/Orchestrator)
+import { Navigate } from "react-router-dom";
 import { useRole } from "../hooks/useRole";
 import { PageReady } from "../components/NProgressBar";
 import TopNavigation from "../components/TopNavigation";
-import DashboardCustomer from "./DashboardCustomer";
 import DashboardStaff from "./DashboardStaff";
 import DashboardAdmin from "./DashboardAdmin";
 import MotionWrapper from "../components/MotionWrapper";
@@ -35,11 +35,8 @@ export default function Dashboard() {
   // ============================================
   switch (role) {
     case "customer":
-      return (
-        <MotionWrapper>
-          <DashboardCustomer />
-        </MotionWrapper>
-      );
+      // Redirect customers to guest-chatbot page
+      return <Navigate to="/guest-chatbot" replace />;
     case "staff":
       return (
         <MotionWrapper>
@@ -53,11 +50,7 @@ export default function Dashboard() {
         </MotionWrapper>
       );
     default:
-      // Fallback to customer dashboard if role is unknown
-      return (
-        <MotionWrapper>
-          <DashboardCustomer />
-        </MotionWrapper>
-      );
+      // Fallback: redirect to guest-chatbot if role is unknown (treat as customer)
+      return <Navigate to="/guest-chatbot" replace />;
   }
 }

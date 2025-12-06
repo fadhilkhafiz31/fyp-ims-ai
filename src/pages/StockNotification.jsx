@@ -356,7 +356,7 @@ useEffect(() => {
   const handleNotifySupplier = () => {
     // Default supplier WhatsApp number (format: country code + number without + or spaces)
     // Example: 60123456789 for Malaysia (+60 12-345 6789)
-    const supplierPhoneNumber = "60123456789"; // TODO: Replace with actual supplier phone number or make it configurable
+    const supplierPhoneNumber = "60146379535"; // TODO: Replace with actual supplier phone number or make it configurable
     
     // Build the message with low stock items
     const itemList = lowStockItems
