@@ -18,9 +18,11 @@ export default function TopNavigation({ role = null, onToggleSidebar = null }) {
   const isPrivileged = effectiveRole === "admin" || effectiveRole === "staff";
 
   const displayName =
-    user?.displayName ||
-    (user?.email ? user.email.split("@")[0] : null) ||
-    (effectiveRole === "customer" ? "Customer" : "User");
+    effectiveRole === "customer" 
+      ? (user?.displayName || (user?.email ? user.email.split("@")[0] : "Customer"))
+      : effectiveRole === "guest"
+      ? "customer"
+      : user?.displayName || (user?.email ? user.email.split("@")[0] : null) || "User";
 
   const storeLabel = storeName || storeId || "Select a store";
 

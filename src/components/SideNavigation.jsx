@@ -14,6 +14,7 @@ export default function SideNavigation({ activeItemCount, onClose }) {
     const isTransactionsActive = location.pathname === "/transactions";
     const isInventoryActive = location.pathname === "/inventory";
     const isChatbotActive = location.pathname === "/chatbot";
+    const isRedeemPointsActive = location.pathname === "/redeem-points";
 
     const menuItems = [
         { icon: "grid", label: "Dashboard", path: "/dashboard", active: isDashboardActive },
@@ -21,6 +22,7 @@ export default function SideNavigation({ activeItemCount, onClose }) {
         { icon: "bell", label: "Stock Notification", path: "/stock-notification", badge: activeItemCount || 0 },
         { icon: "chatbot", label: "SmartStockAI Assistant", path: "/chatbot", active: isChatbotActive },
         { icon: "inventory", label: "Inventory", path: "/inventory", active: isInventoryActive },
+        { icon: "gift", label: "Redeem Points", path: "/redeem-points", active: isRedeemPointsActive },
         { icon: "user", label: "My Profile", path: "#", isMock: true },
         { icon: "gear", label: "Settings", path: "#", isMock: true },
         { icon: "logout", label: "Log Out", path: "/login" },
@@ -46,6 +48,9 @@ export default function SideNavigation({ activeItemCount, onClose }) {
             ),
             chatbot: (
                 <span className="text-xl">🤖</span>
+            ),
+            gift: (
+                <span className="text-xl">🎁</span>
             ),
             inventory: (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
