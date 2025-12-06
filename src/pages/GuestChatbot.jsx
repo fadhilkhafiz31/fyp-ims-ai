@@ -30,14 +30,18 @@ const LOW_STOCK_THRESHOLD = 5;
 function SideNavigation({ activeItemCount, onClose, toast }) {
   const location = useLocation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const { role } = useRole();
   const isDashboardActive = location.pathname === "/guest-chatbot";
   const isChatbotActive = location.pathname === "/guest-chatbot-full";
   const isRedeemPointsActive = location.pathname === "/redeem-points";
+  const isGuest = role === "guest";
 
   const menuItems = [
     { icon: "grid", label: "Dashboard", path: "/guest-chatbot", active: isDashboardActive },
     { icon: "chatbot", label: "SmartStockAI Assistant", path: "/guest-chatbot-full", active: isChatbotActive },
-    { icon: "gift", label: "Redeem Points", path: "/redeem-points", active: isRedeemPointsActive },
+    { icon: "gift", label: "Redeem Points", path: "/redeem-points", active: isRedeemPointsActive, isGuestRestricted: isGuest },
+    { icon: "user", label: "My Profile", path: "#", isMock: true },
+    { icon: "gear", label: "Settings", path: "#", isMock: true },
     { icon: "logout", label: "Log Out", path: "/login" },
     { icon: "question", label: "Help & Support", path: "#", isMock: true },
   ];
@@ -96,15 +100,18 @@ function SideNavigation({ activeItemCount, onClose, toast }) {
         </svg>
       ),
       gift: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2v2m-2 13V8m0 0H8m4 0h4M8 8v13m8-13v13" />
-        </svg>
+        <span className="text-xl">🎁</span>
       ),
     };
     return icons[iconName] || icons.grid;
   };
 
   const handleMockClick = (e, item) => {
+    if (item.isGuestRestricted) {
+      e.preventDefault();
+      toast.info("You need to create account");
+      return;
+    }
     if (item.isMock) {
       e.preventDefault();
       toast.info(`${item.label} - Coming soon!`);
@@ -138,7 +145,9 @@ function SideNavigation({ activeItemCount, onClose, toast }) {
                 {isDarkMode ? '☀️' : '🌙'}
               </span>
             </button>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Guest Assistant</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+              {isGuest ? "Guest Assistant" : role === "customer" ? "Customer Dashboard" : "Admin Dashboard"}
+            </h2>
           </div>
           <button
             type="button"

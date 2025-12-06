@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import * as motion from "motion/react-client";
 import { useToast } from "../contexts/ToastContext";
 import { useDarkMode } from "../contexts/DarkModeContext";
+import { useRole } from "../hooks/useRole";
 import AnimatedBadge from "./ui/AnimatedBadge";
 import AnimatedIcon from "./ui/AnimatedIcon";
 
@@ -9,25 +10,32 @@ export default function SideNavigation({ activeItemCount, onClose }) {
     const location = useLocation();
     const { toast } = useToast();
     const { isDarkMode, toggleDarkMode } = useDarkMode();
+    const { role, ready } = useRole();
+    const isGuest = role === "guest";
 
     const isDashboardActive = location.pathname === "/dashboard";
     const isTransactionsActive = location.pathname === "/transactions";
     const isInventoryActive = location.pathname === "/inventory";
     const isChatbotActive = location.pathname === "/chatbot";
     const isRedeemPointsActive = location.pathname === "/redeem-points";
+    const isGuestChatbotActive = location.pathname === "/guest-chatbot";
+    const isGuestChatbotFullActive = location.pathname === "/guest-chatbot-full";
 
-    const menuItems = [
-        { icon: "grid", label: "Dashboard", path: "/dashboard", active: isDashboardActive },
-        { icon: "transaction", label: "Transaction", path: "/transactions", active: isTransactionsActive },
-        { icon: "bell", label: "Stock Notification", path: "/stock-notification", badge: activeItemCount || 0 },
-        { icon: "chatbot", label: "SmartStockAI Assistant", path: "/chatbot", active: isChatbotActive },
-        { icon: "inventory", label: "Inventory", path: "/inventory", active: isInventoryActive },
-        { icon: "gift", label: "Redeem Points", path: "/redeem-points", active: isRedeemPointsActive },
-        { icon: "user", label: "My Profile", path: "#", isMock: true },
-        { icon: "gear", label: "Settings", path: "#", isMock: true },
-        { icon: "logout", label: "Log Out", path: "/login" },
-        { icon: "question", label: "Help & Support", path: "#", isMock: true },
+    const allMenuItems = [
+        { icon: "grid", label: "Dashboard", path: isGuest ? "/guest-chatbot" : "/dashboard", active: isGuest ? isGuestChatbotActive : isDashboardActive, roles: ["admin", "staff", "customer", "guest"] },
+        { icon: "transaction", label: "Transaction", path: "/transactions", active: isTransactionsActive, roles: ["admin", "staff"] },
+        { icon: "bell", label: "Stock Notification", path: "/stock-notification", badge: activeItemCount || 0, roles: ["admin", "staff"] },
+        { icon: "chatbot", label: "SmartStockAI Assistant", path: isGuest ? "/guest-chatbot-full" : "/chatbot", active: isGuest ? isGuestChatbotFullActive : isChatbotActive, roles: ["admin", "staff", "customer", "guest"] },
+        { icon: "inventory", label: "Inventory", path: "/inventory", active: isInventoryActive, roles: ["admin", "staff"] },
+        { icon: "gift", label: "Redeem Points", path: "/redeem-points", active: isRedeemPointsActive, isGuestRestricted: isGuest, roles: ["admin", "staff", "customer", "guest"] },
+        { icon: "user", label: "My Profile", path: "#", isMock: true, roles: ["admin", "staff", "customer", "guest"] },
+        { icon: "gear", label: "Settings", path: "#", isMock: true, roles: ["admin", "staff", "customer", "guest"] },
+        { icon: "logout", label: "Log Out", path: "/login", roles: ["admin", "staff", "customer", "guest"] },
+        { icon: "question", label: "Help & Support", path: "#", isMock: true, roles: ["admin", "staff", "customer", "guest"] },
     ];
+
+    // Filter menu items based on role
+    const menuItems = ready && role ? allMenuItems.filter(item => item.roles.includes(role)) : [];
 
     const getIcon = (iconName) => {
         const icons = {
@@ -85,6 +93,11 @@ export default function SideNavigation({ activeItemCount, onClose }) {
     };
 
     const handleMockClick = (e, item) => {
+        if (item.isGuestRestricted) {
+            e.preventDefault();
+            toast.info("You need to create account");
+            return;
+        }
         if (item.isMock) {
             e.preventDefault();
             toast.info(`${item.label} - Coming soon!`);
@@ -118,7 +131,9 @@ export default function SideNavigation({ activeItemCount, onClose }) {
                                 {isDarkMode ? '☀️' : '🌙'}
                             </span>
                         </button>
-                        <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Admin Dashboard</h2>
+                        <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                            {isGuest ? "Guest Assistant" : role === "customer" ? "Customer Dashboard" : "Admin Dashboard"}
+                        </h2>
                     </div>
                     <button
                         type="button"
@@ -132,10 +147,12 @@ export default function SideNavigation({ activeItemCount, onClose }) {
                     </button>
                 </div>
                 <motion.ul
+                    key={`menu-${role}-${menuItems.length}`}
                     className="space-y-2"
                     initial="hidden"
-                    animate="visible"
+                    animate={menuItems.length > 0 ? "visible" : "hidden"}
                     variants={{
+                        hidden: {},
                         visible: {
                             transition: {
                                 staggerChildren: 0.05
@@ -146,10 +163,8 @@ export default function SideNavigation({ activeItemCount, onClose }) {
                     {menuItems.map((item, index) => (
                         <motion.li
                             key={`${item.icon}-${item.label}-${index}`}
-                            variants={{
-                                hidden: { opacity: 0, x: -20 },
-                                visible: { opacity: 1, x: 0 }
-                            }}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.3 }}
                         >
                             <Link
