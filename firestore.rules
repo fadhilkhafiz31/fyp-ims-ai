@@ -42,6 +42,19 @@ service cloud.firestore {
       allow create: if true; // Allow anyone to create contact messages
       allow read: if isAdminOrStaff(); // Only admin/staff can read messages
     }
+    
+    // Redeemed codes collection: customers can read their own redemptions, admins can read all
+    match /redeemedCodes/{codeId} {
+      // Customers can read their own redemptions
+      allow read: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
+      // Admins can read all redemptions
+      allow read: if request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // Cloud Functions (server-side) can create/update via admin SDK, no client write needed
+      allow write: if false; // No client-side writes - only via Cloud Functions
+    }
   }
 }
 

@@ -32,10 +32,12 @@ function SideNavigation({ activeItemCount, onClose, toast }) {
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const isDashboardActive = location.pathname === "/guest-chatbot";
   const isChatbotActive = location.pathname === "/guest-chatbot-full";
+  const isRedeemPointsActive = location.pathname === "/redeem-points";
 
   const menuItems = [
     { icon: "grid", label: "Dashboard", path: "/guest-chatbot", active: isDashboardActive },
     { icon: "chatbot", label: "SmartStockAI Assistant", path: "/guest-chatbot-full", active: isChatbotActive },
+    { icon: "gift", label: "Redeem Points", path: "/redeem-points", active: isRedeemPointsActive },
     { icon: "logout", label: "Log Out", path: "/login" },
     { icon: "question", label: "Help & Support", path: "#", isMock: true },
   ];
@@ -91,6 +93,11 @@ function SideNavigation({ activeItemCount, onClose, toast }) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4-4-4" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12H9" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16v1a3 3 0 01-3 3H7a3 3 0 01-3-3V7a3 3 0 013-3h3a3 3 0 013 3v1" />
+        </svg>
+      ),
+      gift: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2v2m-2 13V8m0 0H8m4 0h4M8 8v13m8-13v13" />
         </svg>
       ),
     };

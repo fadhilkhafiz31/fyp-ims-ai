@@ -1738,6 +1738,129 @@ exports.copyInventory = onCall(async (request) => {
   }
 });
 
+// ---------- Redeem Loyalty Code Function ----------
+exports.redeemLoyaltyCode = onCall(async (request) => {
+  // Security: Check authentication
+  if (!request.auth) {
+    throw new HttpsError(
+      'unauthenticated',
+      'User must be authenticated to redeem loyalty codes'
+    );
+  }
+
+  const userId = request.auth.uid;
+
+  // Check user role - only customers can redeem
+  const userDoc = await db.collection('users').doc(userId).get();
+  if (!userDoc.exists) {
+    throw new HttpsError(
+      'permission-denied',
+      'User profile not found'
+    );
+  }
+
+  const role = userDoc.data()?.role;
+  if (role !== 'customer') {
+    throw new HttpsError(
+      'permission-denied',
+      'Only customers can redeem loyalty codes'
+    );
+  }
+
+  // Validate input
+  const { code } = request.data;
+
+  if (!code || typeof code !== 'string' || !code.trim()) {
+    throw new HttpsError(
+      'invalid-argument',
+      'Receipt code is required'
+    );
+  }
+
+  const codeTrimmed = code.trim().toUpperCase();
+
+  try {
+    // Use Firestore transaction for atomic operations
+    return await db.runTransaction(async (transaction) => {
+      // 1. Check if transaction exists (code is transaction ID)
+      const transactionRef = db.collection('transactions').doc(codeTrimmed);
+      const transactionDoc = await transaction.get(transactionRef);
+
+      if (!transactionDoc.exists) {
+        throw new HttpsError(
+          'not-found',
+          'Invalid receipt code. Please check your receipt and try again.'
+        );
+      }
+
+      const transactionData = transactionDoc.data();
+
+      // 2. Check if code has already been redeemed
+      const redeemedCodeRef = db.collection('redeemedCodes').doc(codeTrimmed);
+      const redeemedCodeDoc = await transaction.get(redeemedCodeRef);
+
+      if (redeemedCodeDoc.exists) {
+        throw new HttpsError(
+          'already-exists',
+          'This code has already been redeemed. Each receipt code can only be used once.'
+        );
+      }
+
+      // 3. Calculate points based on purchase amount (1 point per RM, floored)
+      const totalAmount = Number(transactionData.totalAmount) || 0;
+      const pointsAwarded = Math.floor(totalAmount);
+
+      if (pointsAwarded <= 0) {
+        throw new HttpsError(
+          'invalid-argument',
+          'This transaction does not qualify for loyalty points.'
+        );
+      }
+
+      // 4. Get current user points
+      const userRef = db.collection('users').doc(userId);
+      const userDoc = await transaction.get(userRef);
+      const currentPoints = Number(userDoc.data()?.loyaltyPoints || 0);
+      const newPoints = currentPoints + pointsAwarded;
+
+      // 5. Atomically update user points and mark code as redeemed
+      transaction.update(userRef, {
+        loyaltyPoints: newPoints,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      transaction.set(redeemedCodeRef, {
+        userId: userId,
+        code: codeTrimmed,
+        pointsAwarded: pointsAwarded,
+        transactionId: codeTrimmed,
+        transactionAmount: totalAmount,
+        redeemedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      return {
+        success: true,
+        pointsAwarded: pointsAwarded,
+        totalPoints: newPoints,
+        message: `Successfully redeemed ${pointsAwarded} points!`
+      };
+    });
+  } catch (error) {
+    console.error("Error redeeming loyalty code:", error);
+    
+    // Re-throw HttpsError as-is
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    
+    // Wrap other errors
+    throw new HttpsError(
+      'internal',
+      `Failed to redeem code: ${error.message}`
+    );
+  }
+});
+
 // ---------- export ----------
 // Secret binding is optional - will fallback to environment variable if secret is not set
 // Option 1 (Recommended): Set via Firebase CLI: firebase functions:secrets:set GEMINI_API_KEY

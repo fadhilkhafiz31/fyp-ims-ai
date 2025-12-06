@@ -28,6 +28,7 @@ const GuestChatbotFull = lazy(() => import("./pages/GuestChatbotFull"));
 const GeminiChatTest = lazy(() => import("./pages/GeminiChatTest"));
 const About = lazy(() => import("./pages/About"));
 const Contact = lazy(() => import("./pages/Contact"));
+const RedeemPoints = lazy(() => import("./pages/RedeemPoints"));
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -224,6 +225,27 @@ function AnimatedRoutes() {
                   <ProtectedRoute allowGuest={true}>
                     <PageReady />
                     <Chatbot />
+                  </ProtectedRoute>
+                </motion.div>
+              }
+            />
+
+            {/* ✅ Redeem Points — only customers can access */}
+            <Route
+              path="/redeem-points"
+              element={
+                <motion.div
+                  key="redeem-points"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <ProtectedRoute>
+                    <RoleGuard allow={["customer"]}>
+                      <PageReady />
+                      <RedeemPoints />
+                    </RoleGuard>
                   </ProtectedRoute>
                 </motion.div>
               }
