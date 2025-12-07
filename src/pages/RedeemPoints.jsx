@@ -14,12 +14,12 @@ function CustomerSideNavigation({ onClose, toast }) {
   const location = useLocation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const isDashboardActive = location.pathname === "/dashboard";
-  const isChatbotActive = location.pathname === "/chatbot";
+  const isChatbotActive = location.pathname === "/guest-chatbot-full";
   const isRedeemPointsActive = location.pathname === "/redeem-points";
 
   const menuItems = [
     { icon: "grid", label: "Dashboard", path: "/dashboard", active: isDashboardActive },
-    { icon: "chatbot", label: "SmartStockAI Assistant", path: "/chatbot", active: isChatbotActive },
+    { icon: "chatbot", label: "SmartStockAI Assistant", path: "/guest-chatbot-full", active: isChatbotActive },
     { icon: "gift", label: "Redeem Points", path: "/redeem-points", active: isRedeemPointsActive },
     { icon: "user", label: "My Profile", path: "#", isMock: true },
     { icon: "gear", label: "Settings", path: "#", isMock: true },

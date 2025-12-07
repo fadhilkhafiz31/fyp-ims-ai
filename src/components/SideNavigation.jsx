@@ -25,7 +25,7 @@ export default function SideNavigation({ activeItemCount, onClose }) {
         { icon: "grid", label: "Dashboard", path: isGuest ? "/guest-chatbot" : "/dashboard", active: isGuest ? isGuestChatbotActive : isDashboardActive, roles: ["admin", "staff", "customer", "guest"] },
         { icon: "transaction", label: "Transaction", path: "/transactions", active: isTransactionsActive, roles: ["admin", "staff"] },
         { icon: "bell", label: "Stock Notification", path: "/stock-notification", badge: activeItemCount || 0, roles: ["admin", "staff"] },
-        { icon: "chatbot", label: "SmartStockAI Assistant", path: isGuest ? "/guest-chatbot-full" : "/chatbot", active: isGuest ? isGuestChatbotFullActive : isChatbotActive, roles: ["admin", "staff", "customer", "guest"] },
+        { icon: "chatbot", label: "SmartStockAI Assistant", path: (isGuest || role === "customer") ? "/guest-chatbot-full" : "/chatbot", active: (isGuest || role === "customer") ? isGuestChatbotFullActive : isChatbotActive, roles: ["admin", "staff", "customer", "guest"] },
         { icon: "inventory", label: "Inventory", path: "/inventory", active: isInventoryActive, roles: ["admin", "staff"] },
         { icon: "gift", label: "Redeem Points", path: "/redeem-points", active: isRedeemPointsActive, isGuestRestricted: isGuest, roles: ["admin", "staff", "customer", "guest"] },
         { icon: "user", label: "My Profile", path: "#", isMock: true, roles: ["admin", "staff", "customer", "guest"] },
