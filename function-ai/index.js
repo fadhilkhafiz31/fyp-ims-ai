@@ -309,6 +309,87 @@ async function getInventoryContext() {
       });
     });
 
+    // Deduplicate locations and aggregate quantities for each product
+    productMap.forEach((product, productKey) => {
+      const locationMap = new Map();
+      
+      product.locations.forEach(loc => {
+        // Normalize store name and ID for comparison
+        const normalizedStoreName = (loc.storeName || "").trim().toLowerCase().replace(/\s+/g, " ");
+        const normalizedStoreId = (loc.storeId || "").trim().toLowerCase();
+        
+        // Try to find existing location by storeId first (most unique identifier)
+        let foundKey = null;
+        if (normalizedStoreId && normalizedStoreId !== "n/a") {
+          // Look for existing entry with same storeId
+          for (const [key, existing] of locationMap.entries()) {
+            const existingStoreId = (existing.storeId || "").trim().toLowerCase();
+            if (existingStoreId === normalizedStoreId && existingStoreId !== "n/a") {
+              foundKey = key;
+              break;
+            }
+          }
+        }
+        
+        // If no storeId match, try matching by normalized storeName
+        if (!foundKey && normalizedStoreName && normalizedStoreName !== "unknown store") {
+          for (const [key, existing] of locationMap.entries()) {
+            const existingStoreName = (existing.storeName || "").trim().toLowerCase().replace(/\s+/g, " ");
+            if (existingStoreName === normalizedStoreName) {
+              foundKey = key;
+              break;
+            }
+          }
+        }
+        
+        if (foundKey) {
+          // Sum quantities for duplicate locations
+          const existing = locationMap.get(foundKey);
+          existing.qty += loc.qty;
+          // Update storeName if current one is better (longer/more complete)
+          if (loc.storeName && loc.storeName.trim() && 
+              (!existing.storeName || loc.storeName.trim().length > existing.storeName.length)) {
+            existing.storeName = loc.storeName.trim();
+          }
+        } else {
+          // Store name validation: prefer storeName, but don't use storeId if it looks like an ID
+          let displayStoreName = null;
+          if (loc.storeName && loc.storeName.trim()) {
+            displayStoreName = loc.storeName.trim();
+          } else if (loc.storeId && loc.storeId.trim()) {
+            // Only use storeId as display name if it doesn't look like an ID
+            const storeIdTrimmed = loc.storeId.trim();
+            const looksLikeId = storeIdTrimmed.includes("-") || 
+                                storeIdTrimmed.includes("_") || 
+                                (storeIdTrimmed.length < 15 && !storeIdTrimmed.includes(" "));
+            // If it doesn't look like an ID (has spaces, is long enough, etc.), use it
+            if (!looksLikeId && storeIdTrimmed.length > 5) {
+              displayStoreName = storeIdTrimmed;
+            }
+          }
+          
+          // If we still don't have a display name, skip this entry (invalid data)
+          if (!displayStoreName) {
+            return;
+          }
+          
+          // Use normalized storeName as key for deduplication
+          const normalizedDisplayName = displayStoreName.toLowerCase().replace(/\s+/g, " ");
+          const locationKey = normalizedDisplayName || normalizedStoreId || `location_${locationMap.size}`;
+          
+          locationMap.set(locationKey, {
+            storeName: displayStoreName,
+            storeId: loc.storeId.trim() || "N/A",
+            qty: loc.qty,
+            reorderPoint: loc.reorderPoint
+          });
+        }
+      });
+      
+      // Replace product.locations with deduplicated locations
+      product.locations = Array.from(locationMap.values());
+    });
+
     // Format grouped products
     const formattedProducts = Array.from(productMap.values()).map(product => {
       // Sort locations by quantity (highest first)
@@ -317,11 +398,15 @@ async function getInventoryContext() {
       // Calculate total quantity
       const totalQty = sortedLocations.reduce((sum, loc) => sum + loc.qty, 0);
       
-      // Format locations list
+      // Format locations list (using validated store names from deduplication)
       const locationsList = sortedLocations.map(loc => {
-        // Ensure store name and ID match - if they don't, use the storeId to derive name
-        const displayStoreName = loc.storeName || loc.storeId || "Unknown Store";
-        return `  - ${displayStoreName} (ID: ${loc.storeId}): ${loc.qty} units`;
+        // Use the validated storeName (already validated during deduplication)
+        const displayStoreName = loc.storeName || "Unknown Store";
+        // Only show store ID if it's different from store name and not "N/A"
+        const storeIdDisplay = (loc.storeId && loc.storeId !== "N/A" && loc.storeId.toLowerCase() !== displayStoreName.toLowerCase()) 
+          ? ` (ID: ${loc.storeId})` 
+          : "";
+        return `  - ${displayStoreName}${storeIdDisplay}: ${loc.qty} units`;
       }).join("\n");
 
       return `Product: ${product.name} (SKU: ${product.sku}, Category: ${product.category})
