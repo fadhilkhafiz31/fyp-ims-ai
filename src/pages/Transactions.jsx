@@ -11,7 +11,8 @@ import {
   runTransaction,
 } from "firebase/firestore";
 import * as motion from "motion/react-client";
-import { db } from "../lib/firebase";
+import { db, storage } from "../lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useRole } from "../hooks/useRole";
 import { useLowStockCount } from "../hooks/useLowStockCount";
 import { PageReady } from "../components/NProgressBar";
@@ -45,9 +46,13 @@ export default function Transactions() {
   const [items, setItems] = useState([]);
   const [catalog, setCatalog] = useState([]);
   const [inventory, setInventory] = useState([]);
-  const [form, setForm] = useState({ type: "IN", itemId: "", qty: 1, note: "" });
+  const [form, setForm] = useState({ type: "IN", itemId: "", qty: 1, note: "", receiptImage: null });
   const [transactionsError, setTransactionsError] = useState(null);
   const [inventoryError, setInventoryError] = useState(null);
+  const [showCamera, setShowCamera] = useState(false);
+  const [cameraStream, setCameraStream] = useState(null);
+  const [capturedImage, setCapturedImage] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const txRef = collection(db, "transactions");
   const invRef = collection(db, "inventory");
@@ -227,6 +232,75 @@ export default function Transactions() {
     return Number(it?.qty ?? 0);
   };
 
+  // Camera functions
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: "environment" } // Use back camera on mobile
+      });
+      setCameraStream(stream);
+      setShowCamera(true);
+    } catch (err) {
+      console.error("Camera error:", err);
+      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+        toast.error("Camera permission denied. Please enable camera access.");
+      } else {
+        toast.error("Failed to access camera. Please try again.");
+      }
+    }
+  };
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+    setShowCamera(false);
+  };
+
+  const captureImage = () => {
+    const video = document.getElementById("camera-video");
+    if (!video) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0);
+    
+    canvas.toBlob((blob) => {
+      if (blob) {
+        setCapturedImage(blob);
+        setForm(prev => ({ ...prev, receiptImage: blob }));
+        stopCamera();
+        toast.success("Receipt captured! You can add the transaction now.");
+      }
+    }, "image/jpeg", 0.8);
+  };
+
+  // Upload receipt image to Firebase Storage
+  const uploadReceiptImage = async (imageBlob) => {
+    if (!imageBlob) return null;
+
+    try {
+      setUploadingImage(true);
+      const timestamp = Date.now();
+      const fileName = `receipts/${storeId || "unknown"}/${timestamp}_${Math.random().toString(36).substring(7)}.jpg`;
+      const storageRef = ref(storage, fileName);
+      
+      await uploadBytes(storageRef, imageBlob);
+      const downloadURL = await getDownloadURL(storageRef);
+      
+      return downloadURL;
+    } catch (err) {
+      console.error("Image upload error:", err);
+      toast.error("Failed to upload receipt image");
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   // transaction handler
   async function handleAdd(e) {
     e.preventDefault();
@@ -249,6 +323,12 @@ export default function Transactions() {
     const type = form.type;
 
     try {
+      // Upload receipt image if available
+      let receiptImageUrl = null;
+      if (form.receiptImage) {
+        receiptImageUrl = await uploadReceiptImage(form.receiptImage);
+      }
+
       await runTransaction(db, async (tx) => {
         const invSnap = await tx.get(invDocRef);
         if (!invSnap.exists()) throw new Error("Inventory item not found");
@@ -268,19 +348,40 @@ export default function Transactions() {
           storeId: inv.storeId || null, // Store the storeId for transaction tracking
           qty: delta,
           note: (form.note || "").trim() || null,
+          receiptImageUrl: receiptImageUrl || null,
           createdAt: serverTimestamp(),
           balanceBefore: currentQty,
           balanceAfter: nextQty,
         });
       });
 
-      setForm({ type: "IN", itemId: "", qty: 1, note: "" });
+      setForm({ type: "IN", itemId: "", qty: 1, note: "", receiptImage: null });
+      setCapturedImage(null);
       toast.success("Transaction added successfully!");
     } catch (err) {
       console.error(err);
       toast.error(err.message || "Failed to add transaction");
     }
   }
+
+  // Setup camera video element
+  useEffect(() => {
+    if (showCamera && cameraStream) {
+      const video = document.getElementById("camera-video");
+      if (video) {
+        video.srcObject = cameraStream;
+      }
+    }
+  }, [showCamera, cameraStream]);
+
+  // Cleanup camera on unmount
+  useEffect(() => {
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [cameraStream]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -401,57 +502,189 @@ export default function Transactions() {
           )}
 
           {/* Entry form */}
-          <form onSubmit={handleAdd} className="grid grid-cols-1 md:grid-cols-5 gap-3">
-            <select
-              className="border rounded px-3 py-2"
-              value={form.type}
-              onChange={(e) => setForm((s) => ({ ...s, type: e.target.value }))}
-            >
-              <option value="IN">IN (add stock)</option>
-              <option value="OUT">OUT (remove stock)</option>
-            </select>
+          <form onSubmit={handleAdd} className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+              <select
+                className="border rounded px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                value={form.type}
+                onChange={(e) => setForm((s) => ({ ...s, type: e.target.value }))}
+              >
+                <option value="IN">IN (add stock)</option>
+                <option value="OUT">OUT (remove stock)</option>
+              </select>
 
-            <select
-              className="border rounded px-3 py-2"
-              value={form.itemId}
-              onChange={(e) => setForm((s) => ({ ...s, itemId: e.target.value }))}
-              disabled={!storeId}
-            >
-              <option value="">
-                {storeId ? "Select item…" : "Please select a location first"}
-              </option>
-              {filteredCatalog
-                .sort((a, b) => {
-                  const nameA = (a.name || "").toLowerCase();
-                  const nameB = (b.name || "").toLowerCase();
-                  return nameA.localeCompare(nameB);
-                })
-                .map((it) => (
-                  <option key={it.id} value={it.id}>
-                    {displayNameById(it.id, it.name || it.title || it.id)}
-                  </option>
-                ))}
-            </select>
+              <select
+                className="border rounded px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                value={form.itemId}
+                onChange={(e) => setForm((s) => ({ ...s, itemId: e.target.value }))}
+                disabled={!storeId}
+              >
+                <option value="">
+                  {storeId ? "Select item…" : "Please select a location first"}
+                </option>
+                {filteredCatalog
+                  .sort((a, b) => {
+                    const nameA = (a.name || "").toLowerCase();
+                    const nameB = (b.name || "").toLowerCase();
+                    return nameA.localeCompare(nameB);
+                  })
+                  .map((it) => (
+                    <option key={it.id} value={it.id}>
+                      {displayNameById(it.id, it.name || it.title || it.id)}
+                    </option>
+                  ))}
+              </select>
 
-            <input
-              type="number"
-              className="border rounded px-3 py-2"
-              placeholder="Qty"
-              value={form.qty}
-              min={1}
-              onChange={(e) => setForm((s) => ({ ...s, qty: e.target.value }))}
-            />
+              <input
+                type="number"
+                className="border rounded px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                placeholder="Qty"
+                value={form.qty}
+                min={1}
+                onChange={(e) => setForm((s) => ({ ...s, qty: e.target.value }))}
+              />
 
-            <input
-              className="border rounded px-3 py-2"
-              placeholder="Note (optional)"
-              value={form.note}
-              onChange={(e) => setForm((s) => ({ ...s, note: e.target.value }))}
-            />
+              <input
+                className="border rounded px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                placeholder="Note (optional)"
+                value={form.note}
+                onChange={(e) => setForm((s) => ({ ...s, note: e.target.value }))}
+              />
 
-            <button className="bg-black text-white rounded px-4 py-2">
-              Add Transaction
-            </button>
+              <div className="flex gap-2">
+                {/* Camera button */}
+                <motion.button
+                  type="button"
+                  onClick={() => {
+                    if (capturedImage || form.receiptImage) {
+                      // Remove captured image
+                      setCapturedImage(null);
+                      setForm(prev => ({ ...prev, receiptImage: null }));
+                    } else if (showCamera) {
+                      stopCamera();
+                    } else {
+                      startCamera();
+                    }
+                  }}
+                  className={`flex-1 rounded px-3 py-2 flex items-center justify-center gap-2 ${
+                    capturedImage || form.receiptImage
+                      ? "bg-green-600 hover:bg-green-700 text-white"
+                      : showCamera
+                      ? "bg-red-600 hover:bg-red-700 text-white"
+                      : "bg-blue-600 hover:bg-blue-700 text-white"
+                  }`}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  title={capturedImage ? "Receipt captured - Click to remove" : showCamera ? "Stop camera" : "Capture receipt"}
+                >
+                  {capturedImage || form.receiptImage ? (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span className="text-sm">Captured</span>
+                    </>
+                  ) : showCamera ? (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      <span className="text-sm">Stop</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <span className="text-sm">Receipt</span>
+                    </>
+                  )}
+                </motion.button>
+
+                {/* Add Transaction button */}
+                <button 
+                  type="submit"
+                  disabled={uploadingImage}
+                  className="flex-1 bg-black dark:bg-gray-800 text-white rounded px-4 py-2 hover:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {uploadingImage ? "Uploading..." : "Add Transaction"}
+                </button>
+              </div>
+            </div>
+
+            {/* Camera preview */}
+            {showCamera && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="border-2 border-blue-500 rounded-lg overflow-hidden bg-black"
+              >
+                <video
+                  id="camera-video"
+                  autoPlay
+                  playsInline
+                  className="w-full max-h-64 object-contain"
+                />
+                <div className="flex gap-2 p-3 bg-gray-900">
+                  <motion.button
+                    type="button"
+                    onClick={captureImage}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded px-4 py-2 flex items-center justify-center gap-2"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Capture
+                  </motion.button>
+                  <motion.button
+                    type="button"
+                    onClick={stopCamera}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Cancel
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Captured image preview */}
+            {capturedImage && !showCamera && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="border-2 border-green-500 rounded-lg overflow-hidden"
+              >
+                <div className="relative">
+                  <img
+                    src={URL.createObjectURL(capturedImage)}
+                    alt="Captured receipt"
+                    className="w-full max-h-64 object-contain bg-gray-100 dark:bg-gray-800"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCapturedImage(null);
+                      setForm(prev => ({ ...prev, receiptImage: null }));
+                    }}
+                    className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white p-2 rounded-full"
+                    title="Remove receipt"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <p className="text-xs text-gray-600 dark:text-gray-400 p-2 bg-green-50 dark:bg-green-900/20">
+                  ✓ Receipt captured. Click "Add Transaction" to save with receipt.
+                </p>
+              </motion.div>
+            )}
           </form>
 
           {/* Full transaction list */}

@@ -1,0 +1,19 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper function to check if user has admin or staff role
+    function isAdminOrStaff() {
+      return request.auth != null && 
+        firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in ['admin', 'staff'];
+    }
+    
+    // Receipt images: only admin/staff can upload, authenticated users can read
+    match /receipts/{storeId}/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if isAdminOrStaff() && 
+                      request.resource.size < 10 * 1024 * 1024 && // 10MB max
+                      request.resource.contentType.matches('image/.*');
+    }
+  }
+}
