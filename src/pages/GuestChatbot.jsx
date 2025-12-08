@@ -11,7 +11,6 @@ import { useRole } from "../hooks/useRole";
 import { useLowStockCount } from "../hooks/useLowStockCount";
 import { useStore } from "../contexts/StoreContext";
 import { useDarkMode } from "../contexts/DarkModeContext";
-import ChatbotPanel from "../components/ChatbotPanel";
 import LocationSelector from "../components/LocationSelector";
 import { PageReady } from "../components/NProgressBar";
 import TopNavigation from "../components/TopNavigation";
@@ -291,8 +290,23 @@ export default function GuestChatbot() {
   const { globalLowStockCount } = useLowStockCount(storeId || null);
   const [inventory, setInventory] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [chatWidgetOpen, setChatWidgetOpen] = useState(false);
   const [stockNotificationsExpanded, setStockNotificationsExpanded] = useState(false);
+  const [currentPosterIndex, setCurrentPosterIndex] = useState(0);
+  
+  // Poster images for carousel
+  const posterImages = [
+    "/Speedmart poster.png",
+    "/SMARTSTOK AI POSTER.png"
+  ];
+  
+  // Auto-advance carousel every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentPosterIndex((prevIndex) => (prevIndex + 1) % posterImages.length);
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, [posterImages.length]);
   
   // Debug: Log state values
   console.log('🔵 GuestChatbot component loaded!', new Date().toISOString());
@@ -389,7 +403,65 @@ export default function GuestChatbot() {
 
         {/* Main Content Area */}
         <main className={`flex-1 ${sidebarOpen ? "ml-64" : ""} p-6 flex flex-col min-h-[calc(100vh-4rem)]`}>
-          {/* Location Selector - Top */}
+          {/* Promo Poster Carousel - Top */}
+          <section className="mb-4">
+            <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden relative">
+              <div className="relative w-full h-[120px] sm:h-[160px] md:h-[180px] lg:h-[200px]">
+                {posterImages.map((image, index) => (
+                  <motion.img
+                    key={index}
+                    src={image}
+                    alt={`Promo Poster ${index + 1}`}
+                    className="absolute inset-0 w-full h-full object-cover object-center"
+                    initial={{ opacity: 0, x: index === 0 ? 0 : 100 }}
+                    animate={{
+                      opacity: currentPosterIndex === index ? 1 : 0,
+                      x: currentPosterIndex === index ? 0 : (index < currentPosterIndex ? -100 : 100),
+                    }}
+                    transition={{ duration: 0.5, ease: "easeInOut" }}
+                  />
+                ))}
+                
+                {/* Navigation Dots */}
+                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-2 z-10">
+                  {posterImages.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentPosterIndex(index)}
+                      className={`w-2 h-2 rounded-full transition-all ${
+                        currentPosterIndex === index
+                          ? "bg-white w-6"
+                          : "bg-white/50 hover:bg-white/75"
+                      }`}
+                      aria-label={`Go to slide ${index + 1}`}
+                    />
+                  ))}
+                </div>
+                
+                {/* Navigation Arrows */}
+                <button
+                  onClick={() => setCurrentPosterIndex((prev) => (prev - 1 + posterImages.length) % posterImages.length)}
+                  className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-2 rounded-full transition-colors z-10"
+                  aria-label="Previous slide"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setCurrentPosterIndex((prev) => (prev + 1) % posterImages.length)}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-2 rounded-full transition-colors z-10"
+                  aria-label="Next slide"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* Location Selector - Below Promo */}
           <section className="mb-4">
             <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
               <LocationSelector />
@@ -475,62 +547,9 @@ export default function GuestChatbot() {
             </div>
           </section>
 
-          {/* Large Chat Interface - Bottom (takes remaining space) */}
-          <section className="flex-1 flex flex-col min-h-0">
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg flex flex-col flex-1 min-h-0">
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl">🤖</span>
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">SmartStockAI Assistant</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Ask me about product availability and stock levels</p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex-1 min-h-0 p-4">
-                <ChatbotPanel fullHeight={true} />
-              </div>
-            </div>
-          </section>
         </main>
         </div>
 
-      {/* Floating Chat Widget */}
-      {chatWidgetOpen ? (
-        <motion.div
-          className="fixed bottom-4 right-4 z-50 w-96 h-[600px] shadow-2xl"
-          initial={{ opacity: 0, scale: 0.8, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.8, y: 20 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-        >
-          <ChatbotPanel fullHeight={true} />
-          <button
-            onClick={() => setChatWidgetOpen(false)}
-            className="absolute top-2 right-2 p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
-            aria-label="Minimize chat"
-            title="Minimize chat"
-          >
-            <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </motion.div>
-      ) : (
-        <motion.button
-          onClick={() => setChatWidgetOpen(true)}
-          className="fixed bottom-4 right-4 z-50 w-16 h-16 bg-[#0F5132] hover:bg-[#0d4528] text-white rounded-full shadow-lg flex items-center justify-center transition-colors"
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-          aria-label="Open chat"
-          title="Open SmartStockAI Assistant"
-        >
-          <span className="text-2xl">🤖</span>
-        </motion.button>
-      )}
     </div>
   );
 }

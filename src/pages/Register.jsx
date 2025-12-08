@@ -52,7 +52,7 @@ export default function Register() {
       await setDoc(doc(db, "users", user.uid), {
         name,
         email,
-        role: "admin",               // you can change later
+        role: "customer",
         createdAt: serverTimestamp()
       });
       nav("/dashboard");

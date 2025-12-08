@@ -69,7 +69,7 @@ export default function TopNavigation({ role = null, onToggleSidebar = null }) {
 
         {/* Center and Right content */}
         <div className="flex-1 flex items-center justify-between max-w-7xl mx-auto pr-4 sm:pr-6 lg:px-8">
-          {/* Center: Search Bar (only for admin/staff) */}
+          {/* Center: Search Bar (only for admin/staff) or 99 Speedmart Logo (for customer/guest) */}
           {isPrivileged ? (
             <div className="hidden xl:flex flex-1 max-w-lg mx-4">
               <div className="relative w-full">
@@ -111,7 +111,13 @@ export default function TopNavigation({ role = null, onToggleSidebar = null }) {
               </div>
             </div>
           ) : (
-            <div className="flex-1" />
+            <div className="flex-1 flex items-center justify-center">
+              <img
+                src="/99speedmart logo.png"
+                alt="99 Speedmart Logo"
+                className="h-8 w-auto"
+              />
+            </div>
           )}
 
           {/* Right: Store Info, Icons and Menu */}

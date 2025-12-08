@@ -1,7 +1,6 @@
 // src/pages/DashboardCustomer.jsx
 import { signOut } from "firebase/auth";
 import { useAuth } from "../contexts/AuthContext";
-import ChatbotPanel from "../components/ChatbotPanel";
 import LocationSelector from "../components/LocationSelector";
 import { PageReady } from "../components/NProgressBar";
 import TopNavigation from "../components/TopNavigation";
@@ -39,10 +38,6 @@ export default function DashboardCustomer() {
           <LocationSelector />
         </div>
 
-        {/* Chatbot Assistant */}
-        <div className="mt-6">
-          <ChatbotPanel />
-        </div>
       </div>
     </div>
   );
