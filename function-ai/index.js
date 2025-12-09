@@ -475,7 +475,7 @@ Instructions:
 - Do not show the Store ID in the response
 - Group all locations for the same product together
 - Calculate and show total quantities when relevant
-- If a product is not found, suggest similar items if available
+- If a product is not found or near to out of stock, suggest similar items if available
 - Be helpful, concise, and professional
 - If asked about something not related to inventory, politely redirect to inventory-related topics
 - Always verify that store names and store IDs match correctly before reporting them
