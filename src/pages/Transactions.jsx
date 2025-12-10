@@ -12,8 +12,9 @@ import {
 } from "firebase/firestore";
 import * as motion from "motion/react-client";
 import { db, storage } from "../lib/firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL, uploadBytesResumable } from "firebase/storage";
 import { useRole } from "../hooks/useRole";
+import { useAuth } from "../contexts/AuthContext";
 import { useLowStockCount } from "../hooks/useLowStockCount";
 import { PageReady } from "../components/NProgressBar";
 import { useStore } from "../contexts/StoreContext";
@@ -37,6 +38,7 @@ import SideNavigation from "../components/SideNavigation";
 // ============================================
 export default function Transactions() {
   const { role } = useRole();
+  const { user } = useAuth();
   const { storeId } = useStore();
   const { toast } = useToast();
   const { filterItems, searchQuery, hasSearch } = useSearch();
@@ -53,6 +55,8 @@ export default function Transactions() {
   const [cameraStream, setCameraStream] = useState(null);
   const [capturedImage, setCapturedImage] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [processingImage, setProcessingImage] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [imageUrl, setImageUrl] = useState(null);
   const [showReceiptOptions, setShowReceiptOptions] = useState(false);
   const [viewingReceiptUrl, setViewingReceiptUrl] = useState(null);
@@ -283,29 +287,32 @@ export default function Transactions() {
     }, "image/jpeg", 0.8);
   };
 
-  // Handle file upload from browse
-  const handleFileUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Process image file (used by both file input and drag-and-drop)
+  const processImageFile = async (file) => {
+    if (!file) return false;
 
     console.log("📁 File selected:", file.name, file.type, file.size);
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
       toast.error("Please select an image file");
-      e.target.value = "";
-      return;
+      return false;
     }
 
     // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       toast.error("Image size must be less than 10MB");
-      e.target.value = "";
-      return;
+      return false;
     }
 
+    // Show loading state
+    setProcessingImage(true);
+    
     // Close dropdown
     setShowReceiptOptions(false);
+
+    // Small delay to show processing feedback (especially for large images)
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Revoke previous URL if exists
     if (imageUrlRef.current) {
@@ -314,7 +321,7 @@ export default function Transactions() {
       imageUrlRef.current = null;
     }
 
-    // Create blob URL immediately for instant preview
+    // Create blob URL for preview
     const url = URL.createObjectURL(file);
     console.log("🖼️ Created blob URL:", url);
     
@@ -326,15 +333,67 @@ export default function Transactions() {
     
     console.log("✅ State updated - imageUrl:", url, "capturedImage:", file);
     
+    // Hide loading state
+    setProcessingImage(false);
+    
     toast.success("Receipt image selected! You can add the transaction now.");
+    
+    return true;
+  };
+
+  // Handle file upload from browse
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    await processImageFile(file);
     
     // Reset file input
     e.target.value = "";
   };
 
+  // Handle drag and drop events
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set isDragging to false if we're leaving the drop zone itself
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      await processImageFile(file);
+    }
+  };
+
   // Upload receipt image to Firebase Storage
   const uploadReceiptImage = async (imageBlob) => {
     if (!imageBlob) return null;
+
+    // Check if user is authenticated
+    if (!user) {
+      toast.error("You must be logged in to upload images");
+      return null;
+    }
 
     try {
       setUploadingImage(true);
@@ -342,13 +401,51 @@ export default function Transactions() {
       const fileName = `receipts/${storeId || "unknown"}/${timestamp}_${Math.random().toString(36).substring(7)}.jpg`;
       const storageRef = ref(storage, fileName);
       
-      await uploadBytes(storageRef, imageBlob);
+      // Ensure we have a proper Blob with content type
+      let blobToUpload = imageBlob;
+      
+      // If it's a File, use it directly (already has contentType)
+      // If it's a Blob from canvas, ensure it has the correct content type
+      if (imageBlob instanceof Blob && !(imageBlob instanceof File)) {
+        // If it doesn't have a type, set it to image/jpeg
+        if (!imageBlob.type || imageBlob.type === '') {
+          blobToUpload = new Blob([imageBlob], { type: 'image/jpeg' });
+        }
+      }
+      
+      // Upload with metadata
+      const metadata = {
+        contentType: blobToUpload.type || 'image/jpeg',
+        cacheControl: 'public, max-age=31536000',
+      };
+      
+      console.log("🔄 Uploading image to Firebase Storage...");
+      console.log("📦 File:", fileName);
+      console.log("👤 User:", user?.uid);
+      
+      await uploadBytes(storageRef, blobToUpload, metadata);
       const downloadURL = await getDownloadURL(storageRef);
       
+      console.log("✅ Image uploaded successfully:", downloadURL);
       return downloadURL;
     } catch (err) {
-      console.error("Image upload error:", err);
-      toast.error("Failed to upload receipt image");
+      console.error("❌ Image upload error:", err);
+      console.error("Error code:", err.code);
+      console.error("Error message:", err.message);
+      console.error("Error stack:", err.stack);
+      
+      // Provide more specific error messages
+      if (err.code === 'storage/unauthorized') {
+        toast.error("Unauthorized: Please check your permissions. You need admin or staff role.");
+      } else if (err.code === 'storage/canceled') {
+        toast.error("Upload was canceled");
+      } else if (err.code === 'storage/unknown' || err.message?.includes('CORS') || err.message?.includes('Failed to fetch')) {
+        toast.error("CORS error: Please configure CORS for Firebase Storage. See setup-storage-cors.md for instructions.");
+      } else if (err.code === 'storage/quota-exceeded') {
+        toast.error("Storage quota exceeded. Please contact administrator.");
+      } else {
+        toast.error(`Failed to upload receipt image: ${err.message || err.code || 'Unknown error'}`);
+      }
       return null;
     } finally {
       setUploadingImage(false);
@@ -411,6 +508,12 @@ export default function Transactions() {
 
       setForm({ type: "IN", itemId: "", qty: 1, note: "", receiptImage: null });
       setCapturedImage(null);
+      setImageUrl(null);
+      setProcessingImage(false);
+      if (imageUrlRef.current) {
+        URL.revokeObjectURL(imageUrlRef.current);
+        imageUrlRef.current = null;
+      }
       toast.success("Transaction added successfully!");
     } catch (err) {
       console.error(err);
@@ -635,12 +738,30 @@ export default function Transactions() {
               <div className="flex gap-2">
                 {/* Receipt options dropdown */}
                 <div className="relative flex-1 receipt-options-container">
-                  {capturedImage || form.receiptImage ? (
+                  {processingImage ? (
+                    // Show loading state when processing image
+                    <motion.button
+                      type="button"
+                      disabled
+                      className="w-full bg-blue-500 text-white rounded px-3 py-2 flex items-center justify-center gap-2 opacity-75 cursor-not-allowed"
+                    >
+                      <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      <span className="text-sm">Processing Image...</span>
+                    </motion.button>
+                  ) : capturedImage || form.receiptImage ? (
                     // Show remove button when image is captured
                     <motion.button
                       type="button"
                       onClick={() => {
+                        if (imageUrlRef.current) {
+                          URL.revokeObjectURL(imageUrlRef.current);
+                          imageUrlRef.current = null;
+                        }
                         setCapturedImage(null);
+                        setImageUrl(null);
+                        setProcessingImage(false);
                         setForm(prev => ({ ...prev, receiptImage: null }));
                         toast.info("Receipt image removed");
                       }}
@@ -656,6 +777,15 @@ export default function Transactions() {
                   ) : (
                     // Show dropdown menu for receipt options
                     <div className="relative">
+                      {/* File input - moved outside button */}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                      
                       <motion.button
                         type="button"
                         onClick={() => setShowReceiptOptions(!showReceiptOptions)}
@@ -705,13 +835,6 @@ export default function Transactions() {
                             }}
                             className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 text-gray-900 dark:text-white"
                           >
-                            <input
-                              ref={fileInputRef}
-                              type="file"
-                              accept="image/*"
-                              onChange={handleFileUpload}
-                              className="hidden"
-                            />
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                             </svg>
@@ -733,6 +856,55 @@ export default function Transactions() {
                 </button>
               </div>
             </div>
+
+            {/* Drag and Drop Zone */}
+            {!capturedImage && !form.receiptImage && !processingImage && (
+              <motion.div
+                onDragEnter={handleDragEnter}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`
+                  border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 cursor-pointer
+                  ${isDragging 
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 scale-105' 
+                    : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/10'
+                  }
+                `}
+                whileHover={{ scale: isDragging ? 1.05 : 1.02 }}
+                onClick={() => {
+                  if (fileInputRef.current) {
+                    fileInputRef.current.click();
+                  }
+                }}
+              >
+                {isDragging ? (
+                  <div className="flex flex-col items-center gap-3">
+                    <svg className="w-12 h-12 text-blue-500 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <p className="text-lg font-semibold text-blue-600 dark:text-blue-400">Drop your receipt image here</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-3">
+                    <svg className="w-12 h-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <div>
+                      <p className="text-base font-medium text-gray-700 dark:text-gray-300">
+                        Drag and drop your receipt image here
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        or <span className="text-blue-600 dark:text-blue-400 font-medium">click to browse</span>
+                      </p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                        Supports: JPG, PNG, GIF (Max 10MB)
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
 
             {/* Camera preview */}
             {showCamera && (
@@ -774,8 +946,27 @@ export default function Transactions() {
               </motion.div>
             )}
 
+            {/* Processing indicator */}
+            {processingImage && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="border-2 border-blue-500 rounded-lg overflow-hidden"
+              >
+                <div className="relative min-h-[200px] flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+                  <div className="flex flex-col items-center gap-3 text-gray-700 dark:text-gray-300">
+                    <svg className="w-10 h-10 animate-spin text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span className="text-sm font-medium">Processing image...</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Please wait</span>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             {/* Captured image preview */}
-            {capturedImage && !showCamera && (
+            {capturedImage && !showCamera && !processingImage && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -805,6 +996,7 @@ export default function Transactions() {
                       }
                       setCapturedImage(null);
                       setImageUrl(null);
+                      setProcessingImage(false);
                       setForm(prev => ({ ...prev, receiptImage: null }));
                     }}
                     className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white p-2 rounded-full z-10"

@@ -9,7 +9,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyBt6Es1l-WNPM3Ss8mjwI1t4X1bbnKiVzs",
   authDomain: "ims-ai-821f0.firebaseapp.com",
   projectId: "ims-ai-821f0",
-  storageBucket: "ims-ai-821f0.appspot.com",
+  storageBucket: "ims-ai-821f0.firebasestorage.app",
   messagingSenderId: "601293142427",
   appId: "1:601293142427:web:0a6ae66714d8145ec0893e",
   measurementId: "G-8YNLJ61C6C"
