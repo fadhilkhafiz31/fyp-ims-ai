@@ -18,16 +18,16 @@ export default function SideNavigation({ activeItemCount, onClose }) {
     const isInventoryActive = location.pathname === "/inventory";
     const isChatbotActive = location.pathname === "/chatbot";
     const isRedeemPointsActive = location.pathname === "/redeem-points";
-    const isGuestChatbotActive = location.pathname === "/guest-chatbot";
+    const isGuestChatbotActive = location.pathname === "/dashboard-customer-guest";
     const isGuestChatbotFullActive = location.pathname === "/guest-chatbot-full";
 
     const allMenuItems = [
-        { icon: "grid", label: "Dashboard", path: isGuest ? "/guest-chatbot" : "/dashboard", active: isGuest ? isGuestChatbotActive : isDashboardActive, roles: ["admin", "staff", "customer", "guest"] },
+        { icon: "grid", label: "Dashboard", path: isGuest ? "/dashboard-customer-guest" : "/dashboard", active: isGuest ? isGuestChatbotActive : isDashboardActive, roles: ["admin", "staff", "customer", "guest"] },
         { icon: "transaction", label: "Transaction", path: "/transactions", active: isTransactionsActive, roles: ["admin", "staff"] },
         { icon: "bell", label: "Stock Notification", path: "/stock-notification", badge: activeItemCount || 0, roles: ["admin", "staff"] },
         { icon: "chatbot", label: "SmartStockAI Assistant", path: (isGuest || role === "customer") ? "/guest-chatbot-full" : "/chatbot", active: (isGuest || role === "customer") ? isGuestChatbotFullActive : isChatbotActive, roles: ["admin", "staff", "customer", "guest"] },
         { icon: "inventory", label: "Inventory", path: "/inventory", active: isInventoryActive, roles: ["admin", "staff"] },
-        { icon: "gift", label: "Redeem Points", path: "/redeem-points", active: isRedeemPointsActive, isGuestRestricted: isGuest, roles: ["admin", "staff", "customer", "guest"] },
+        { icon: "gift", label: "Redeem Points", path: "/redeem-points", active: isRedeemPointsActive, isGuestRestricted: isGuest, roles: ["customer", "guest"] },
         { icon: "user", label: "My Profile", path: "#", isMock: true, roles: ["admin", "staff", "customer", "guest"] },
         { icon: "gear", label: "Settings", path: "#", isMock: true, roles: ["admin", "staff", "customer", "guest"] },
         { icon: "logout", label: "Log Out", path: "/login", roles: ["admin", "staff", "customer", "guest"] },

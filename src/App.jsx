@@ -11,7 +11,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Inventory = lazy(() => import("./pages/Inventory"));
 const Transactions = lazy(() => import("./pages/Transactions"));
 const StockNotification = lazy(() => import("./pages/StockNotification"));
-const GuestChatbot = lazy(() => import("./pages/GuestChatbot"));
+const GuestChatbot = lazy(() => import("./pages/CustomerOrGuestDashboard"));
 const GeminiChatTest = lazy(() => import("./pages/GeminiChatTest"));
 
 export default function App() {
@@ -32,7 +32,7 @@ export default function App() {
           <Routes location={location} key={location.pathname}>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/guest-chatbot" element={<GuestChatbot />} />
+            <Route path="/dashboard-customer-guest" element={<GuestChatbot />} />
 
             <Route
               path="/dashboard"

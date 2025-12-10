@@ -5,7 +5,7 @@ import { EnhancedSpinner } from "./ui/EnhancedSpinner";
 export default function RoleGuard({ allow = [], children }) {
   const { role, ready } = useRole();
   
-  // Show visible loading state instead of blank page
+  
   if (!ready) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">

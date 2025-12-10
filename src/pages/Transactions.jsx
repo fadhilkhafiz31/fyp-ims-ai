@@ -1,5 +1,5 @@
 // src/pages/Transactions.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   collection,
@@ -53,6 +53,11 @@ export default function Transactions() {
   const [cameraStream, setCameraStream] = useState(null);
   const [capturedImage, setCapturedImage] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageUrl, setImageUrl] = useState(null);
+  const [showReceiptOptions, setShowReceiptOptions] = useState(false);
+  const [viewingReceiptUrl, setViewingReceiptUrl] = useState(null);
+  const imageUrlRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const txRef = collection(db, "transactions");
   const invRef = collection(db, "inventory");
@@ -278,6 +283,55 @@ export default function Transactions() {
     }, "image/jpeg", 0.8);
   };
 
+  // Handle file upload from browse
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    console.log("📁 File selected:", file.name, file.type, file.size);
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      e.target.value = "";
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image size must be less than 10MB");
+      e.target.value = "";
+      return;
+    }
+
+    // Close dropdown
+    setShowReceiptOptions(false);
+
+    // Revoke previous URL if exists
+    if (imageUrlRef.current) {
+      console.log("🗑️ Revoking previous URL:", imageUrlRef.current);
+      URL.revokeObjectURL(imageUrlRef.current);
+      imageUrlRef.current = null;
+    }
+
+    // Create blob URL immediately for instant preview
+    const url = URL.createObjectURL(file);
+    console.log("🖼️ Created blob URL:", url);
+    
+    // Store URL in ref and state
+    imageUrlRef.current = url;
+    setImageUrl(url);
+    setCapturedImage(file);
+    setForm(prev => ({ ...prev, receiptImage: file }));
+    
+    console.log("✅ State updated - imageUrl:", url, "capturedImage:", file);
+    
+    toast.success("Receipt image selected! You can add the transaction now.");
+    
+    // Reset file input
+    e.target.value = "";
+  };
+
   // Upload receipt image to Firebase Storage
   const uploadReceiptImage = async (imageBlob) => {
     if (!imageBlob) return null;
@@ -364,6 +418,29 @@ export default function Transactions() {
     }
   }
 
+  // Manage blob URL for image preview
+  useEffect(() => {
+    console.log("🔄 useEffect triggered - capturedImage:", !!capturedImage, "imageUrl:", imageUrl, "imageUrlRef:", imageUrlRef.current);
+    // Only create URL if we have an image but no URL yet
+    if (capturedImage && !imageUrl && !imageUrlRef.current) {
+      console.log("🆕 Creating new URL in useEffect");
+      const url = URL.createObjectURL(capturedImage);
+      imageUrlRef.current = url;
+      setImageUrl(url);
+    }
+  }, [capturedImage, imageUrl])
+
+  // Close receipt options dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showReceiptOptions && !event.target.closest('.receipt-options-container')) {
+        setShowReceiptOptions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showReceiptOptions]);
+
   // Setup camera video element
   useEffect(() => {
     if (showCamera && cameraStream) {
@@ -374,11 +451,15 @@ export default function Transactions() {
     }
   }, [showCamera, cameraStream]);
 
-  // Cleanup camera on unmount
+  // Cleanup camera and image URL on unmount
   useEffect(() => {
     return () => {
       if (cameraStream) {
         cameraStream.getTracks().forEach(track => track.stop());
+      }
+      // Cleanup image URL on unmount only
+      if (imageUrlRef.current) {
+        URL.revokeObjectURL(imageUrlRef.current);
       }
     };
   }, [cameraStream]);
@@ -552,55 +633,95 @@ export default function Transactions() {
               />
 
               <div className="flex gap-2">
-                {/* Camera button */}
-                <motion.button
-                  type="button"
-                  onClick={() => {
-                    if (capturedImage || form.receiptImage) {
-                      // Remove captured image
-                      setCapturedImage(null);
-                      setForm(prev => ({ ...prev, receiptImage: null }));
-                    } else if (showCamera) {
-                      stopCamera();
-                    } else {
-                      startCamera();
-                    }
-                  }}
-                  className={`flex-1 rounded px-3 py-2 flex items-center justify-center gap-2 ${
-                    capturedImage || form.receiptImage
-                      ? "bg-green-600 hover:bg-green-700 text-white"
-                      : showCamera
-                      ? "bg-red-600 hover:bg-red-700 text-white"
-                      : "bg-blue-600 hover:bg-blue-700 text-white"
-                  }`}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  title={capturedImage ? "Receipt captured - Click to remove" : showCamera ? "Stop camera" : "Capture receipt"}
-                >
+                {/* Receipt options dropdown */}
+                <div className="relative flex-1 receipt-options-container">
                   {capturedImage || form.receiptImage ? (
-                    <>
+                    // Show remove button when image is captured
+                    <motion.button
+                      type="button"
+                      onClick={() => {
+                        setCapturedImage(null);
+                        setForm(prev => ({ ...prev, receiptImage: null }));
+                        toast.info("Receipt image removed");
+                      }}
+                      className="w-full bg-green-600 hover:bg-green-700 text-white rounded px-3 py-2 flex items-center justify-center gap-2"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      <span className="text-sm">Captured</span>
-                    </>
-                  ) : showCamera ? (
-                    <>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                      <span className="text-sm">Stop</span>
-                    </>
+                      <span className="text-sm">Receipt Added</span>
+                    </motion.button>
                   ) : (
-                    <>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      <span className="text-sm">Receipt</span>
-                    </>
+                    // Show dropdown menu for receipt options
+                    <div className="relative">
+                      <motion.button
+                        type="button"
+                        onClick={() => setShowReceiptOptions(!showReceiptOptions)}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded px-3 py-2 flex items-center justify-center gap-2"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span className="text-sm">Receipt (Required)</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </motion.button>
+                      
+                      {/* Dropdown menu */}
+                      {showReceiptOptions && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 overflow-hidden"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              startCamera();
+                              setShowReceiptOptions(false);
+                            }}
+                            className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 text-gray-900 dark:text-white"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <span>Take Photo</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowReceiptOptions(false);
+                              // Trigger file input click
+                              if (fileInputRef.current) {
+                                fileInputRef.current.click();
+                              }
+                            }}
+                            className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 text-gray-900 dark:text-white"
+                          >
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              accept="image/*"
+                              onChange={handleFileUpload}
+                              className="hidden"
+                            />
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            <span>Upload from Device</span>
+                          </button>
+                        </motion.div>
+                      )}
+                    </div>
                   )}
-                </motion.button>
+                </div>
 
                 {/* Add Transaction button */}
                 <button 
@@ -660,19 +781,33 @@ export default function Transactions() {
                 animate={{ opacity: 1, y: 0 }}
                 className="border-2 border-green-500 rounded-lg overflow-hidden"
               >
-                <div className="relative">
-                  <img
-                    src={URL.createObjectURL(capturedImage)}
-                    alt="Captured receipt"
-                    className="w-full max-h-64 object-contain bg-gray-100 dark:bg-gray-800"
-                  />
+                <div className="relative min-h-[200px] flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+                  {(imageUrl || imageUrlRef.current) ? (
+                    <img
+                      src={imageUrl || imageUrlRef.current}
+                      alt="Captured receipt"
+                      className="w-full max-h-64 object-contain"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 text-gray-500 dark:text-gray-400">
+                      <svg className="w-8 h-8 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      <span className="text-sm">Loading preview...</span>
+                    </div>
+                  )}
                   <button
                     type="button"
                     onClick={() => {
+                      if (imageUrlRef.current) {
+                        URL.revokeObjectURL(imageUrlRef.current);
+                        imageUrlRef.current = null;
+                      }
                       setCapturedImage(null);
+                      setImageUrl(null);
                       setForm(prev => ({ ...prev, receiptImage: null }));
                     }}
-                    className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white p-2 rounded-full"
+                    className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white p-2 rounded-full z-10"
                     title="Remove receipt"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -681,7 +816,7 @@ export default function Transactions() {
                   </button>
                 </div>
                 <p className="text-xs text-gray-600 dark:text-gray-400 p-2 bg-green-50 dark:bg-green-900/20">
-                  ✓ Receipt captured. Click "Add Transaction" to save with receipt.
+                  ✓ Receipt {capturedImage instanceof File ? "uploaded" : "captured"}. Click "Add Transaction" to save with receipt.
                 </p>
               </motion.div>
             )}
@@ -713,11 +848,12 @@ export default function Transactions() {
             </div>
 
             {/* Table header row - aligned with data rows */}
-            <div className="grid grid-cols-5 gap-2 px-3 py-2 border-b bg-gray-50 dark:bg-gray-800/50 font-semibold text-sm text-gray-700 dark:text-gray-300">
+            <div className="grid grid-cols-6 gap-2 px-3 py-2 border-b bg-gray-50 dark:bg-gray-800/50 font-semibold text-sm text-gray-700 dark:text-gray-300">
               <div>Item</div>
               <div className="text-center">Type</div>
               <div>Time</div>
               <div>Qty</div>
+              <div className="text-center">Receipt</div>
               <div>Note</div>
             </div>
 
@@ -754,7 +890,7 @@ export default function Transactions() {
                 .map((t) => (
                   <div
                     key={t.id}
-                    className="grid grid-cols-5 gap-2 px-3 py-2 border-b border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white"
+                    className="grid grid-cols-6 gap-2 px-3 py-2 border-b border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white"
                   >
                     <div>
                       {displayNameById(t.itemId || null, t.itemName || "Unknown Item")}
@@ -775,6 +911,24 @@ export default function Transactions() {
                       {formatTransactionTime(t.createdAt)}
                     </div>
                     <div>{t.qty ?? 0}</div>
+                    <div className="flex items-center justify-center">
+                      {t.receiptImageUrl ? (
+                        <motion.button
+                          type="button"
+                          onClick={() => setViewingReceiptUrl(t.receiptImageUrl)}
+                          className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                          title="Click to view receipt"
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                        >
+                          <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </motion.button>
+                      ) : (
+                        <span className="text-gray-400 dark:text-gray-500 text-xs">—</span>
+                      )}
+                    </div>
                     <div className="truncate">
                       {t.note ||
                         (typeof t.balanceBefore === "number"
@@ -823,6 +977,58 @@ export default function Transactions() {
         >
           <span className="text-2xl">🤖</span>
         </motion.button>
+      )}
+
+      {/* Receipt Image Modal */}
+      {viewingReceiptUrl && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
+          onClick={() => setViewingReceiptUrl(null)}
+        >
+          <motion.div
+            initial={{ scale: 0.9 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0.9 }}
+            className="relative bg-white dark:bg-gray-900 rounded-lg max-w-4xl max-h-[90vh] overflow-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={() => setViewingReceiptUrl(null)}
+              className="absolute top-4 right-4 z-10 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+              aria-label="Close"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Image */}
+            <div className="p-4">
+              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Receipt</h3>
+              <img
+                src={viewingReceiptUrl}
+                alt="Receipt"
+                className="w-full h-auto rounded-lg"
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setViewingReceiptUrl(null)}
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
       )}
     </div>
   );

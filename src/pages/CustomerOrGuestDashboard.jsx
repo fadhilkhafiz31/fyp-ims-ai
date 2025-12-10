@@ -1,4 +1,4 @@
-// src/pages/GuestChatbot.jsx
+// src/pages/CustomerOrGuestDashboard.jsx
 import { useEffect, useMemo, useState } from "react";
 // Force recompilation
 import { Link, useLocation } from "react-router-dom";
@@ -30,13 +30,13 @@ function SideNavigation({ activeItemCount, onClose, toast }) {
   const location = useLocation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const { role } = useRole();
-  const isDashboardActive = location.pathname === "/guest-chatbot";
+  const isDashboardActive = location.pathname === "/dashboard-customer-guest";
   const isChatbotActive = location.pathname === "/guest-chatbot-full";
   const isRedeemPointsActive = location.pathname === "/redeem-points";
   const isGuest = role === "guest";
 
   const menuItems = [
-    { icon: "grid", label: "Dashboard", path: "/guest-chatbot", active: isDashboardActive },
+    { icon: "grid", label: "Dashboard", path: "/dashboard-customer-guest", active: isDashboardActive },
     { icon: "chatbot", label: "SmartStockAI Assistant", path: "/guest-chatbot-full", active: isChatbotActive },
     { icon: "gift", label: "Redeem Points", path: "/redeem-points", active: isRedeemPointsActive, isGuestRestricted: isGuest },
     { icon: "user", label: "My Profile", path: "#", isMock: true },
@@ -281,7 +281,7 @@ function OutOfStockCard({ item, index }) {
 // ============================================
 // Main Component
 // ============================================
-export default function GuestChatbot() {
+export default function CustomerOrGuestDashboard() {
   // Hooks must be called unconditionally
   const { user } = useAuth();
   const { role } = useRole();
@@ -309,9 +309,9 @@ export default function GuestChatbot() {
   }, [posterImages.length]);
   
   // Debug: Log state values
-  console.log('🔵 GuestChatbot component loaded!', new Date().toISOString());
+  console.log('🔵 CustomerOrGuestDashboard component loaded!', new Date().toISOString());
   console.log('🔵 Current URL:', window.location.pathname);
-  console.log('🔵 GuestChatbot state:', { 
+  console.log('🔵 CustomerOrGuestDashboard state:', { 
     sidebarOpen, 
     storeId, 
     inventoryCount: inventory.length,

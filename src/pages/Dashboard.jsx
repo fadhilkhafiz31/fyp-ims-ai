@@ -35,8 +35,8 @@ export default function Dashboard() {
   // ============================================
   switch (role) {
     case "customer":
-      // Redirect customers to guest-chatbot page
-      return <Navigate to="/guest-chatbot" replace />;
+      // Redirect customers to dashboard-customer-guest page
+      return <Navigate to="/dashboard-customer-guest" replace />;
     case "staff":
       return (
         <MotionWrapper>
@@ -50,7 +50,7 @@ export default function Dashboard() {
         </MotionWrapper>
       );
     default:
-      // Fallback: redirect to guest-chatbot if role is unknown (treat as customer)
-      return <Navigate to="/guest-chatbot" replace />;
+      // Fallback: redirect to dashboard-customer-guest if role is unknown (treat as customer)
+      return <Navigate to="/dashboard-customer-guest" replace />;
   }
 }

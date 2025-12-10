@@ -98,7 +98,7 @@ export default function Login() {
     setLoading(true);
     try {
       await loginAsGuest();
-      navigate("/guest-chatbot");
+      navigate("/dashboard-customer-guest");
     } catch (e) {
       // Provide user-friendly error messages
       if (e.code === "auth/admin-restricted-operation") {

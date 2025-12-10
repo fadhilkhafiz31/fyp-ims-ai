@@ -23,7 +23,7 @@ const Inventory = lazy(() => import("./pages/Inventory"));
 const Transactions = lazy(() => import("./pages/Transactions"));
 const StockNotification = lazy(() => import("./pages/StockNotification"));
 const Chatbot = lazy(() => import("./pages/Chatbot"));
-const GuestChatbot = lazy(() => import("./pages/GuestChatbot"));
+const GuestChatbot = lazy(() => import("./pages/CustomerOrGuestDashboard"));
 const GuestChatbotFull = lazy(() => import("./pages/GuestChatbotFull"));
 const GeminiChatTest = lazy(() => import("./pages/GeminiChatTest"));
 const About = lazy(() => import("./pages/About"));
@@ -64,12 +64,12 @@ function AnimatedRoutes() {
               } 
             />
 
-            {/* Guest Chatbot - public route */}
+            {/* Customer/Guest Dashboard - public route */}
             <Route
-              path="/guest-chatbot"
+              path="/dashboard-customer-guest"
               element={
                 <motion.div
-                  key="guest-chatbot"
+                  key="dashboard-customer-guest"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
