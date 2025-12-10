@@ -100,7 +100,7 @@ function CustomerSideNavigation({ onClose, toast }) {
                 {isDarkMode ? '☀️' : '🌙'}
               </span>
             </button>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Customer Menu</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Customer Dashboard</h2>
           </div>
           <button
             type="button"
@@ -333,7 +333,7 @@ export default function RedeemPoints() {
                       type="text"
                       value={code}
                       onChange={(e) => setCode(e.target.value.toUpperCase())}
-                      placeholder="e.g. SALE-8832-X"
+                      placeholder="e.g. RECEIPT-8832-X"
                       className="flex-1 px-4 py-3 text-center text-lg font-mono uppercase border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
                       maxLength={50}
                       disabled={loading}
