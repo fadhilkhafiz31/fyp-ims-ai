@@ -469,15 +469,28 @@ export default function Transactions() {
       return;
     }
 
+    // Validate receipt image is required
+    if (!form.receiptImage && !capturedImage) {
+      toast.error("Receipt image is required. Please upload or capture a receipt before adding the transaction.");
+      return;
+    }
+
     const invDocRef = doc(db, "inventory", form.itemId);
     const txDocRef = doc(txRef);
     const type = form.type;
 
     try {
-      // Upload receipt image if available
+      // Upload receipt image (required)
       let receiptImageUrl = null;
-      if (form.receiptImage) {
-        receiptImageUrl = await uploadReceiptImage(form.receiptImage);
+      if (form.receiptImage || capturedImage) {
+        const imageToUpload = form.receiptImage || capturedImage;
+        receiptImageUrl = await uploadReceiptImage(imageToUpload);
+        
+        // If upload failed, don't proceed with transaction
+        if (!receiptImageUrl) {
+          toast.error("Failed to upload receipt image. Transaction not added.");
+          return;
+        }
       }
 
       await runTransaction(db, async (tx) => {
@@ -499,7 +512,7 @@ export default function Transactions() {
           storeId: inv.storeId || null, // Store the storeId for transaction tracking
           qty: delta,
           note: (form.note || "").trim() || null,
-          receiptImageUrl: receiptImageUrl || null,
+          receiptImageUrl: receiptImageUrl, // Receipt is required, so this should always be set
           createdAt: serverTimestamp(),
           balanceBefore: currentQty,
           balanceAfter: nextQty,
@@ -849,8 +862,9 @@ export default function Transactions() {
                 {/* Add Transaction button */}
                 <button 
                   type="submit"
-                  disabled={uploadingImage}
+                  disabled={uploadingImage || (!form.receiptImage && !capturedImage)}
                   className="flex-1 bg-black dark:bg-gray-800 text-white rounded px-4 py-2 hover:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={(!form.receiptImage && !capturedImage) ? "Please add a receipt image first" : ""}
                 >
                   {uploadingImage ? "Uploading..." : "Add Transaction"}
                 </button>
