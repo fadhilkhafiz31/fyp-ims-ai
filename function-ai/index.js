@@ -290,6 +290,9 @@ async function getInventoryContext() {
       const storeId = item.storeId || "N/A";
       const category = item.category || "Uncategorized";
       const reorderPoint = Number(item.reorderPoint ?? 5);
+      const price = item.price !== undefined && item.price !== null
+        ? Number(item.price)
+        : null;
 
       if (!productMap.has(productKey)) {
         productMap.set(productKey, {
@@ -305,7 +308,8 @@ async function getInventoryContext() {
         storeName: storeName.trim(),
         storeId: storeId.trim(),
         qty,
-        reorderPoint
+        reorderPoint,
+        price: price !== null && !Number.isNaN(price) ? price : null
       });
     });
 
@@ -351,6 +355,10 @@ async function getInventoryContext() {
               (!existing.storeName || loc.storeName.trim().length > existing.storeName.length)) {
             existing.storeName = loc.storeName.trim();
           }
+          // Preserve price if we don't have one yet (or if the new one is a valid number)
+          if (existing.price === null && loc.price !== null && !Number.isNaN(loc.price)) {
+            existing.price = loc.price;
+          }
         } else {
           // Store name validation: prefer storeName, but don't use storeId if it looks like an ID
           let displayStoreName = null;
@@ -381,7 +389,8 @@ async function getInventoryContext() {
             storeName: displayStoreName,
             storeId: loc.storeId.trim() || "N/A",
             qty: loc.qty,
-            reorderPoint: loc.reorderPoint
+            reorderPoint: loc.reorderPoint,
+            price: loc.price !== null && !Number.isNaN(loc.price) ? loc.price : null
           });
         }
       });
@@ -391,7 +400,7 @@ async function getInventoryContext() {
     });
 
     // Format grouped products
-    const formattedProducts = Array.from(productMap.values()).map(product => {
+      const formattedProducts = Array.from(productMap.values()).map(product => {
       // Sort locations by quantity (highest first)
       const sortedLocations = product.locations.sort((a, b) => b.qty - a.qty);
       
@@ -399,14 +408,17 @@ async function getInventoryContext() {
       const totalQty = sortedLocations.reduce((sum, loc) => sum + loc.qty, 0);
       
       // Format locations list (using validated store names from deduplication)
-      const locationsList = sortedLocations.map(loc => {
+        const locationsList = sortedLocations.map(loc => {
         // Use the validated storeName (already validated during deduplication)
         const displayStoreName = loc.storeName || "Unknown Store";
         // Only show store ID if it's different from store name and not "N/A"
         const storeIdDisplay = (loc.storeId && loc.storeId !== "N/A" && loc.storeId.toLowerCase() !== displayStoreName.toLowerCase()) 
           ? ` (ID: ${loc.storeId})` 
           : "";
-        return `  - ${displayStoreName}${storeIdDisplay}: ${loc.qty} units`;
+          const priceDisplay = loc.price !== null && !Number.isNaN(loc.price)
+            ? ` | Price: RM ${loc.price.toFixed(2)}`
+            : "";
+          return `  - ${displayStoreName}${storeIdDisplay}: ${loc.qty} units${priceDisplay}`;
       }).join("\n");
 
       return `Product: ${product.name} (SKU: ${product.sku}, Category: ${product.category})
@@ -475,6 +487,7 @@ Instructions:
 - Do not show the Store ID in the response
 - Group all locations for the same product together
 - Calculate and show total quantities when relevant
+- Include price (RM) when available and clearly state it when the user asks about price
 - If a product is not found or near to out of stock, suggest similar items if available
 - Be helpful, concise, and professional
 - If asked about something not related to inventory, politely redirect to inventory-related topics
@@ -1730,6 +1743,7 @@ exports.copyInventory = onCall(async (request) => {
       }
 
       // Create new item data
+      // Spread all existing fields (including name, sku, qty, reorderPoint, category, price, Keywords, etc.)
       const newData = {
         ...data,
         storeId: toStore,
@@ -1738,6 +1752,8 @@ exports.copyInventory = onCall(async (request) => {
         // Update legacy fields for compatibility
         StoreId: toStore,
         StoreName: destinationStoreName,
+        // Preserve price field if it exists (used for chatbot queries and redeem points calculation)
+        price: data.price !== undefined ? data.price : null,
         // Set new timestamps
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),

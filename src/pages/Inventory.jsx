@@ -566,7 +566,7 @@ export default function Inventory() {
 
             <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
-                <label htmlFor="name" className="block text-sm mb-1">
+                <label htmlFor="name" className="block text-sm mb-1 text-gray-700 dark:text-gray-300">
                   Name
                 </label>
                 <motion.input
@@ -587,7 +587,7 @@ export default function Inventory() {
               </div>
 
               <div>
-                <label htmlFor="sku" className="block text-sm mb-1">
+                <label htmlFor="sku" className="block text-sm mb-1 text-gray-700 dark:text-gray-300">
                   SKU
                 </label>
                 <motion.input
@@ -608,7 +608,7 @@ export default function Inventory() {
               </div>
 
               <div>
-                <label htmlFor="qty" className="block text-sm mb-1">
+                <label htmlFor="qty" className="block text-sm mb-1 text-gray-700 dark:text-gray-300">
                   Qty
                 </label>
                 <motion.input
@@ -630,7 +630,7 @@ export default function Inventory() {
               </div>
 
               <div>
-                <label htmlFor="reorderPoint" className="block text-sm mb-1">
+                <label htmlFor="reorderPoint" className="block text-sm mb-1 text-gray-700 dark:text-gray-300">
                   Reorder Point
                 </label>
                 <motion.input
@@ -652,7 +652,7 @@ export default function Inventory() {
               </div>
 
               <div>
-                <label htmlFor="category" className="block text-sm mb-1">
+                <label htmlFor="category" className="block text-sm mb-1 text-gray-700 dark:text-gray-300">
                   Category
                 </label>
                 <motion.input
@@ -675,7 +675,7 @@ export default function Inventory() {
               {!storeId && (
                 <>
                   <div>
-                    <label htmlFor="StoreId" className="block text-sm mb-1">
+                    <label htmlFor="StoreId" className="block text-sm mb-1 text-gray-700 dark:text-gray-300">
                       Store ID
                     </label>
                     {storeLoadError && (
@@ -709,7 +709,7 @@ export default function Inventory() {
                   </div>
 
                   <div>
-                    <label htmlFor="StoreName" className="block text-sm mb-1">
+                    <label htmlFor="StoreName" className="block text-sm mb-1 text-gray-700 dark:text-gray-300">
                       Store Name
                     </label>
                     <input
@@ -717,7 +717,7 @@ export default function Inventory() {
                       name="StoreName"
                       value={form.StoreName}
                       onChange={handleChange}
-                      className="w-full border rounded px-3 py-2 bg-gray-50 dark:bg-gray-800"
+                      className="w-full border rounded px-3 py-2 bg-gray-50 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600"
                       placeholder="Auto-filled"
                       autoComplete="off"
                       readOnly
@@ -728,7 +728,7 @@ export default function Inventory() {
               {storeId && (
                 <>
                   <div>
-                    <label htmlFor="StoreId" className="block text-sm mb-1">
+                    <label htmlFor="StoreId" className="block text-sm mb-1 text-gray-700 dark:text-gray-300">
                       Store ID
                     </label>
                     {storeLoadError && (
@@ -766,7 +766,7 @@ export default function Inventory() {
                   </div>
 
                   <div>
-                    <label htmlFor="StoreName" className="block text-sm mb-1">
+                    <label htmlFor="StoreName" className="block text-sm mb-1 text-gray-700 dark:text-gray-300">
                       Store Name
                     </label>
                     <input
@@ -774,7 +774,7 @@ export default function Inventory() {
                       name="StoreName"
                       value={form.StoreName || storeName}
                       onChange={handleChange}
-                      className="w-full border rounded px-3 py-2 bg-gray-50 dark:bg-gray-800"
+                      className="w-full border rounded px-3 py-2 bg-gray-50 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600"
                       placeholder="Auto-filled"
                       autoComplete="off"
                       readOnly
@@ -784,7 +784,7 @@ export default function Inventory() {
               )}
 
               <div>
-                <label htmlFor="Keywords" className="block text-sm mb-1">
+                <label htmlFor="Keywords" className="block text-sm mb-1 text-gray-700 dark:text-gray-300">
                   Keywords
                 </label>
                 <motion.input
@@ -805,7 +805,7 @@ export default function Inventory() {
               </div>
 
               <div>
-                <label htmlFor="price" className="block text-sm mb-1">
+                <label htmlFor="price" className="block text-sm mb-1 text-gray-700 dark:text-gray-300">
                   Selling Price (RM)
                 </label>
                 <motion.input
@@ -854,7 +854,7 @@ export default function Inventory() {
                       setEditingId(null);
                       resetForm();
                     }}
-                    className="border border-gray-400 px-4 py-2 rounded hover:bg-gray-700 hover:text-white"
+                    className="border border-gray-400 dark:border-gray-500 px-4 py-2 rounded hover:bg-gray-700 hover:text-white dark:text-gray-200 dark:hover:bg-gray-600 text-gray-900"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     transition={{ duration: 0.2 }}
@@ -909,7 +909,7 @@ export default function Inventory() {
               <div className="overflow-x-auto">
                 <div className="divide-y divide-gray-200 dark:divide-gray-700 min-w-[1000px]">
                   {/* header */}
-                  <div className="grid grid-cols-9 gap-2 px-4 py-2 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  <div className="grid grid-cols-9 gap-2 px-4 py-2 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-300">
                   <div>Name</div>
                   <div>SKU</div>
                   <div>Qty</div>
