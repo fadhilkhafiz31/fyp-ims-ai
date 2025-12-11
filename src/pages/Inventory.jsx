@@ -76,6 +76,7 @@ export default function Inventory() {
     qty: "",
     reorderPoint: "5",
     category: "",
+    price: "",
     StoreId: "",
     StoreName: "",
     Keywords: "",
@@ -322,6 +323,14 @@ export default function Inventory() {
       return;
     }
 
+    // Allow decimals for price (e.g., 10.50, 0.99)
+    if (name === "price") {
+      if (value === "" || /^\d*\.?\d*$/.test(value)) {
+        setForm((f) => ({ ...f, [name]: value }));
+      }
+      return;
+    }
+
     setForm((f) => ({ ...f, [name]: value }));
   };
 
@@ -357,6 +366,7 @@ export default function Inventory() {
       qty: Number(form.qty),
       reorderPoint: Number(form.reorderPoint),
       category: form.category.trim(),
+      price: form.price ? Number(form.price) : null, // Price in RM (can be decimal)
       // canonical fields (lowercase)
       storeId: finalStoreId,
       storeName: finalStoreName,
@@ -398,6 +408,7 @@ export default function Inventory() {
       qty: String(Number(it.qty ?? 0)),
       reorderPoint: String(Number(it.reorderPoint ?? 5)),
       category: it.category || "",
+      price: it.price ? String(it.price) : "",
       StoreId: it.storeId || it.StoreId || "",
       StoreName: it.storeName || it.StoreName || "",
       Keywords: Array.isArray(it.Keywords) ? it.Keywords.join(", ") : it.Keywords || "",
@@ -793,6 +804,31 @@ export default function Inventory() {
                 />
               </div>
 
+              <div>
+                <label htmlFor="price" className="block text-sm mb-1">
+                  Selling Price (RM)
+                </label>
+                <motion.input
+                  id="price"
+                  name="price"
+                  type="text"
+                  value={form.price}
+                  onChange={handleChange}
+                  className="w-full border rounded px-3 py-2 focus:outline-none transition-colors"
+                  placeholder="e.g., 2.50"
+                  inputMode="decimal"
+                  autoComplete="off"
+                  whileFocus={{
+                    borderColor: "#3b82f6",
+                    boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.1)",
+                  }}
+                  transition={{ duration: 0.2 }}
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Unit selling price - customers can inquire about this price via chatbot
+                </p>
+              </div>
+
               <div className="flex items-end gap-3">
                 <motion.button
                   type="submit"
@@ -873,15 +909,14 @@ export default function Inventory() {
               <div className="overflow-x-auto">
                 <div className="divide-y divide-gray-200 dark:divide-gray-700 min-w-[1000px]">
                   {/* header */}
-                  <div className="grid grid-cols-10 gap-2 px-4 py-2 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  <div className="grid grid-cols-9 gap-2 px-4 py-2 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
                   <div>Name</div>
                   <div>SKU</div>
                   <div>Qty</div>
-                  <div>Reorder</div>
                   <div>Category</div>
+                  <div>Reorder</div>
                   <div>Store Name</div>
-                  <div>Store ID</div>
-                  <div>Created</div>
+                  <div>Price (RM)</div>
                   <div>Keywords</div>
                   <div className="text-right">Actions</div>
                 </div>
@@ -903,7 +938,7 @@ export default function Inventory() {
                     return (
                       <motion.div
                         key={it.id}
-                        className="grid grid-cols-10 gap-2 px-4 py-3 text-sm items-center text-gray-900 dark:text-white"
+                        className="grid grid-cols-9 gap-2 px-4 py-3 text-sm items-center text-gray-900 dark:text-white"
                         variants={{
                           hidden: { opacity: 0, x: -20, backgroundColor: "rgba(0,0,0,0)" },
                           visible: { opacity: 1, x: 0, backgroundColor: "rgba(0,0,0,0)" },
@@ -929,25 +964,21 @@ export default function Inventory() {
                         </div>
                         <div className="truncate">{it.sku || "—"}</div>
                         <div>{Number(it.qty ?? 0)}</div>
-                        <div>{Number(it.reorderPoint ?? 0)}</div>
                         <div
                           className="break-words whitespace-normal text-sm leading-tight"
                           title={it.category || undefined}
                         >
                           {it.category || "—"}
                         </div>
+                        <div>{Number(it.reorderPoint ?? 0)}</div>
                         <div
                           className="break-words whitespace-normal text-sm leading-tight"
                           title={it.storeName || it.StoreName || undefined}
                         >
                           {it.storeName || it.StoreName || "—"}
                         </div>
-                        <div className="truncate">{it.storeId || it.StoreId || "—"}</div>
-                        <div
-                          className="break-words whitespace-normal text-sm leading-tight"
-                          title={formatTimestamp(it.createdAt)}
-                        >
-                          {formatTimestamp(it.createdAt)}
+                        <div className="font-medium">
+                          {it.price !== null && it.price !== undefined ? `RM ${Number(it.price).toFixed(2)}` : "—"}
                         </div>
                         <div className="truncate">
                           {Array.isArray(it.Keywords) ? it.Keywords.join(", ") : it.Keywords || "—"}

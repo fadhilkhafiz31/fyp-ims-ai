@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { httpsCallable } from "firebase/functions";
-import { functions } from "../lib/firebase";
+import { functions, db } from "../lib/firebase";
+import { doc, onSnapshot } from "firebase/firestore";
+import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
 import * as motion from "motion/react-client";
 import TopNavigation from "../components/TopNavigation";
@@ -161,10 +163,37 @@ export default function RedeemPoints() {
   const [loading, setLoading] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [success, setSuccess] = useState(null);
+  const [pointsBalance, setPointsBalance] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 1024);
   const { toast } = useToast();
+  const { user } = useAuth();
   const scannerRef = useRef(null);
   const html5QrCodeRef = useRef(null);
+
+  // Fetch user points balance in real-time
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    const userDocRef = doc(db, "users", user.uid);
+    const unsubscribe = onSnapshot(
+      userDocRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const userData = snapshot.data();
+          // Use loyaltyPoints field (matches Firebase function)
+          setPointsBalance(userData.loyaltyPoints || 0);
+        } else {
+          setPointsBalance(0);
+        }
+      },
+      (error) => {
+        console.error("Error fetching user points:", error);
+        setPointsBalance(0);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user?.uid]);
 
   const handleRedeem = async (e) => {
     if (e) e.preventDefault();
@@ -265,7 +294,21 @@ export default function RedeemPoints() {
 
         {/* Main Content Area */}
         <main className={`flex-1 ${sidebarOpen ? "ml-64" : ""} p-6`}>
-          <div className="max-w-md mx-auto py-12">
+          {/* Points Balance Display - Outside Card */}
+          <div className="max-w-md mx-auto mb-6">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-200 dark:border-green-800 rounded-xl p-6 text-center shadow-md"
+            >
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">You currently have:</p>
+              <p className="text-3xl font-bold text-green-700 dark:text-green-400 flex items-center justify-center gap-2">
+                {pointsBalance} Points <span className="text-3xl">🎉</span>
+              </p>
+            </motion.div>
+          </div>
+
+          <div className="max-w-md mx-auto py-6">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
