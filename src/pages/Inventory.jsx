@@ -13,6 +13,7 @@ import {
   serverTimestamp,
   updateDoc,
   where,
+  writeBatch,
 } from "firebase/firestore";
 import * as motion from "motion/react-client";
 import { db } from "../lib/firebase";
@@ -90,6 +91,7 @@ export default function Inventory() {
   const [storeOptions, setStoreOptions] = useState([]);
   const [storeLoadError, setStoreLoadError] = useState("");
   const [highlightedItems, setHighlightedItems] = useState(new Set());
+  const [deletingAll, setDeletingAll] = useState(false);
 
   // ---- realtime subscription ----
   useEffect(() => {
@@ -343,6 +345,9 @@ export default function Inventory() {
       errors.push("Reorder point must be a number.");
     if (!form.category.trim()) errors.push("Category is required.");
     if (!form.Keywords.trim()) errors.push("Keywords are required.");
+    if (!form.price || form.price === "" || Number.isNaN(Number(form.price)) || Number(form.price) <= 0) {
+      errors.push("Selling Price is required and must be a positive number.");
+    }
     if (!storeId && !form.StoreId.trim()) errors.push("Store ID is required.");
     return errors;
   };
@@ -425,6 +430,62 @@ export default function Inventory() {
       // eslint-disable-next-line no-console
       console.error("delete error:", err);
       toast.error("Failed to delete item. Please try again.");
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    if (items.length === 0) {
+      toast.warning("No items to delete.");
+      return;
+    }
+
+    const confirmMessage = storeId
+      ? `Are you sure you want to delete ALL ${items.length} items from "${storeName || storeId}"?\n\nThis action cannot be undone!`
+      : `Are you sure you want to delete ALL ${items.length} items from the inventory?\n\nThis action cannot be undone!`;
+
+    if (!window.confirm(confirmMessage)) return;
+
+    // Double confirmation for safety
+    if (!window.confirm("This will permanently delete all items. Type OK to confirm.")) return;
+
+    setDeletingAll(true);
+    try {
+      // Use batch writes (Firestore limit is 500 operations per batch)
+      const batches = [];
+      let currentBatch = writeBatch(db);
+      let operationCount = 0;
+      const maxOperationsPerBatch = 500;
+
+      for (const item of items) {
+        const itemRef = doc(db, INVENTORY_COL, item.id);
+        currentBatch.delete(itemRef);
+        operationCount++;
+
+        // Start a new batch if we've reached the limit
+        if (operationCount >= maxOperationsPerBatch) {
+          batches.push(currentBatch);
+          currentBatch = writeBatch(db);
+          operationCount = 0;
+        }
+      }
+
+      // Add the last batch if it has operations
+      if (operationCount > 0) {
+        batches.push(currentBatch);
+      }
+
+      // Execute all batches
+      for (const batch of batches) {
+        await batch.commit();
+      }
+
+      toast.success(`Successfully deleted ${items.length} item${items.length !== 1 ? "s" : ""}!`);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("delete all error:", err);
+      toast.error("Failed to delete items. Please try again.");
+    } finally {
+      setDeletingAll(false);
     }
   };
 
@@ -818,6 +879,7 @@ export default function Inventory() {
                   placeholder="e.g., 2.50"
                   inputMode="decimal"
                   autoComplete="off"
+                  required
                   whileFocus={{
                     borderColor: "#3b82f6",
                     boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.1)",
@@ -877,13 +939,42 @@ export default function Inventory() {
                   </span>
                 )}
               </div>
-              <div className="text-sm text-gray-500">
-                {hasSearch ? (
-                  <span>
-                    {filteredItems.length} of {items.length} items
-                  </span>
-                ) : (
-                  <span>{items.length} total</span>
+              <div className="flex items-center gap-3">
+                <div className="text-sm text-gray-500">
+                  {hasSearch ? (
+                    <span>
+                      {filteredItems.length} of {items.length} items
+                    </span>
+                  ) : (
+                    <span>{items.length} total</span>
+                  )}
+                </div>
+                {items.length > 0 && (role === "admin" || role === "staff") && (
+                  <motion.button
+                    type="button"
+                    onClick={handleDeleteAll}
+                    disabled={deletingAll || loading}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    whileHover={!deletingAll && !loading ? { scale: 1.05 } : {}}
+                    whileTap={!deletingAll && !loading ? { scale: 0.95 } : {}}
+                  >
+                    {deletingAll ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Delete All
+                      </>
+                    )}
+                  </motion.button>
                 )}
               </div>
             </div>

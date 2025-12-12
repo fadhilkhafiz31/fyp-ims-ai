@@ -436,6 +436,115 @@ ${locationsList}`;
 
 const reply = (text) => ({ fulfillmentText: text });
 
+// ---------- Rate Limiting Configuration ----------
+// Free tier limits (adjust based on your plan)
+const RATE_LIMITS = {
+  DAILY_LIMIT: 50,        // Max requests per day
+  MONTHLY_LIMIT: 1000,    // Max requests per month
+  PER_MINUTE_LIMIT: 5,    // Max requests per minute (per user)
+  PER_HOUR_LIMIT: 20,     // Max requests per hour (per user)
+};
+
+// Track usage in Firestore
+async function checkAndUpdateUsage() {
+  const today = new Date();
+  const dateKey = today.toISOString().split('T')[0]; // YYYY-MM-DD
+  const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
+  
+  const usageRef = db.collection('gemini_usage').doc('global');
+  
+  try {
+    return await db.runTransaction(async (tx) => {
+      const usageDoc = await tx.get(usageRef);
+      const usageData = usageDoc.exists ? usageDoc.data() : {};
+      
+      // Initialize counters if they don't exist
+      const dailyCount = usageData[dateKey] || 0;
+      const monthlyCount = usageData[monthKey] || 0;
+      
+      // Check limits
+      if (dailyCount >= RATE_LIMITS.DAILY_LIMIT) {
+        throw new Error(`Daily limit reached (${RATE_LIMITS.DAILY_LIMIT} requests/day). Please try again tomorrow.`);
+      }
+      
+      if (monthlyCount >= RATE_LIMITS.MONTHLY_LIMIT) {
+        throw new Error(`Monthly limit reached (${RATE_LIMITS.MONTHLY_LIMIT} requests/month). Please contact administrator.`);
+      }
+      
+      // Update counters
+      const updates = {};
+      updates[dateKey] = (dailyCount || 0) + 1;
+      updates[monthKey] = (monthlyCount || 0) + 1;
+      updates.lastRequest = admin.firestore.FieldValue.serverTimestamp();
+      updates.totalRequests = (usageData.totalRequests || 0) + 1;
+      
+      tx.set(usageRef, updates, { merge: true });
+      
+      return {
+        dailyCount: updates[dateKey],
+        monthlyCount: updates[monthKey],
+        dailyLimit: RATE_LIMITS.DAILY_LIMIT,
+        monthlyLimit: RATE_LIMITS.MONTHLY_LIMIT,
+        remainingDaily: RATE_LIMITS.DAILY_LIMIT - updates[dateKey],
+        remainingMonthly: RATE_LIMITS.MONTHLY_LIMIT - updates[monthKey],
+      };
+    });
+  } catch (error) {
+    // If it's a limit error, throw it
+    if (error.message.includes('limit reached')) {
+      throw error;
+    }
+    // For other errors, log and allow (fail open to avoid blocking service)
+    console.error("Error checking usage:", error);
+    return {
+      dailyCount: 0,
+      monthlyCount: 0,
+      dailyLimit: RATE_LIMITS.DAILY_LIMIT,
+      monthlyLimit: RATE_LIMITS.MONTHLY_LIMIT,
+      remainingDaily: RATE_LIMITS.DAILY_LIMIT,
+      remainingMonthly: RATE_LIMITS.MONTHLY_LIMIT,
+    };
+  }
+}
+
+// Per-user rate limiting (simple in-memory cache, resets on function restart)
+const userRequestCache = new Map();
+
+function checkUserRateLimit(userId) {
+  const now = Date.now();
+  const userKey = userId || 'anonymous';
+  
+  if (!userRequestCache.has(userKey)) {
+    userRequestCache.set(userKey, {
+      requests: [],
+      lastCleanup: now,
+    });
+  }
+  
+  const userData = userRequestCache.get(userKey);
+  
+  // Cleanup old requests (older than 1 hour)
+  if (now - userData.lastCleanup > 3600000) {
+    userData.requests = userData.requests.filter(timestamp => now - timestamp < 3600000);
+    userData.lastCleanup = now;
+  }
+  
+  // Check per-minute limit
+  const recentRequests = userData.requests.filter(timestamp => now - timestamp < 60000);
+  if (recentRequests.length >= RATE_LIMITS.PER_MINUTE_LIMIT) {
+    throw new Error(`Rate limit exceeded. Maximum ${RATE_LIMITS.PER_MINUTE_LIMIT} requests per minute. Please wait a moment.`);
+  }
+  
+  // Check per-hour limit
+  const hourlyRequests = userData.requests.filter(timestamp => now - timestamp < 3600000);
+  if (hourlyRequests.length >= RATE_LIMITS.PER_HOUR_LIMIT) {
+    throw new Error(`Rate limit exceeded. Maximum ${RATE_LIMITS.PER_HOUR_LIMIT} requests per hour. Please wait before trying again.`);
+  }
+  
+  // Add current request
+  userData.requests.push(now);
+}
+
 // ---------- Gemini AI Handler ----------
 async function geminiHandler(req, res) {
   try {
@@ -447,6 +556,33 @@ async function geminiHandler(req, res) {
         response: "Please provide a message to chat with the AI."
       });
     }
+
+    // Get user ID from request (if available)
+    const userId = req.body?.userId || req.headers['x-user-id'] || 'anonymous';
+    
+    // Check per-user rate limits
+    try {
+      checkUserRateLimit(userId);
+    } catch (rateLimitError) {
+      return res.status(429).json({
+        error: "Rate limit exceeded",
+        response: rateLimitError.message
+      });
+    }
+
+    // Check and update global usage limits
+    let usageInfo;
+    try {
+      usageInfo = await checkAndUpdateUsage();
+    } catch (limitError) {
+      return res.status(429).json({
+        error: "Usage limit exceeded",
+        response: limitError.message
+      });
+    }
+
+    // Log usage info (for monitoring)
+    console.log(`Gemini API usage - Daily: ${usageInfo.dailyCount}/${usageInfo.dailyLimit}, Monthly: ${usageInfo.monthlyCount}/${usageInfo.monthlyLimit}`);
 
     // Get API key from Firebase secret
     const GEMINI_API_KEY = geminiApiKeySecret.value();
@@ -545,7 +681,13 @@ User Question: ${message}`;
     return res.json({
       response: text,
       model: successfulModel,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      usage: {
+        dailyRemaining: usageInfo.remainingDaily,
+        monthlyRemaining: usageInfo.remainingMonthly,
+        dailyUsed: usageInfo.dailyCount,
+        monthlyUsed: usageInfo.monthlyCount,
+      }
     });
 
   } catch (error) {
@@ -1793,7 +1935,7 @@ exports.copyInventory = onCall(async (request) => {
         itemName: itemData.name || null,
         storeId: toStore,
         qty: qty,
-        note: `Copied from "${sourceStoreName}" (${fromStore})`,
+        note: "New Stock",
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         balanceBefore: 0, // New item, so balance before is 0
         balanceAfter: qty, // Balance after is the copied quantity
