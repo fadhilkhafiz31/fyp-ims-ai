@@ -550,7 +550,7 @@ export default function CustomerOrGuestDashboard() {
           </section>
 
         </main>
-      </div>
+        </div>
 
       {/* Floating Chat Widget */}
       {chatWidgetOpen ? (

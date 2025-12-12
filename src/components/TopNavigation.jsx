@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import * as motion from "motion/react-client";
 import { useAuth } from "../contexts/AuthContext";
@@ -12,7 +12,11 @@ export default function TopNavigation({ role = null, onToggleSidebar = null }) {
   const { storeName, storeId } = useStore();
   const { searchQuery, updateSearch, clearSearch, hasSearch } = useSearch();
   const { toast } = useToast();
+  const location = useLocation();
   const [localSearch, setLocalSearch] = useState(searchQuery);
+  
+  // Hide Home button on About and Contact pages
+  const hideHomeButton = location.pathname === "/about" || location.pathname === "/contact";
 
   const effectiveRole = typeof role === "string" ? role.toLowerCase() : null;
   const isPrivileged = effectiveRole === "admin" || effectiveRole === "staff";
@@ -59,12 +63,23 @@ export default function TopNavigation({ role = null, onToggleSidebar = null }) {
               </svg>
             </button>
           )}
-          <img
-            src="/Smart Stock AI (1).png"
-            alt="SmartStockAI Logo"
-            className="h-10 w-auto bg-transparent object-contain"
-            style={{ mixBlendMode: "normal" }}
-          />
+          {hideHomeButton ? (
+            <img
+              src="/Smart Stock AI (1).png"
+              alt="SmartStockAI Logo"
+              className="h-10 w-auto bg-transparent object-contain"
+              style={{ mixBlendMode: "normal" }}
+            />
+          ) : (
+            <Link to={isPrivileged ? "/dashboard" : "/chatbot"} className="flex items-center">
+              <img
+                src="/Smart Stock AI (1).png"
+                alt="SmartStockAI Logo"
+                className="h-10 w-auto bg-transparent object-contain cursor-pointer hover:opacity-80 transition-opacity"
+                style={{ mixBlendMode: "normal" }}
+              />
+            </Link>
+          )}
         </div>
 
         {/* Center and Right content */}
@@ -253,6 +268,14 @@ export default function TopNavigation({ role = null, onToggleSidebar = null }) {
 
             {/* Menu Links */}
             <div className="hidden sm:flex items-center gap-4 border-l border-green-400/30 pl-4 ml-2">
+              {hideHomeButton && (
+                <AnimatedLink
+                  to="/login"
+                  className="text-sm font-medium text-white hover:text-green-100 transition"
+                >
+                  LOG IN
+                </AnimatedLink>
+              )}
               <AnimatedLink
                 to="/about"
                 className="text-sm font-medium text-white hover:text-green-100 transition"

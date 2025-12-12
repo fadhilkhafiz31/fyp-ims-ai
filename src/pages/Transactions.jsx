@@ -307,7 +307,7 @@ export default function Transactions() {
 
     // Show loading state
     setProcessingImage(true);
-    
+
     // Close dropdown
     setShowReceiptOptions(false);
 
