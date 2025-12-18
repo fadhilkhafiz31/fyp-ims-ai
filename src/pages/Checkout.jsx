@@ -8,6 +8,7 @@ import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { PageReady } from "../components/NProgressBar";
 import TopNavigation from "../components/TopNavigation";
 import SideNavigation from "../components/SideNavigation";
+import LocationSelector from "../components/LocationSelector";
 
 export default function Checkout() {
   const { storeId, storeName } = useStore();
@@ -117,8 +118,29 @@ export default function Checkout() {
         <main className={`flex-1 ${sidebarOpen ? "ml-64" : ""} p-6`}>
           <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Checkout</h1>
 
-          {/* TWO COLUMN LAYOUT */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Location Selector */}
+          <div className="mb-6">
+            <LocationSelector />
+          </div>
+
+          {/* Show message if no store selected */}
+          {!storeId ? (
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6 text-center">
+              <div className="text-yellow-600 dark:text-yellow-400 mb-2">
+                <svg className="w-12 h-12 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
+                Please Select a Location
+              </h3>
+              <p className="text-yellow-700 dark:text-yellow-300">
+                Choose a store location above to view available products for checkout.
+              </p>
+            </div>
+          ) : (
+            /* TWO COLUMN LAYOUT */
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             {/* LEFT: Item Entry */}
             <div className="lg:col-span-1 bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-700 h-fit">
@@ -145,7 +167,7 @@ export default function Checkout() {
                   <input 
                     type="number" 
                     min="1" 
-                    className="w-full border p-2 rounded dark:bg-gray-800"
+                    className="w-full border p-2 rounded dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
                     value={qtyInput}
                     onChange={e => setQtyInput(e.target.value)}
                   />
@@ -162,34 +184,34 @@ export default function Checkout() {
 
             {/* RIGHT: Cart & Checkout */}
             <div className="lg:col-span-2 bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col h-[calc(100vh-10rem)]">
-              <h2 className="font-semibold mb-4 text-lg">Current Order</h2>
+              <h2 className="font-semibold mb-4 text-lg text-gray-900 dark:text-gray-100">Current Order</h2>
               
               {/* Cart Items List */}
               <div className="flex-1 overflow-y-auto mb-4">
                 {cart.length === 0 ? (
-                  <div className="text-center text-gray-500 mt-10">Cart is empty</div>
+                  <div className="text-center text-gray-500 dark:text-gray-400 mt-10">Cart is empty</div>
                 ) : (
                   <table className="w-full text-left">
                     <thead className="bg-gray-100 dark:bg-gray-800 text-sm">
                       <tr>
-                        <th className="p-2">Item</th>
-                        <th className="p-2">Price</th>
-                        <th className="p-2">Qty</th>
-                        <th className="p-2 text-right">Total</th>
+                        <th className="p-2 text-gray-900 dark:text-gray-100">Item</th>
+                        <th className="p-2 text-gray-900 dark:text-gray-100">Price</th>
+                        <th className="p-2 text-gray-900 dark:text-gray-100">Qty</th>
+                        <th className="p-2 text-right text-gray-900 dark:text-gray-100">Total</th>
                         <th className="p-2 w-10"></th>
                       </tr>
                     </thead>
                     <tbody className="text-sm">
                       {cart.map(item => (
                         <tr key={item.id} className="border-b dark:border-gray-700">
-                          <td className="p-2">{item.name}</td>
-                          <td className="p-2">{item.price.toFixed(2)}</td>
-                          <td className="p-2">{item.qty}</td>
-                          <td className="p-2 text-right">{(item.price * item.qty).toFixed(2)}</td>
+                          <td className="p-2 text-gray-900 dark:text-gray-100">{item.name}</td>
+                          <td className="p-2 text-gray-900 dark:text-gray-100">{item.price.toFixed(2)}</td>
+                          <td className="p-2 text-gray-900 dark:text-gray-100">{item.qty}</td>
+                          <td className="p-2 text-right text-gray-900 dark:text-gray-100">{(item.price * item.qty).toFixed(2)}</td>
                           <td className="p-2">
                             <button 
                               onClick={() => removeFromCart(item.id)}
-                              className="text-red-500 hover:text-red-700"
+                              className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                             >
                               ✕
                             </button>
@@ -203,7 +225,7 @@ export default function Checkout() {
 
               {/* Totals & Checkout Button */}
               <div className="border-t pt-4 dark:border-gray-700">
-                <div className="flex justify-between items-center text-xl font-bold mb-4">
+                <div className="flex justify-between items-center text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">
                   <span>Total Amount:</span>
                   <span>RM {cartTotal.toFixed(2)}</span>
                 </div>
@@ -218,7 +240,8 @@ export default function Checkout() {
               </div>
             </div>
 
-          </div>
+            </div>
+          )}
         </main>
       </div>
     </div>

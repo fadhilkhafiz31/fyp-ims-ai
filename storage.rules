@@ -15,5 +15,11 @@ service firebase.storage {
                       request.resource.size < 10 * 1024 * 1024 && // 10MB max
                       request.resource.contentType.matches('image/.*');
     }
+    
+    // PDF receipts: publicly readable, only functions can write
+    match /receipts/{receiptId} {
+      allow read: if resource.contentType == 'application/pdf'; // Public read access for PDF receipts
+      allow write: if false; // Only Cloud Functions can write (via Admin SDK)
+    }
   }
 }
