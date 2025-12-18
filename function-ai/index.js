@@ -2039,22 +2039,26 @@ exports.checkout = onCall(async (request) => {
     const file = bucket.file(`receipts/${orderId}.pdf`);
 
     await file.save(pdfBuffer, {
-      metadata: { contentType: "application/pdf" }
+      metadata: { 
+        contentType: "application/pdf",
+        // Make file publicly readable to avoid signed URL permission issues
+        cacheControl: 'public, max-age=31536000'
+      }
     });
 
-    // Get Download URL (valid for far future)
-    const [url] = await file.getSignedUrl({
-      action: 'read',
-      expires: '03-01-2500'
-    });
+    // Make the file publicly accessible
+    await file.makePublic();
+
+    // Use public URL instead of signed URL to avoid IAM permission issues
+    const publicUrl = `https://storage.googleapis.com/${bucket.name}/receipts/${orderId}.pdf`;
 
     // Save URL back to order for history
-    await orderRef.update({ receiptUrl: url });
+    await orderRef.update({ receiptUrl: publicUrl });
 
     return {
       success: true,
       orderId: orderId, // Redeem Code
-      receiptUrl: url
+      receiptUrl: publicUrl
     };
 
   } catch (error) {
