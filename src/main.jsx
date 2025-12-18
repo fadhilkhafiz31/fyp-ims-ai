@@ -21,6 +21,7 @@ const Register = lazy(() => import("./pages/Register"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Inventory = lazy(() => import("./pages/Inventory"));
 const Transactions = lazy(() => import("./pages/Transactions"));
+const Checkout = lazy(() => import("./pages/Checkout"));
 const StockNotification = lazy(() => import("./pages/StockNotification"));
 const Chatbot = lazy(() => import("./pages/Chatbot"));
 const GuestChatbot = lazy(() => import("./pages/CustomerOrGuestDashboard"));
@@ -184,6 +185,27 @@ function AnimatedRoutes() {
                     <RoleGuard allow={["admin", "staff"]}>
                       <PageReady />
                       <Transactions />
+                    </RoleGuard>
+                  </ProtectedRoute>
+                </motion.div>
+              }
+            />
+
+            {/* ✅ Checkout — only admin & staff can access */}
+            <Route
+              path="/checkout"
+              element={
+                <motion.div
+                  key="checkout"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <ProtectedRoute>
+                    <RoleGuard allow={["admin", "staff"]}>
+                      <PageReady />
+                      <Checkout />
                     </RoleGuard>
                   </ProtectedRoute>
                 </motion.div>

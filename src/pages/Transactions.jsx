@@ -291,7 +291,7 @@ export default function Transactions() {
   const processImageFile = async (file) => {
     if (!file) return false;
 
-    console.log("📁 File selected:", file.name, file.type, file.size);
+    console.log("≡ƒôü File selected:", file.name, file.type, file.size);
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
@@ -316,14 +316,14 @@ export default function Transactions() {
 
     // Revoke previous URL if exists
     if (imageUrlRef.current) {
-      console.log("🗑️ Revoking previous URL:", imageUrlRef.current);
+      console.log("≡ƒùæ∩╕Å Revoking previous URL:", imageUrlRef.current);
       URL.revokeObjectURL(imageUrlRef.current);
       imageUrlRef.current = null;
     }
 
     // Create blob URL for preview
     const url = URL.createObjectURL(file);
-    console.log("🖼️ Created blob URL:", url);
+    console.log("≡ƒû╝∩╕Å Created blob URL:", url);
     
     // Store URL in ref and state
     imageUrlRef.current = url;
@@ -331,7 +331,7 @@ export default function Transactions() {
     setCapturedImage(file);
     setForm(prev => ({ ...prev, receiptImage: file }));
     
-    console.log("✅ State updated - imageUrl:", url, "capturedImage:", file);
+    console.log("State updated - imageUrl:", url, "capturedImage:", file);
     
     // Hide loading state
     setProcessingImage(false);
@@ -419,17 +419,17 @@ export default function Transactions() {
         cacheControl: 'public, max-age=31536000',
       };
       
-      console.log("🔄 Uploading image to Firebase Storage...");
-      console.log("📦 File:", fileName);
-      console.log("👤 User:", user?.uid);
+      console.log("≡ƒöä Uploading image to Firebase Storage...");
+      console.log("≡ƒôª File:", fileName);
+      console.log("≡ƒæñ User:", user?.uid);
       
       await uploadBytes(storageRef, blobToUpload, metadata);
       const downloadURL = await getDownloadURL(storageRef);
       
-      console.log("✅ Image uploaded successfully:", downloadURL);
+      console.log("Image uploaded successfully:", downloadURL);
       return downloadURL;
     } catch (err) {
-      console.error("❌ Image upload error:", err);
+      console.error("Image upload error:", err);
       console.error("Error code:", err.code);
       console.error("Error message:", err.message);
       console.error("Error stack:", err.stack);
@@ -536,10 +536,10 @@ export default function Transactions() {
 
   // Manage blob URL for image preview
   useEffect(() => {
-    console.log("🔄 useEffect triggered - capturedImage:", !!capturedImage, "imageUrl:", imageUrl, "imageUrlRef:", imageUrlRef.current);
+    console.log("≡ƒöä useEffect triggered - capturedImage:", !!capturedImage, "imageUrl:", imageUrl, "imageUrlRef:", imageUrlRef.current);
     // Only create URL if we have an image but no URL yet
     if (capturedImage && !imageUrl && !imageUrlRef.current) {
-      console.log("🆕 Creating new URL in useEffect");
+      console.log("≡ƒåò Creating new URL in useEffect");
       const url = URL.createObjectURL(capturedImage);
       imageUrlRef.current = url;
       setImageUrl(url);
@@ -617,21 +617,21 @@ export default function Transactions() {
 
           {/* Last 30 Days Visual Summary */}
           <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-900 space-y-3">
-            <h2 className="font-semibold text-lg text-gray-900 dark:text-gray-100">📦 Last 30 Days Summary</h2>
+            <h2 className="font-semibold text-lg text-gray-900 dark:text-gray-100">Last 30 Days Summary</h2>
 
             <div className="text-sm leading-relaxed">
               <p className="text-green-700 dark:text-green-400">
                 + IN: <b>{last30.inQty}</b> units ({last30.inTx.length} transactions)
               </p>
               <p className="text-red-700 dark:text-red-400">
-                – OUT: <b>{last30.outQty}</b> units ({last30.outTx.length} transactions)
+                - OUT: <b>{last30.outQty}</b> units ({last30.outTx.length} transactions)
               </p>
               <hr className="my-2 border-gray-300 dark:border-gray-700" />
               <p
                 className={`font-medium ${last30.net >= 0 ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"
                   }`}
               >
-                {last30.net >= 0 ? "▲ Net Gain" : "▼ Net Loss"}:{" "}
+                {last30.net >= 0 ? "Net Gain" : "Net Loss"}:{" "}
                 {last30.net > 0 ? "+" : ""}
                 {last30.net} units
               </p>
@@ -658,10 +658,10 @@ export default function Transactions() {
                         <span className="ml-2 text-xs text-gray-600 dark:text-gray-400">(current: {currentQtyByIdOrName(it.id || null, it.name || null)})</span>
                       </div>
                       <div className="text-green-700 dark:text-green-400">
-                        ➕ {it.inQty ?? 0} <span className="text-xs text-gray-600 dark:text-gray-400">IN</span>
+                        {it.inQty ?? 0} <span className="text-xs text-gray-600 dark:text-gray-400">IN</span>
                       </div>
                       <div className="text-red-700 dark:text-red-400">
-                        ➖ {it.outQty ?? 0} <span className="text-xs text-gray-600 dark:text-gray-400">OUT</span>
+                        {it.outQty ?? 0} <span className="text-xs text-gray-600 dark:text-gray-400">OUT</span>
                       </div>
                     </div>
                   ))}
@@ -673,7 +673,7 @@ export default function Transactions() {
           {transactionsError && (
             <div className="border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
               <div className="flex items-start gap-3">
-                <div className="text-red-600 dark:text-red-400 font-semibold">⚠️ Error Loading Transactions</div>
+                <div className="text-red-600 dark:text-red-400 font-semibold">Error Loading Transactions</div>
               </div>
               <p className="text-sm text-red-700 dark:text-red-300 mt-2">
                 {transactionsError.code === "failed-precondition"
@@ -688,7 +688,7 @@ export default function Transactions() {
           {inventoryError && (
             <div className="border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
               <div className="flex items-start gap-3">
-                <div className="text-red-600 dark:text-red-400 font-semibold">⚠️ Error Loading Inventory</div>
+                <div className="text-red-600 dark:text-red-400 font-semibold">Error Loading Inventory</div>
               </div>
               <p className="text-sm text-red-700 dark:text-red-300 mt-2">
                 {inventoryError.code === "permission-denied"
@@ -717,7 +717,7 @@ export default function Transactions() {
                 disabled={!storeId}
               >
                 <option value="">
-                  {storeId ? "Select item…" : "Please select a location first"}
+                  {storeId ? "Select item..." : "Please select a location first"}
                 </option>
                 {filteredCatalog
                   .sort((a, b) => {
@@ -1181,7 +1181,7 @@ export default function Transactions() {
           aria-label="Open chat"
           title="Open SmartStockAI Assistant"
         >
-          <span className="text-2xl">🤖</span>
+          <span className="text-2xl" aria-hidden="true">🤖</span>
         </motion.button>
       )}
 

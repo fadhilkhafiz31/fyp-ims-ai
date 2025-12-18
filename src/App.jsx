@@ -10,6 +10,7 @@ const Register = lazy(() => import("./pages/Register"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Inventory = lazy(() => import("./pages/Inventory"));
 const Transactions = lazy(() => import("./pages/Transactions"));
+const Checkout = lazy(() => import("./pages/Checkout"));
 const StockNotification = lazy(() => import("./pages/StockNotification"));
 const GuestChatbot = lazy(() => import("./pages/CustomerOrGuestDashboard"));
 const GeminiChatTest = lazy(() => import("./pages/GeminiChatTest"));
@@ -63,6 +64,18 @@ export default function App() {
                   <RoleGuard allow={["admin", "staff"]}>
                     <PageReady />
                     <Transactions />
+                  </RoleGuard>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/checkout"
+              element={
+                <ProtectedRoute>
+                  <RoleGuard allow={["admin", "staff"]}>
+                    <PageReady />
+                    <Checkout />
                   </RoleGuard>
                 </ProtectedRoute>
               }

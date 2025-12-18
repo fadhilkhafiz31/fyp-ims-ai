@@ -4,6 +4,7 @@ const { setGlobalOptions } = require("firebase-functions/v2");
 const admin = require("firebase-admin");
 const express = require("express");
 const cors = require("cors");
+const { generateReceiptPdf } = require("./pdfGenerator");
 
 // Dialogflow detectIntent client (uses default creds in Functions)
 const dialogflow = require('@google-cloud/dialogflow');
@@ -1981,6 +1982,87 @@ exports.copyInventory = onCall(async (request) => {
   }
 });
 
+// ---------- Checkout Function ----------
+exports.checkout = onCall(async (request) => {
+  // 1. Validate Data
+  const { cart, storeId, storeName } = request.data;
+  if (!cart || cart.length === 0) {
+    throw new HttpsError('invalid-argument', 'Cart is empty');
+  }
+
+  // 2. Calculate Total
+  const totalAmount = cart.reduce(
+    (sum, item) => sum + (Number(item.price) * Number(item.qty)),
+    0
+  );
+
+  try {
+    // 3. Create Order Document (This ID will be the Redeem Code)
+    const orderRef = db.collection('orders').doc(); // Auto-ID
+    const orderId = orderRef.id;
+
+    // 4. Update Inventory (Batch Write)
+    const batch = db.batch();
+
+    // Save Order Record
+    batch.set(orderRef, {
+      storeId,
+      storeName: storeName || "Unknown Store",
+      totalAmount,
+      items: cart,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      redeemStatus: "unused", // IMPORTANT for Redeem Page
+      pointsAwarded: Math.floor(totalAmount) // 1 point per RM
+    });
+
+    // Deduct Stock Logic
+    cart.forEach(item => {
+      const itemRef = db.collection('inventory').doc(item.id);
+      const qtyToDeduct = Number(item.qty) || 0;
+      batch.update(itemRef, {
+        qty: admin.firestore.FieldValue.increment(-qtyToDeduct),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    });
+
+    await batch.commit();
+
+    // 5. Generate & Upload PDF
+    const pdfBuffer = await generateReceiptPdf({
+      id: orderId, // This is the redemption code
+      storeName,
+      items: cart,
+      totalAmount
+    });
+
+    const bucket = admin.storage().bucket();
+    const file = bucket.file(`receipts/${orderId}.pdf`);
+
+    await file.save(pdfBuffer, {
+      metadata: { contentType: "application/pdf" }
+    });
+
+    // Get Download URL (valid for far future)
+    const [url] = await file.getSignedUrl({
+      action: 'read',
+      expires: '03-01-2500'
+    });
+
+    // Save URL back to order for history
+    await orderRef.update({ receiptUrl: url });
+
+    return {
+      success: true,
+      orderId: orderId, // Redeem Code
+      receiptUrl: url
+    };
+
+  } catch (error) {
+    console.error("Checkout failed:", error);
+    throw new HttpsError('internal', error.message);
+  }
+});
+
 // ---------- Redeem Loyalty Code Function ----------
 exports.redeemLoyaltyCode = onCall(async (request) => {
   // Security: Check authentication
@@ -2020,29 +2102,26 @@ exports.redeemLoyaltyCode = onCall(async (request) => {
     );
   }
 
-  const codeTrimmed = code.trim().toUpperCase();
+  const codeTrimmed = code.trim();
 
   try {
     // Use Firestore transaction for atomic operations
     return await db.runTransaction(async (transaction) => {
-      // 1. Check if transaction exists (code is transaction ID)
-      const transactionRef = db.collection('transactions').doc(codeTrimmed);
-      const transactionDoc = await transaction.get(transactionRef);
+      // 1. Look up order (code is order ID)
+      const orderRef = db.collection('orders').doc(codeTrimmed);
+      const orderDoc = await transaction.get(orderRef);
 
-      if (!transactionDoc.exists) {
+      if (!orderDoc.exists) {
         throw new HttpsError(
           'not-found',
           'Invalid receipt code. Please check your receipt and try again.'
         );
       }
 
-      const transactionData = transactionDoc.data();
+      const orderData = orderDoc.data();
 
       // 2. Check if code has already been redeemed
-      const redeemedCodeRef = db.collection('redeemedCodes').doc(codeTrimmed);
-      const redeemedCodeDoc = await transaction.get(redeemedCodeRef);
-
-      if (redeemedCodeDoc.exists) {
+      if (orderData.redeemStatus === 'redeemed') {
         throw new HttpsError(
           'already-exists',
           'This code has already been redeemed. Each receipt code can only be used once.'
@@ -2050,8 +2129,8 @@ exports.redeemLoyaltyCode = onCall(async (request) => {
       }
 
       // 3. Calculate points based on purchase amount (1 point per RM, floored)
-      const totalAmount = Number(transactionData.totalAmount) || 0;
-      const pointsAwarded = Math.floor(totalAmount);
+      const totalAmount = Number(orderData.totalAmount) || 0;
+      const pointsAwarded = Number(orderData.pointsAwarded ?? Math.floor(totalAmount));
 
       if (pointsAwarded <= 0) {
         throw new HttpsError(
@@ -2072,13 +2151,10 @@ exports.redeemLoyaltyCode = onCall(async (request) => {
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       });
 
-      transaction.set(redeemedCodeRef, {
-        userId: userId,
-        code: codeTrimmed,
-        pointsAwarded: pointsAwarded,
-        transactionId: codeTrimmed,
-        transactionAmount: totalAmount,
-        redeemedAt: admin.firestore.FieldValue.serverTimestamp()
+      transaction.update(orderRef, {
+        redeemStatus: 'redeemed',
+        redeemedAt: admin.firestore.FieldValue.serverTimestamp(),
+        redeemedBy: userId
       });
 
       return {

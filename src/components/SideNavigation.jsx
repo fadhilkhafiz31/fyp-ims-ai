@@ -15,6 +15,7 @@ export default function SideNavigation({ activeItemCount, onClose }) {
 
     const isDashboardActive = location.pathname === "/dashboard";
     const isTransactionsActive = location.pathname === "/transactions";
+    const isCheckoutActive = location.pathname === "/checkout";
     const isInventoryActive = location.pathname === "/inventory";
     const isChatbotActive = location.pathname === "/chatbot";
     const isRedeemPointsActive = location.pathname === "/redeem-points";
@@ -24,6 +25,7 @@ export default function SideNavigation({ activeItemCount, onClose }) {
     const allMenuItems = [
         { icon: "grid", label: "Dashboard", path: isGuest ? "/dashboard-customer-guest" : "/dashboard", active: isGuest ? isGuestChatbotActive : isDashboardActive, roles: ["admin", "staff", "customer", "guest"] },
         { icon: "transaction", label: "Transaction", path: "/transactions", active: isTransactionsActive, roles: ["admin", "staff"] },
+        { icon: "checkout", label: "Checkout", path: "/checkout", active: isCheckoutActive, roles: ["admin", "staff"] },
         { icon: "bell", label: "Stock Notification", path: "/stock-notification", badge: activeItemCount || 0, roles: ["admin", "staff"] },
         { icon: "chatbot", label: "SmartStockAI Assistant", path: (isGuest || role === "customer") ? "/guest-chatbot-full" : "/chatbot", active: (isGuest || role === "customer") ? isGuestChatbotFullActive : isChatbotActive, roles: ["admin", "staff", "customer", "guest"] },
         { icon: "inventory", label: "Inventory", path: "/inventory", active: isInventoryActive, roles: ["admin", "staff"] },
@@ -48,6 +50,9 @@ export default function SideNavigation({ activeItemCount, onClose }) {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
+            ),
+            checkout: (
+                <span className="text-xl">🛒</span>
             ),
             bell: (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
