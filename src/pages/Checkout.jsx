@@ -80,6 +80,11 @@ export default function Checkout() {
     
     setProcessing(true);
     try {
+      console.log("Starting checkout process...");
+      console.log("Cart:", cart);
+      console.log("Store ID:", storeId);
+      console.log("Store Name:", storeName);
+      
       const checkoutFn = httpsCallable(functions, 'checkout');
       const result = await checkoutFn({ 
         cart, 
@@ -87,20 +92,37 @@ export default function Checkout() {
         storeName
       });
 
+      console.log("Checkout result:", result);
       const { receiptUrl, orderId } = result.data;
+      
+      console.log("Receipt URL:", receiptUrl);
+      console.log("Order ID:", orderId);
 
       // Success
       toast.success("Transaction Successful!");
       setCart([]); // Clear cart
       
       // Open Receipt
-      if (receiptUrl) window.open(receiptUrl, '_blank');
+      if (receiptUrl) {
+        console.log("Opening receipt URL in new tab:", receiptUrl);
+        const newWindow = window.open(receiptUrl, '_blank');
+        if (!newWindow) {
+          console.error("Failed to open new window - popup blocked?");
+          toast.warning("Receipt generated but popup was blocked. Check your browser settings.");
+        }
+      } else {
+        console.error("No receipt URL received");
+        toast.error("Receipt URL not generated");
+      }
       
       // Show Code to Cashier immediately
-      alert(`Receipt Generated!\n\nRedemption Code: ${orderId}\n\n(Receipt opened in new tab)`);
+      const shortCode = orderId.substring(0, 8).toUpperCase();
+      alert(`Receipt Generated!\n\nRedemption Code: ${shortCode}\n\n${receiptUrl ? "(Receipt opened in new tab)" : "(Receipt URL not available)"}`);
 
     } catch (error) {
-      console.error(error);
+      console.error("Checkout error:", error);
+      console.error("Error details:", error.message);
+      console.error("Error code:", error.code);
       toast.error("Checkout failed: " + error.message);
     } finally {
       setProcessing(false);

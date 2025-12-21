@@ -1,4 +1,6 @@
 const PDFDocument = require("pdfkit");
+const path = require("path");
+const fs = require("fs");
 
 exports.generateReceiptPdf = (order) => {
   return new Promise((resolve, reject) => {
@@ -9,8 +11,34 @@ exports.generateReceiptPdf = (order) => {
     doc.on("end", () => resolve(Buffer.concat(buffers)));
     doc.on("error", (err) => reject(err));
 
-    // --- 1. HEADER (SHOP NAME) ---
-    doc.fontSize(24).text("99 SPEEDMART", { align: "center" });
+    // --- 1. HEADER (LOGO) ---
+    try {
+      // Try to load the logo image
+      const logoPath = path.join(__dirname, "99speedmart-logo.png");
+      if (fs.existsSync(logoPath)) {
+        // Add logo image centered
+        const logoWidth = 120;
+        const logoHeight = 60;
+        const pageWidth = doc.page.width;
+        const logoX = (pageWidth - logoWidth) / 2;
+        
+        doc.image(logoPath, logoX, doc.y, {
+          width: logoWidth,
+          height: logoHeight
+        });
+        doc.moveDown(4); // Move down to account for logo height
+      } else {
+        // Fallback to text if logo not found
+        doc.fontSize(24).text("99 SPEEDMART", { align: "center" });
+        doc.moveDown();
+      }
+    } catch (error) {
+      console.error("Error loading logo:", error);
+      // Fallback to text if logo fails to load
+      doc.fontSize(24).text("99 SPEEDMART", { align: "center" });
+      doc.moveDown();
+    }
+
     doc.fontSize(12).text(order.storeName || "Store Location", { align: "center" });
     doc.fontSize(10).text("Official Receipt", { align: "center" });
     doc.fontSize(8).text("Thank you for shopping with us!", { align: "center" });
@@ -71,20 +99,34 @@ exports.generateReceiptPdf = (order) => {
 
     // --- 6. LOYALTY POINTS SECTION ---
     const codeY = doc.y + 10;
-    doc.rect(100, codeY, 400, 120).fillAndStroke("#fff3cd", "#856404");
+    const pageWidth = doc.page.width;
+    const boxWidth = 400;
+    const boxX = (pageWidth - boxWidth) / 2; // Center the box
+    
+    doc.rect(boxX, codeY, boxWidth, 80).fillAndStroke("#fff3cd", "#856404");
     doc.fillColor("black");
 
-    doc.fontSize(14).font("Helvetica-Bold").text("🎁 LOYALTY POINTS EARNED!", 100, codeY + 15, { align: "center" });
-    doc.fontSize(12).text(`You earned ${Math.floor(order.totalAmount)} points!`, 100, codeY + 35, { align: "center" });
+    // Remove emoji and use text instead since PDFs don't always support emojis
+    doc.fontSize(14).font("Helvetica-Bold").text("LOYALTY POINTS EARNED!", boxX, codeY + 10, { 
+      width: boxWidth, 
+      align: "center" 
+    });
+    doc.fontSize(12).text(`You earned ${Math.floor(order.totalAmount)} points! (RM1 = 1 Point)`, boxX, codeY + 30, { 
+      width: boxWidth, 
+      align: "center" 
+    });
     
-    doc.fontSize(10).font("Helvetica").text("YOUR REDEMPTION CODE:", 100, codeY + 55, { align: "center" });
-
-    // BIG CODE
-    doc.fontSize(28).font("Courier-Bold").fillColor("#856404");
-    doc.text(order.id, 100, codeY + 70, { align: "center" });
-
-    doc.fontSize(9).font("Helvetica").fillColor("gray");
-    doc.text(`Use this code in our app to redeem rewards!`, 100, codeY + 105, { align: "center" });
+    // Generate shorter code (8 characters)
+    const shortCode = order.id.substring(0, 8).toUpperCase();
+    doc.fontSize(10).font("Helvetica").text("REDEMPTION CODE:", boxX, codeY + 50, { 
+      width: boxWidth, 
+      align: "center" 
+    });
+    doc.fontSize(20).font("Courier-Bold").fillColor("#856404");
+    doc.text(shortCode, boxX, codeY + 65, { 
+      width: boxWidth, 
+      align: "center" 
+    });
 
     // --- 7. FOOTER ---
     doc.moveDown(3);

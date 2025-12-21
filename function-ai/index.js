@@ -1984,9 +1984,13 @@ exports.copyInventory = onCall(async (request) => {
 
 // ---------- Checkout Function ----------
 exports.checkout = onCall(async (request) => {
+  console.log("=== CHECKOUT FUNCTION CALLED ===");
+  console.log("Request data:", JSON.stringify(request.data, null, 2));
+  
   // 1. Validate Data
   const { cart, storeId, storeName } = request.data;
   if (!cart || cart.length === 0) {
+    console.error("Cart is empty or invalid");
     throw new HttpsError('invalid-argument', 'Cart is empty');
   }
 
@@ -1995,16 +1999,19 @@ exports.checkout = onCall(async (request) => {
     (sum, item) => sum + (Number(item.price) * Number(item.qty)),
     0
   );
+  console.log("Total amount calculated:", totalAmount);
 
   try {
     // 3. Create Order Document (This ID will be the Redeem Code)
     const orderRef = db.collection('orders').doc(); // Auto-ID
     const orderId = orderRef.id;
+    console.log("Generated order ID:", orderId);
 
     // 4. Update Inventory (Batch Write)
     const batch = db.batch();
 
     // Save Order Record
+    const shortCode = orderId.substring(0, 8).toUpperCase();
     batch.set(orderRef, {
       storeId,
       storeName: storeName || "Unknown Store",
@@ -2012,7 +2019,8 @@ exports.checkout = onCall(async (request) => {
       items: cart,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       redeemStatus: "unused", // IMPORTANT for Redeem Page
-      pointsAwarded: Math.floor(totalAmount) // 1 point per RM
+      pointsAwarded: Math.floor(totalAmount), // 1 point per RM
+      shortCode: shortCode // Store the short code for easy lookup
     });
 
     // Deduct Stock Logic
@@ -2025,44 +2033,93 @@ exports.checkout = onCall(async (request) => {
       });
     });
 
+    console.log("Committing batch write...");
     await batch.commit();
+    console.log("Batch write completed");
 
     // 5. Generate & Upload PDF
+    console.log("Generating PDF...");
     const pdfBuffer = await generateReceiptPdf({
       id: orderId, // This is the redemption code
       storeName,
       items: cart,
       totalAmount
     });
+    console.log("PDF generated, buffer size:", pdfBuffer.length);
 
     const bucket = admin.storage().bucket();
     const file = bucket.file(`receipts/${orderId}.pdf`);
+    console.log("Bucket name:", bucket.name);
+    console.log("File path:", `receipts/${orderId}.pdf`);
 
+    console.log("Uploading PDF to storage...");
     await file.save(pdfBuffer, {
       metadata: { 
         contentType: "application/pdf",
-        // Make file publicly readable to avoid signed URL permission issues
         cacheControl: 'public, max-age=31536000'
       }
     });
+    console.log("PDF uploaded successfully");
 
-    // Make the file publicly accessible
-    await file.makePublic();
+    // Instead of makePublic(), let's try getting a signed URL with a very long expiration
+    console.log("Generating signed URL...");
+    try {
+      const [signedUrl] = await file.getSignedUrl({
+        action: 'read',
+        expires: '03-01-2030' // 5 years from now
+      });
+      console.log("Signed URL generated:", signedUrl);
+      
+      // Save URL back to order for history
+      console.log("Updating order with receipt URL...");
+      await orderRef.update({ receiptUrl: signedUrl });
+      console.log("Order updated with receipt URL");
 
-    // Use public URL instead of signed URL to avoid IAM permission issues
-    const publicUrl = `https://storage.googleapis.com/${bucket.name}/receipts/${orderId}.pdf`;
+      const result = {
+        success: true,
+        orderId: orderId, // Redeem Code
+        receiptUrl: signedUrl
+      };
+      console.log("=== CHECKOUT COMPLETED SUCCESSFULLY ===");
+      console.log("Result:", JSON.stringify(result, null, 2));
+      return result;
+      
+    } catch (signedUrlError) {
+      console.error("Signed URL failed, trying public URL approach:", signedUrlError);
+      
+      // Fallback: try making file public
+      try {
+        await file.makePublic();
+        console.log("File made public");
+        
+        const publicUrl = `https://storage.googleapis.com/${bucket.name}/receipts/${orderId}.pdf`;
+        console.log("Generated public URL:", publicUrl);
 
-    // Save URL back to order for history
-    await orderRef.update({ receiptUrl: publicUrl });
+        // Save URL back to order for history
+        console.log("Updating order with receipt URL...");
+        await orderRef.update({ receiptUrl: publicUrl });
+        console.log("Order updated with receipt URL");
 
-    return {
-      success: true,
-      orderId: orderId, // Redeem Code
-      receiptUrl: publicUrl
-    };
+        const result = {
+          success: true,
+          orderId: orderId, // Redeem Code
+          receiptUrl: publicUrl
+        };
+        console.log("=== CHECKOUT COMPLETED SUCCESSFULLY (PUBLIC URL) ===");
+        console.log("Result:", JSON.stringify(result, null, 2));
+        return result;
+        
+      } catch (publicError) {
+        console.error("Public URL also failed:", publicError);
+        throw publicError;
+      }
+    }
 
   } catch (error) {
-    console.error("Checkout failed:", error);
+    console.error("=== CHECKOUT FAILED ===");
+    console.error("Error:", error);
+    console.error("Error message:", error.message);
+    console.error("Error stack:", error.stack);
     throw new HttpsError('internal', error.message);
   }
 });
@@ -2111,15 +2168,32 @@ exports.redeemLoyaltyCode = onCall(async (request) => {
   try {
     // Use Firestore transaction for atomic operations
     return await db.runTransaction(async (transaction) => {
-      // 1. Look up order (code is order ID)
-      const orderRef = db.collection('orders').doc(codeTrimmed);
-      const orderDoc = await transaction.get(orderRef);
-
-      if (!orderDoc.exists) {
-        throw new HttpsError(
-          'not-found',
-          'Invalid receipt code. Please check your receipt and try again.'
-        );
+      let orderRef;
+      let orderDoc;
+      
+      // 1. Look up order - try full code first, then short code
+      if (codeTrimmed.length > 10) {
+        // Likely a full order ID
+        orderRef = db.collection('orders').doc(codeTrimmed);
+        orderDoc = await transaction.get(orderRef);
+      }
+      
+      if (!orderDoc || !orderDoc.exists) {
+        // Try to find by short code
+        const ordersQuery = await db.collection('orders')
+          .where('shortCode', '==', codeTrimmed.toUpperCase())
+          .limit(1)
+          .get();
+          
+        if (ordersQuery.empty) {
+          throw new HttpsError(
+            'not-found',
+            'Invalid receipt code. Please check your receipt and try again.'
+          );
+        }
+        
+        orderDoc = ordersQuery.docs[0];
+        orderRef = orderDoc.ref;
       }
 
       const orderData = orderDoc.data();
