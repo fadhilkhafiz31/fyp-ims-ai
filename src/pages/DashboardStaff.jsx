@@ -7,6 +7,7 @@ import * as motion from "motion/react-client";
 
 import { auth, db } from "../lib/firebase";
 import { useAuth } from "../contexts/AuthContext";
+import { useDarkMode } from "../contexts/DarkModeContext";
 import { useLowStockCount } from "../hooks/useLowStockCount";
 import { useStore } from "../contexts/StoreContext";
 import ChatbotPanel from "../components/ChatbotPanel";
@@ -27,6 +28,7 @@ const LOW_STOCK_THRESHOLD = 5;
 // ============================================
 function SideNavigation({ activeItemCount, onClose, toast }) {
   const location = useLocation();
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
   const isDashboardActive = location.pathname === "/dashboard";
   const isTransactionsActive = location.pathname === "/transactions";
   const isInventoryActive = location.pathname === "/inventory";
@@ -39,7 +41,7 @@ function SideNavigation({ activeItemCount, onClose, toast }) {
     { icon: "bell", label: "Stock Notification", path: "/stock-notification", badge: activeItemCount || 0 },
     { icon: "chatbot", label: "SmartStockAI Assistant", path: "/chatbot", active: isChatbotActive },
     { icon: "inventory", label: "Inventory", path: "/inventory", active: isInventoryActive },
-    { icon: "user", label: "My Profile", path: "#", isMock: true },
+    { icon: "user", label: "My Profile", path: "/staff-profile" },
     { icon: "gear", label: "Settings", path: "#", isMock: true },
     { icon: "logout", label: "Log Out", path: "/login" },
     { icon: "question", label: "Help & Support", path: "#", isMock: true },
@@ -121,7 +123,21 @@ function SideNavigation({ activeItemCount, onClose, toast }) {
     >
       <nav className="p-4">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Staff Dashboard</h2>
+          <div className="flex items-center gap-3">
+            {/* Dark Mode Button */}
+            <button
+              type="button"
+              onClick={toggleDarkMode}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Toggle dark mode"
+              title={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              <span className="text-xl">
+                {isDarkMode ? '☀️' : '🌙'}
+              </span>
+            </button>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Staff Dashboard</h2>
+          </div>
           <button
             type="button"
             onClick={onClose}

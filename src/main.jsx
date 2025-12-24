@@ -31,6 +31,7 @@ const About = lazy(() => import("./pages/About"));
 const Contact = lazy(() => import("./pages/Contact"));
 const RedeemPoints = lazy(() => import("./pages/RedeemPoints"));
 const CustomerProfile = lazy(() => import("./pages/CustomerProfile"));
+const StaffProfile = lazy(() => import("./pages/StaffProfile"));
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -289,6 +290,27 @@ function AnimatedRoutes() {
                     <RoleGuard allow={["customer"]}>
                       <PageReady />
                       <CustomerProfile />
+                    </RoleGuard>
+                  </ProtectedRoute>
+                </motion.div>
+              }
+            />
+
+            {/* ✅ Staff Profile — only staff can access */}
+            <Route
+              path="/staff-profile"
+              element={
+                <motion.div
+                  key="staff-profile"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <ProtectedRoute>
+                    <RoleGuard allow={["staff"]}>
+                      <PageReady />
+                      <StaffProfile />
                     </RoleGuard>
                   </ProtectedRoute>
                 </motion.div>
