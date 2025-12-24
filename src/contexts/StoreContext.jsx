@@ -19,13 +19,35 @@ export function StoreProvider({ children }) {
   const [loadingStores, setLoadingStores] = useState(true);
 
   useEffect(() => {
+    // Extract unique stores from inventory collection instead of relying on separate storeId collection
     const unsub = onSnapshot(
-      collection(db, "storeId"),
+      collection(db, "inventory"),
       (snap) => {
-        const list = snap.docs.map((d) => ({
-          id: d.id,
-          name: d.data().storeName || d.id,
-        }));
+        console.log("StoreContext: Loading stores from inventory collection...");
+        console.log(`StoreContext: Found ${snap.docs.length} inventory items`);
+        
+        // Extract unique stores from inventory items
+        const storeMap = new Map();
+        
+        snap.docs.forEach((doc) => {
+          const data = doc.data();
+          const storeId = data.storeId;
+          const storeName = data.storeName;
+          
+          if (storeId && !storeMap.has(storeId)) {
+            storeMap.set(storeId, {
+              id: storeId,
+              name: storeName || storeId,
+            });
+          }
+        });
+        
+        const list = Array.from(storeMap.values()).sort((a, b) => 
+          a.name.localeCompare(b.name)
+        );
+        
+        console.log(`StoreContext: Extracted ${list.length} unique stores:`, list);
+        
         setStores(list);
         setLoadingStores(false);
 
@@ -35,9 +57,11 @@ export function StoreProvider({ children }) {
         if (chosen) {
           setStoreId(chosen.id);
           setStoreName(chosen.name);
+          console.log(`StoreContext: Selected store: ${chosen.name} (${chosen.id})`);
         } else {
           setStoreId(null);
           setStoreName("");
+          console.log("StoreContext: No stores available to select");
         }
       },
       (err) => {

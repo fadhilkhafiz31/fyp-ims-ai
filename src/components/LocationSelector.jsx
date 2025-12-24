@@ -13,8 +13,14 @@ export default function LocationSelector({ label = "Choose Location:" }) {
 
   if (!stores.length) {
     return (
-      <div className="text-sm text-gray-500 dark:text-gray-400">
-        No locations available
+      <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-white dark:bg-gray-900">
+        <div className="flex items-center gap-2 mb-2 font-medium">
+          <span className="text-red-600 dark:text-red-400">📍</span>
+          <span className="text-gray-900 dark:text-gray-100">{label}</span>
+        </div>
+        <div className="text-sm text-gray-500 dark:text-gray-400">
+          No locations available. Please add inventory items with store information to populate locations.
+        </div>
       </div>
     );
   }
