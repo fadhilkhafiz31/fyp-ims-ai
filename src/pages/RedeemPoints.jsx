@@ -23,7 +23,7 @@ function CustomerSideNavigation({ onClose, toast }) {
     { icon: "grid", label: "Dashboard", path: "/dashboard", active: isDashboardActive },
     { icon: "chatbot", label: "SmartStockAI Assistant", path: "/guest-chatbot-full", active: isChatbotActive },
     { icon: "gift", label: "Redeem Points", path: "/redeem-points", active: isRedeemPointsActive },
-    { icon: "user", label: "My Profile", path: "#", isMock: true },
+    { icon: "user", label: "My Profile", path: "/profile", active: location.pathname === "/profile" },
     { icon: "gear", label: "Settings", path: "#", isMock: true },
     { icon: "logout", label: "Log Out", path: "/login" },
     { icon: "question", label: "Help & Support", path: "#", isMock: true },

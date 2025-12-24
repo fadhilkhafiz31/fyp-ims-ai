@@ -30,6 +30,7 @@ const GeminiChatTest = lazy(() => import("./pages/GeminiChatTest"));
 const About = lazy(() => import("./pages/About"));
 const Contact = lazy(() => import("./pages/Contact"));
 const RedeemPoints = lazy(() => import("./pages/RedeemPoints"));
+const CustomerProfile = lazy(() => import("./pages/CustomerProfile"));
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -267,6 +268,27 @@ function AnimatedRoutes() {
                     <RoleGuard allow={["customer"]}>
                       <PageReady />
                       <RedeemPoints />
+                    </RoleGuard>
+                  </ProtectedRoute>
+                </motion.div>
+              }
+            />
+
+            {/* ✅ Customer Profile — only customers can access */}
+            <Route
+              path="/profile"
+              element={
+                <motion.div
+                  key="profile"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <ProtectedRoute>
+                    <RoleGuard allow={["customer"]}>
+                      <PageReady />
+                      <CustomerProfile />
                     </RoleGuard>
                   </ProtectedRoute>
                 </motion.div>

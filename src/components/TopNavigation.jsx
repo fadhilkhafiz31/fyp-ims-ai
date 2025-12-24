@@ -63,23 +63,12 @@ export default function TopNavigation({ role = null, onToggleSidebar = null }) {
               </svg>
             </button>
           )}
-          {hideHomeButton ? (
-            <img
-              src="/Smart Stock AI (1).png"
-              alt="SmartStockAI Logo"
-              className="h-10 w-auto bg-transparent object-contain"
-              style={{ mixBlendMode: "normal" }}
-            />
-          ) : (
-            <Link to={isPrivileged ? "/dashboard" : "/chatbot"} className="flex items-center">
-              <img
-                src="/Smart Stock AI (1).png"
-                alt="SmartStockAI Logo"
-                className="h-10 w-auto bg-transparent object-contain cursor-pointer hover:opacity-80 transition-opacity"
-                style={{ mixBlendMode: "normal" }}
-              />
-            </Link>
-          )}
+          <img
+            src="/Smart Stock AI (1).png"
+            alt="SmartStockAI Logo"
+            className="h-10 w-auto bg-transparent object-contain"
+            style={{ mixBlendMode: "normal" }}
+          />
         </div>
 
         {/* Center and Right content */}

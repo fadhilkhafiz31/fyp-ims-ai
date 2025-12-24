@@ -40,7 +40,7 @@ function SideNavigation({ activeItemCount, onClose, toast }) {
     { icon: "grid", label: "Dashboard", path: "/dashboard-customer-guest", active: isDashboardActive },
     { icon: "chatbot", label: "SmartStockAI Assistant", path: "/guest-chatbot-full", active: isChatbotActive },
     { icon: "gift", label: "Redeem Points", path: "/redeem-points", active: isRedeemPointsActive, isGuestRestricted: isGuest },
-    { icon: "user", label: "My Profile", path: "/profile", active: location.pathname === "/profile" },
+    { icon: "user", label: "My Profile", path: role === "customer" ? "/profile" : "#", active: location.pathname === "/profile", isMock: role !== "customer" },
     { icon: "gear", label: "Settings", path: "#", isMock: true },
     { icon: "logout", label: "Log Out", path: "/login" },
     { icon: "question", label: "Help & Support", path: "#", isMock: true },

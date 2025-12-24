@@ -15,6 +15,9 @@ const StockNotification = lazy(() => import("./pages/StockNotification"));
 const GuestChatbot = lazy(() => import("./pages/CustomerOrGuestDashboard"));
 const GeminiChatTest = lazy(() => import("./pages/GeminiChatTest"));
 const CustomerProfile = lazy(() => import("./pages/CustomerProfile"));
+const RedeemPoints = lazy(() => import("./pages/RedeemPoints"));
+const Chatbot = lazy(() => import("./pages/Chatbot"));
+const GuestChatbotFull = lazy(() => import("./pages/GuestChatbotFull"));
 
 export default function App() {
   const location = useLocation();
@@ -111,6 +114,42 @@ export default function App() {
                   <RoleGuard allow={["customer"]}>
                     <PageReady />
                     <CustomerProfile />
+                  </RoleGuard>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/redeem-points"
+              element={
+                <ProtectedRoute>
+                  <RoleGuard allow={["customer", "guest"]}>
+                    <PageReady />
+                    <RedeemPoints />
+                  </RoleGuard>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/chatbot"
+              element={
+                <ProtectedRoute>
+                  <RoleGuard allow={["admin", "staff"]}>
+                    <PageReady />
+                    <Chatbot />
+                  </RoleGuard>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/guest-chatbot-full"
+              element={
+                <ProtectedRoute>
+                  <RoleGuard allow={["customer", "guest"]}>
+                    <PageReady />
+                    <GuestChatbotFull />
                   </RoleGuard>
                 </ProtectedRoute>
               }

@@ -7,6 +7,7 @@ import { doc, getDoc, updateDoc, collection, query, where, orderBy, getDocs } fr
 import { updatePassword, sendEmailVerification, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 import { db } from "../lib/firebase";
 import TopNavigation from "../components/TopNavigation";
+import SideNavigation from "../components/SideNavigation";
 import * as motion from "motion/react-client";
 
 export default function CustomerProfile() {
@@ -16,6 +17,7 @@ export default function CustomerProfile() {
   const { toast } = useToast();
   
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState("profile");
   const [profileData, setProfileData] = useState({
     displayName: "",
@@ -185,7 +187,7 @@ export default function CustomerProfile() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <TopNavigation role={role} />
+        <TopNavigation role={role} onToggleSidebar={() => setSidebarOpen((v) => !v)} />
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
         </div>
@@ -195,9 +197,20 @@ export default function CustomerProfile() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <TopNavigation role={role} />
+      <TopNavigation role={role} onToggleSidebar={() => setSidebarOpen((v) => !v)} />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex">
+        {/* Side Navigation */}
+        {sidebarOpen && (
+          <SideNavigation
+            activeItemCount={0}
+            onClose={() => setSidebarOpen(false)}
+          />
+        )}
+
+        {/* Main Content Area */}
+        <main className={`flex-1 ${sidebarOpen ? "ml-64" : ""} transition-all duration-300`}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Profile Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -664,6 +677,8 @@ export default function CustomerProfile() {
             )}
           </div>
         </div>
+          </div>
+        </main>
       </div>
     </div>
   );
