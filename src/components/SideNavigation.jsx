@@ -21,6 +21,7 @@ export default function SideNavigation({ activeItemCount, onClose }) {
     const isRedeemPointsActive = location.pathname === "/redeem-points";
     const isGuestChatbotActive = location.pathname === "/dashboard-customer-guest";
     const isGuestChatbotFullActive = location.pathname === "/guest-chatbot-full";
+    const isProfileActive = location.pathname === "/profile";
 
     const allMenuItems = [
         { icon: "grid", label: "Dashboard", path: isGuest ? "/dashboard-customer-guest" : "/dashboard", active: isGuest ? isGuestChatbotActive : isDashboardActive, roles: ["admin", "staff", "customer", "guest"] },
@@ -30,7 +31,7 @@ export default function SideNavigation({ activeItemCount, onClose }) {
         { icon: "chatbot", label: "SmartStockAI Assistant", path: (isGuest || role === "customer") ? "/guest-chatbot-full" : "/chatbot", active: (isGuest || role === "customer") ? isGuestChatbotFullActive : isChatbotActive, roles: ["admin", "staff", "customer", "guest"] },
         { icon: "inventory", label: "Inventory", path: "/inventory", active: isInventoryActive, roles: ["admin", "staff"] },
         { icon: "gift", label: "Redeem Points", path: "/redeem-points", active: isRedeemPointsActive, isGuestRestricted: isGuest, roles: ["customer", "guest"] },
-        { icon: "user", label: "My Profile", path: "#", isMock: true, roles: ["admin", "staff", "customer", "guest"] },
+        { icon: "user", label: "My Profile", path: role === "customer" ? "/profile" : "#", active: isProfileActive, isMock: role !== "customer", roles: ["admin", "staff", "customer", "guest"] },
         { icon: "gear", label: "Settings", path: "#", isMock: true, roles: ["admin", "staff", "customer", "guest"] },
         { icon: "logout", label: "Log Out", path: "/login", roles: ["admin", "staff", "customer", "guest"] },
         { icon: "question", label: "Help & Support", path: "#", isMock: true, roles: ["admin", "staff", "customer", "guest"] },

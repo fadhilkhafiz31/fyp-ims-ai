@@ -177,7 +177,7 @@ export default function TopNavigation({ role = null, onToggleSidebar = null }) {
             {/* User Greeting */}
             {!isPrivileged && displayName && (
               <div className="hidden md:flex items-center gap-2 text-sm border-r border-green-400/30 pr-4">
-                <span className="text-white">
+                <span className="text-white font-bold">
                   Welcome, {displayName}
                 </span>
               </div>

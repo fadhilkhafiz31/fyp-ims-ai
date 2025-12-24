@@ -2012,16 +2012,71 @@ exports.checkout = onCall(async (request) => {
 
     // Save Order Record
     const shortCode = orderId.substring(0, 8).toUpperCase();
-    batch.set(orderRef, {
+    const orderData = {
       storeId,
       storeName: storeName || "Unknown Store",
       totalAmount,
       items: cart,
+      userId: request.auth?.uid || null, // Add user ID for customer tracking
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       redeemStatus: "unused", // IMPORTANT for Redeem Page
       pointsAwarded: Math.floor(totalAmount), // 1 point per RM
       shortCode: shortCode // Store the short code for easy lookup
-    });
+    };
+    
+    batch.set(orderRef, orderData);
+
+    // Update user loyalty points if user is authenticated
+    if (request.auth?.uid) {
+      try {
+        const userRef = db.collection('users').doc(request.auth.uid);
+        const userDoc = await userRef.get();
+        
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          const pointsEarned = Math.floor(totalAmount); // RM1 = 1 Point
+          
+          // Update user profile in batch
+          batch.update(userRef, {
+            loyaltyPoints: admin.firestore.FieldValue.increment(pointsEarned),
+            totalSpent: admin.firestore.FieldValue.increment(totalAmount)
+          });
+          
+          // Add points history record
+          const pointsHistoryRef = db.collection('pointsHistory').doc();
+          batch.set(pointsHistoryRef, {
+            userId: request.auth.uid,
+            points: pointsEarned,
+            description: `Purchase - Order #${orderId.slice(-8)}`,
+            orderId: orderId,
+            type: "earned",
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
+          });
+          
+          console.log(`Will add ${pointsEarned} loyalty points to user ${request.auth.uid}`);
+        } else {
+          // Initialize user profile if it doesn't exist
+          batch.set(userRef, {
+            loyaltyPoints: Math.floor(totalAmount),
+            totalSpent: totalAmount,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            preferences: {
+              notifications: {
+                lowStock: true,
+                promotions: true,
+                orderUpdates: true
+              },
+              language: "en"
+            }
+          }, { merge: true });
+          
+          console.log(`Will initialize user profile for ${request.auth.uid}`);
+        }
+      } catch (loyaltyError) {
+        console.error("Error preparing loyalty update:", loyaltyError);
+        // Don't fail the entire checkout if loyalty preparation fails
+      }
+    }
 
     // Deduct Stock Logic
     cart.forEach(item => {

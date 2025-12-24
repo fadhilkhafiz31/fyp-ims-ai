@@ -14,6 +14,7 @@ const Checkout = lazy(() => import("./pages/Checkout"));
 const StockNotification = lazy(() => import("./pages/StockNotification"));
 const GuestChatbot = lazy(() => import("./pages/CustomerOrGuestDashboard"));
 const GeminiChatTest = lazy(() => import("./pages/GeminiChatTest"));
+const CustomerProfile = lazy(() => import("./pages/CustomerProfile"));
 
 export default function App() {
   const location = useLocation();
@@ -99,6 +100,18 @@ export default function App() {
                 <ProtectedRoute>
                   <PageReady />
                   <GeminiChatTest />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <RoleGuard allow={["customer"]}>
+                    <PageReady />
+                    <CustomerProfile />
+                  </RoleGuard>
                 </ProtectedRoute>
               }
             />
