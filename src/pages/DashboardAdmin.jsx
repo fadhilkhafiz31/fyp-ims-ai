@@ -30,6 +30,7 @@ function SideNavigation({ activeItemCount, onClose, toast }) {
   const location = useLocation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const isDashboardActive = location.pathname === "/dashboard";
+  const isAdminProfileActive = location.pathname === "/admin-profile";
 
   const menuItems = [
     { icon: "grid", label: "Dashboard", path: "/dashboard", active: isDashboardActive },
@@ -38,7 +39,7 @@ function SideNavigation({ activeItemCount, onClose, toast }) {
     { icon: "bell", label: "Stock Notification", path: "/stock-notification", badge: activeItemCount || 0 },
     { icon: "chatbot", label: "SmartStockAI Assistant", path: "/chatbot" },
     { icon: "inventory", label: "Inventory", path: "/inventory" },
-    { icon: "user", label: "My Profile", path: "#", isMock: true },
+    { icon: "user", label: "My Profile", path: "/admin-profile", active: isAdminProfileActive },
     { icon: "gear", label: "Settings", path: "#", isMock: true },
     { icon: "logout", label: "Log Out", path: "/login" },
     { icon: "question", label: "Help & Support", path: "#", isMock: true },
@@ -107,7 +108,7 @@ function SideNavigation({ activeItemCount, onClose, toast }) {
   const handleMockClick = (e, item) => {
     if (item.isMock) {
       e.preventDefault();
-      toast.info(`${item.label} - Coming late!`);
+      toast.info(`${item.label} - Coming soon!`);
     }
   };
 

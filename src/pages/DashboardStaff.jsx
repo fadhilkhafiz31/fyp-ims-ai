@@ -233,7 +233,7 @@ function KPI({ label, value, pill, index = 0 }) {
         )}
       </div>
       <motion.div
-        className="text-2xl font-semibold mt-1"
+        className="text-2xl font-semibold mt-1 text-gray-900 dark:text-white"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: index * 0.1 + 0.2 }}
@@ -248,7 +248,7 @@ function LowStockTable({ lowStock }) {
   return (
     <section className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden bg-white dark:bg-gray-900/50">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-        <h2 className="font-semibold text-lg">
+        <h2 className="font-semibold text-lg text-gray-900 dark:text-white">
           Low Stock (≤ {LOW_STOCK_THRESHOLD})
         </h2>
         <span
@@ -314,7 +314,7 @@ export default function DashboardStaff() {
   const { user } = useAuth();
   const { storeId, storeName } = useStore();
   const { toast } = useToast();
-  const { globalLowStockCount } = useLowStockCount(); // Use shared hook for consistent count
+  const { globalLowStockCount: storeLowStockCount } = useLowStockCount(storeId); // Pass storeId for store-specific count
   const [inventory, setInventory] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [chatWidgetOpen, setChatWidgetOpen] = useState(false);
@@ -375,7 +375,7 @@ export default function DashboardStaff() {
       <div className="flex">
         {sidebarOpen && (
           <SideNavigation
-            activeItemCount={globalLowStockCount}
+            activeItemCount={storeLowStockCount}
             onClose={() => setSidebarOpen(false)}
             toast={toast}
           />
@@ -386,7 +386,7 @@ export default function DashboardStaff() {
 
           {/* Header */}
           <header className="space-y-1">
-            <h1 className="text-3xl font-bold">Staff Dashboard</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Staff Dashboard</h1>
             <p className="text-gray-600 dark:text-gray-400">
               Welcome, <span className="font-medium text-gray-900 dark:text-gray-200">{user?.displayName || "Staff"}</span>
             </p>
