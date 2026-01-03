@@ -11,7 +11,7 @@ import SideNavigation from "../components/SideNavigation";
 import * as motion from "motion/react-client";
 
 export default function StaffProfile() {
-  const { user, role } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const { stores, storeId } = useStore();
   const { isDarkMode } = useDarkMode();
   const { toast } = useToast();
@@ -84,29 +84,26 @@ export default function StaffProfile() {
 
   // Load user profile data
   useEffect(() => {
-    if (user) {
+    if (user && profile && !authLoading) {
       loadProfileData();
       setCustomerRatings(sampleRatings);
     }
-  }, [user]);
+  }, [user, profile, authLoading]);
 
   const loadProfileData = async () => {
     try {
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        
+      if (profile) {
         // Find store name from storeId
-        const assignedStore = stores.find(store => store.id === userData.storeAssignment);
+        const assignedStore = stores.find(store => store.id === profile.storeAssignment);
         
         setProfileData({
-          displayName: userData.displayName || user.displayName || "",
+          displayName: profile.displayName || user.displayName || "",
           email: user.email || "",
-          phone: userData.phone || "",
-          employeeId: userData.employeeId || `EMP${user.uid.slice(-6).toUpperCase()}`,
-          hireDate: userData.hireDate || userData.createdAt || null,
-          department: userData.department || "Store Associate",
-          storeAssignment: userData.storeAssignment || storeId || "",
+          phone: profile.phone || "",
+          employeeId: profile.employeeId || `EMP${user.uid.slice(-6).toUpperCase()}`,
+          hireDate: profile.hireDate || profile.createdAt || null,
+          department: profile.department || "Store Associate",
+          storeAssignment: profile.storeAssignment || storeId || "",
           storeName: assignedStore?.name || "99 Speedmart Main Branch"
         });
       } else {

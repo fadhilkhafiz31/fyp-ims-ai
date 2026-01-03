@@ -11,7 +11,7 @@ import SideNavigation from "../components/SideNavigation";
 import * as motion from "motion/react-client";
 
 export default function CustomerProfile() {
-  const { user, role } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const { stores, storeId, setStore } = useStore();
   const { isDarkMode } = useDarkMode();
   const { toast } = useToast();
@@ -50,28 +50,26 @@ export default function CustomerProfile() {
 
   // Load user profile data
   useEffect(() => {
-    if (user) {
+    if (user && profile && !authLoading) {
       loadProfileData();
       loadOrderHistory();
       loadPointsHistory();
     }
-  }, [user]);
+  }, [user, profile, authLoading]);
 
   const loadProfileData = async () => {
     try {
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
+      if (profile) {
         setProfileData({
-          displayName: userData.displayName || user.displayName || "",
+          displayName: profile.displayName || user.displayName || "",
           email: user.email || "",
-          phone: userData.phone || "",
-          preferredStoreId: userData.preferredStoreId || "",
-          loyaltyPoints: userData.loyaltyPoints || 0,
-          totalSpent: userData.totalSpent || 0,
-          memberSince: userData.createdAt || null
+          phone: profile.phone || "",
+          preferredStoreId: profile.preferredStoreId || "",
+          loyaltyPoints: profile.loyaltyPoints || 0,
+          totalSpent: profile.totalSpent || 0,
+          memberSince: profile.createdAt || null
         });
-        setPreferences(userData.preferences || preferences);
+        setPreferences(profile.preferences || preferences);
       }
     } catch (error) {
       console.error("Error loading profile:", error);

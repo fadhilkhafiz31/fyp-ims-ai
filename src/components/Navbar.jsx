@@ -2,13 +2,13 @@ import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function Navbar() {
-  const { user, authReady } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
   // Determine home link based on authentication status
-  const homeLink = user && authReady ? "/dashboard" : "/about";
-  const isAuthenticated = user && authReady;
+  const homeLink = user && !loading ? "/dashboard" : "/about";
+  const isAuthenticated = user && !loading;
   const hideHomeButton = location.pathname === "/about" || location.pathname === "/contact";
 
   // Prevent navigation to dashboard if not authenticated

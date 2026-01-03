@@ -31,7 +31,7 @@ import LocationSelector from "../components/LocationSelector";
 import * as motion from "motion/react-client";
 
 export default function AdminProfile() {
-  const { user, role } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const { stores, storeId } = useStore();
   const { isDarkMode } = useDarkMode();
   const { toast } = useToast();
@@ -74,24 +74,22 @@ export default function AdminProfile() {
 
   // Load admin profile data
   useEffect(() => {
-    if (user) {
+    if (user && profile && !authLoading) {
       loadProfileData();
       loadStaffList();
       loadSystemStats();
     }
-  }, [user, storeId]);
+  }, [user, profile, authLoading, storeId]);
 
   const loadProfileData = async () => {
     try {
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
+      if (profile) {
         setProfileData({
-          displayName: userData.displayName || user.displayName || "",
+          displayName: profile.displayName || user.displayName || "",
           email: user.email || "",
-          phone: userData.phone || "",
-          adminLevel: userData.adminLevel || "Super Admin",
-          joinDate: userData.createdAt || null
+          phone: profile.phone || "",
+          adminLevel: profile.adminLevel || "Super Admin",
+          joinDate: profile.createdAt || null
         });
       }
     } catch (error) {

@@ -19,6 +19,14 @@ export function StoreProvider({ children }) {
   const [loadingStores, setLoadingStores] = useState(true);
 
   useEffect(() => {
+    // Set a timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      if (loadingStores) {
+        console.warn("Store loading taking too long, setting loadingStores to false");
+        setLoadingStores(false);
+      }
+    }, 4000); // 4 second timeout
+
     // Extract unique stores from inventory collection instead of relying on separate storeId collection
     const unsub = onSnapshot(
       collection(db, "inventory"),
@@ -50,6 +58,7 @@ export function StoreProvider({ children }) {
         
         setStores(list);
         setLoadingStores(false);
+        clearTimeout(timeout); // Clear timeout when stores load successfully
 
         // Auto-select store: check localStorage first, then use first store
         const saved = localStorage.getItem("selectedStore");
@@ -67,9 +76,14 @@ export function StoreProvider({ children }) {
       (err) => {
         console.error("StoreContext: onSnapshot error:", err);
         setLoadingStores(false);
+        clearTimeout(timeout);
       }
     );
-    return () => unsub();
+    
+    return () => {
+      unsub();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const setStore = (id) => {
