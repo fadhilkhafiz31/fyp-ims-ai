@@ -3,6 +3,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useStore } from "../contexts/StoreContext";
 import { useDarkMode } from "../contexts/DarkModeContext";
 import { useToast } from "../contexts/ToastContext";
+import { useRole } from "../hooks/useRole";
 import { doc, getDoc, updateDoc, collection, query, where, orderBy, getDocs } from "firebase/firestore";
 import { updatePassword, sendEmailVerification, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 import { db } from "../lib/firebase";
@@ -15,7 +16,8 @@ export default function StaffProfile() {
   const { stores, storeId } = useStore();
   const { isDarkMode } = useDarkMode();
   const { toast } = useToast();
-  
+  const { role } = useRole();
+
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState("profile");
@@ -29,7 +31,7 @@ export default function StaffProfile() {
     storeAssignment: "",
     storeName: ""
   });
-  
+
   const [customerRatings, setCustomerRatings] = useState([]);
   const [passwordChange, setPasswordChange] = useState({
     currentPassword: "",
@@ -95,7 +97,7 @@ export default function StaffProfile() {
       if (profile) {
         // Find store name from storeId
         const assignedStore = stores.find(store => store.id === profile.storeAssignment);
-        
+
         setProfileData({
           displayName: profile.displayName || user.displayName || "",
           email: user.email || "",
@@ -140,21 +142,21 @@ export default function StaffProfile() {
       // Re-authenticate user first
       const credential = EmailAuthProvider.credential(user.email, passwordChange.currentPassword);
       await reauthenticateWithCredential(user, credential);
-      
+
       // Send email verification for password change
       await sendEmailVerification(user);
       toast.info("Verification email sent. Please check your email to confirm password change.");
-      
+
       // Update password
       await updatePassword(user, passwordChange.newPassword);
-      
+
       setPasswordChange({
         currentPassword: "",
         newPassword: "",
         confirmPassword: "",
         showForm: false
       });
-      
+
       toast.success("Password updated successfully!");
     } catch (error) {
       console.error("Error changing password:", error);
@@ -178,16 +180,15 @@ export default function StaffProfile() {
     return Array.from({ length: 5 }, (_, index) => (
       <span
         key={index}
-        className={`text-lg ${
-          index < rating ? "text-yellow-400" : "text-gray-300 dark:text-gray-600"
-        }`}
+        className={`text-lg ${index < rating ? "text-yellow-400" : "text-gray-300 dark:text-gray-600"
+          }`}
       >
         ★
       </span>
     ));
   };
 
-  const averageRating = customerRatings.length > 0 
+  const averageRating = customerRatings.length > 0
     ? (customerRatings.reduce((sum, rating) => sum + rating.rating, 0) / customerRatings.length).toFixed(1)
     : "0.0";
 
@@ -205,7 +206,7 @@ export default function StaffProfile() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <TopNavigation role={role} onToggleSidebar={() => setSidebarOpen((v) => !v)} />
-      
+
       <div className="flex">
         {/* Side Navigation */}
         {sidebarOpen && (
@@ -321,11 +322,10 @@ export default function StaffProfile() {
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
-                        activeTab === tab.id
-                          ? "border-green-500 text-green-600 dark:text-green-400"
-                          : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                      }`}
+                      className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${activeTab === tab.id
+                        ? "border-green-500 text-green-600 dark:text-green-400"
+                        : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                        }`}
                     >
                       <span>{tab.icon}</span>
                       <span>{tab.label}</span>
@@ -350,7 +350,7 @@ export default function StaffProfile() {
                         </p>
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -363,7 +363,7 @@ export default function StaffProfile() {
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
                         />
                       </div>
-                      
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Email
@@ -375,7 +375,7 @@ export default function StaffProfile() {
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
                         />
                       </div>
-                      
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Phone Number
@@ -387,7 +387,7 @@ export default function StaffProfile() {
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
                         />
                       </div>
-                      
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Employee ID
@@ -411,7 +411,7 @@ export default function StaffProfile() {
                     className="space-y-6"
                   >
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white">Work Information</h3>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                         <h4 className="font-medium text-gray-900 dark:text-white mb-2">Employee Details</h4>
@@ -430,7 +430,7 @@ export default function StaffProfile() {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                         <h4 className="font-medium text-gray-900 dark:text-white mb-2">Store Assignment</h4>
                         <div className="space-y-3">
@@ -467,7 +467,7 @@ export default function StaffProfile() {
                         <span className="text-sm text-gray-500 dark:text-gray-400">({customerRatings.length} reviews)</span>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-4">
                       {customerRatings.map((rating) => (
                         <div key={rating.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
@@ -483,7 +483,7 @@ export default function StaffProfile() {
                               <p className="text-sm text-gray-500 dark:text-gray-400">{formatDate(rating.date)}</p>
                             </div>
                           </div>
-                          
+
                           <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
                             <p className="text-green-800 dark:text-green-200 italic">"{rating.comment}"</p>
                           </div>
@@ -501,7 +501,7 @@ export default function StaffProfile() {
                     className="space-y-6"
                   >
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white">Security Settings</h3>
-                    
+
                     <div className="space-y-6">
                       <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                         <div className="flex items-center justify-between mb-4">
@@ -516,7 +516,7 @@ export default function StaffProfile() {
                             {passwordChange.showForm ? 'Cancel' : 'Change Password'}
                           </button>
                         </div>
-                        
+
                         {passwordChange.showForm && (
                           <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                             <div>
@@ -530,7 +530,7 @@ export default function StaffProfile() {
                                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
                               />
                             </div>
-                            
+
                             <div>
                               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 New Password
@@ -542,7 +542,7 @@ export default function StaffProfile() {
                                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
                               />
                             </div>
-                            
+
                             <div>
                               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Confirm New Password
@@ -554,13 +554,13 @@ export default function StaffProfile() {
                                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
                               />
                             </div>
-                            
+
                             <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
                               <p className="text-sm text-yellow-800 dark:text-yellow-200">
                                 🔒 For security, we'll send a verification email before changing your password.
                               </p>
                             </div>
-                            
+
                             <button
                               onClick={handlePasswordChange}
                               disabled={!passwordChange.currentPassword || !passwordChange.newPassword || !passwordChange.confirmPassword}
@@ -571,7 +571,7 @@ export default function StaffProfile() {
                           </div>
                         )}
                       </div>
-                      
+
                       <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                         <div className="flex items-center justify-between">
                           <div>

@@ -24,8 +24,12 @@ const LOW_STOCK_THRESHOLD = 5;
 function SideNavigation({ activeItemCount, onClose, toast }) {
   const location = useLocation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const { role } = useRole();
   const isDashboardActive = location.pathname === "/dashboard";
   const isChatbotActive = location.pathname === "/chatbot";
+
+  // Determine dashboard title based on role
+  const dashboardTitle = role === "admin" ? "Admin Dashboard" : "Staff Dashboard";
 
   const menuItems = [
     { icon: "grid", label: "Dashboard", path: "/dashboard", active: isDashboardActive },
@@ -129,7 +133,7 @@ function SideNavigation({ activeItemCount, onClose, toast }) {
                 {isDarkMode ? '☀️' : '🌙'}
               </span>
             </button>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Admin Dashboard</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">{dashboardTitle}</h2>
           </div>
           <button
             type="button"
@@ -166,11 +170,10 @@ function SideNavigation({ activeItemCount, onClose, toast }) {
               <Link
                 to={item.path}
                 onClick={(e) => handleMockClick(e, item)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-                  item.active
-                    ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300"
-                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                }`}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${item.active
+                  ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300"
+                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  }`}
               >
                 {getIcon(item.icon)}
                 <span className="font-medium">{item.label}</span>
@@ -253,9 +256,9 @@ export default function Chatbot() {
       </div>
     );
   }
-  
+
   const isRestricted = role === "guest" || role === "customer";
-  
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <PageReady />
@@ -284,7 +287,7 @@ export default function Chatbot() {
               <LocationSelector />
             </div>
           )}
-          
+
           {/* Chatbot Section */}
           <section className="flex-1 flex flex-col gap-4 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm p-4 sm:p-6">
             <div className="flex items-center gap-2">
