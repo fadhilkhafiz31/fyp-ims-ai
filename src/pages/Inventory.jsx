@@ -939,42 +939,13 @@ export default function Inventory() {
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-3">
-                <div className="text-sm text-gray-500">
-                  {hasSearch ? (
-                    <span>
-                      {filteredItems.length} of {items.length} items
-                    </span>
-                  ) : (
-                    <span>{items.length} total</span>
-                  )}
-                </div>
-                {items.length > 0 && (role === "admin" || role === "staff") && (
-                  <motion.button
-                    type="button"
-                    onClick={handleDeleteAll}
-                    disabled={deletingAll || loading}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                    whileHover={!deletingAll && !loading ? { scale: 1.05 } : {}}
-                    whileTap={!deletingAll && !loading ? { scale: 0.95 } : {}}
-                  >
-                    {deletingAll ? (
-                      <>
-                        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Deleting...
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                        Delete All
-                      </>
-                    )}
-                  </motion.button>
+              <div className="text-sm text-gray-500">
+                {hasSearch ? (
+                  <span>
+                    {filteredItems.length} of {items.length} items
+                  </span>
+                ) : (
+                  <span>{items.length} total</span>
                 )}
               </div>
             </div>
@@ -1001,107 +972,107 @@ export default function Inventory() {
                 <div className="divide-y divide-gray-200 dark:divide-gray-700 min-w-[1000px]">
                   {/* header */}
                   <div className="grid grid-cols-9 gap-2 px-4 py-2 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-300">
-                  <div>Name</div>
-                  <div>SKU</div>
-                  <div>Qty</div>
-                  <div>Category</div>
-                  <div>Reorder</div>
-                  <div>Store Name</div>
-                  <div>Price (RM)</div>
-                  <div>Keywords</div>
-                  <div className="text-right">Actions</div>
-                </div>
+                    <div>Name</div>
+                    <div>SKU</div>
+                    <div>Qty</div>
+                    <div>Category</div>
+                    <div>Reorder</div>
+                    <div>Store Name</div>
+                    <div>Price (RM)</div>
+                    <div>Keywords</div>
+                    <div className="text-right">Actions</div>
+                  </div>
 
-                {/* rows */}
-                <motion.div
-                  initial="hidden"
-                  animate="visible"
-                  variants={{
-                    visible: {
-                      transition: {
-                        staggerChildren: 0.03
+                  {/* rows */}
+                  <motion.div
+                    initial="hidden"
+                    animate="visible"
+                    variants={{
+                      visible: {
+                        transition: {
+                          staggerChildren: 0.03
+                        }
                       }
-                    }
-                  }}
-                >
-                  {filteredItems.map((it, index) => {
-                    const isHighlighted = highlightedItems.has(it.id);
-                    return (
-                      <motion.div
-                        key={it.id}
-                        className="grid grid-cols-9 gap-2 px-4 py-3 text-sm items-center text-gray-900 dark:text-white"
-                        variants={{
-                          hidden: { opacity: 0, x: -20, backgroundColor: "rgba(0,0,0,0)" },
-                          visible: { opacity: 1, x: 0, backgroundColor: "rgba(0,0,0,0)" },
-                          highlighted: { opacity: 1, x: 0, backgroundColor: "rgba(59, 130, 246, 0.1)" }
-                        }}
-                        initial="hidden"
-                        animate={isHighlighted ? "highlighted" : "visible"}
-                        transition={{
-                          duration: 0.3,
-                          ease: "easeOut"
-                        }}
-                        whileHover={{
-                          backgroundColor: "rgba(0, 0, 0, 0.02)",
-                          transition: { duration: 0.2 }
-                        }}
-                        style={{ willChange: 'transform, opacity' }}
-                      >
-                        <div
-                          className="break-words whitespace-normal text-sm leading-tight"
-                          title={it.name || undefined}
+                    }}
+                  >
+                    {filteredItems.map((it, index) => {
+                      const isHighlighted = highlightedItems.has(it.id);
+                      return (
+                        <motion.div
+                          key={it.id}
+                          className="grid grid-cols-9 gap-2 px-4 py-3 text-sm items-center text-gray-900 dark:text-white"
+                          variants={{
+                            hidden: { opacity: 0, x: -20, backgroundColor: "rgba(0,0,0,0)" },
+                            visible: { opacity: 1, x: 0, backgroundColor: "rgba(0,0,0,0)" },
+                            highlighted: { opacity: 1, x: 0, backgroundColor: "rgba(59, 130, 246, 0.1)" }
+                          }}
+                          initial="hidden"
+                          animate={isHighlighted ? "highlighted" : "visible"}
+                          transition={{
+                            duration: 0.3,
+                            ease: "easeOut"
+                          }}
+                          whileHover={{
+                            backgroundColor: "rgba(0, 0, 0, 0.02)",
+                            transition: { duration: 0.2 }
+                          }}
+                          style={{ willChange: 'transform, opacity' }}
                         >
-                          {it.name || "—"}
-                        </div>
-                        <div className="truncate">{it.sku || "—"}</div>
-                        <div>{Number(it.qty ?? 0)}</div>
-                        <div
-                          className="break-words whitespace-normal text-sm leading-tight"
-                          title={it.category || undefined}
-                        >
-                          {it.category || "—"}
-                        </div>
-                        <div>{Number(it.reorderPoint ?? 0)}</div>
-                        <div
-                          className="break-words whitespace-normal text-sm leading-tight"
-                          title={it.storeName || it.StoreName || undefined}
-                        >
-                          {it.storeName || it.StoreName || "—"}
-                        </div>
-                        <div className="font-medium">
-                          {it.price !== null && it.price !== undefined ? `RM ${Number(it.price).toFixed(2)}` : "—"}
-                        </div>
-                        <div className="truncate">
-                          {Array.isArray(it.Keywords) ? it.Keywords.join(", ") : it.Keywords || "—"}
-                        </div>
+                          <div
+                            className="break-words whitespace-normal text-sm leading-tight"
+                            title={it.name || undefined}
+                          >
+                            {it.name || "—"}
+                          </div>
+                          <div className="truncate">{it.sku || "—"}</div>
+                          <div>{Number(it.qty ?? 0)}</div>
+                          <div
+                            className="break-words whitespace-normal text-sm leading-tight"
+                            title={it.category || undefined}
+                          >
+                            {it.category || "—"}
+                          </div>
+                          <div>{Number(it.reorderPoint ?? 0)}</div>
+                          <div
+                            className="break-words whitespace-normal text-sm leading-tight"
+                            title={it.storeName || it.StoreName || undefined}
+                          >
+                            {it.storeName || it.StoreName || "—"}
+                          </div>
+                          <div className="font-medium">
+                            {it.price !== null && it.price !== undefined ? `RM ${Number(it.price).toFixed(2)}` : "—"}
+                          </div>
+                          <div className="truncate">
+                            {Array.isArray(it.Keywords) ? it.Keywords.join(", ") : it.Keywords || "—"}
+                          </div>
 
-                        {/* actions */}
-                        <div className="flex gap-2 justify-end">
-                          <motion.button
-                            type="button"
-                            onClick={() => handleEdit(it)}
-                            className="px-3 py-1 border border-blue-500 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-600 hover:text-white transition-colors"
-                            whileHover={{ scale: 1.05, boxShadow: "0 4px 12px rgba(37, 99, 235, 0.3)" }}
-                            whileTap={{ scale: 0.95 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            Edit
-                          </motion.button>
-                          <motion.button
-                            type="button"
-                            onClick={() => handleDelete(it.id)}
-                            className="px-3 py-1 border border-red-500 text-red-600 dark:text-red-400 rounded hover:bg-red-600 hover:text-white transition-colors"
-                            whileHover={{ scale: 1.05, boxShadow: "0 4px 12px rgba(220, 38, 38, 0.3)" }}
-                            whileTap={{ scale: 0.95 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            Delete
-                          </motion.button>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </motion.div>
+                          {/* actions */}
+                          <div className="flex gap-2 justify-end">
+                            <motion.button
+                              type="button"
+                              onClick={() => handleEdit(it)}
+                              className="px-3 py-1 border border-blue-500 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-600 hover:text-white transition-colors"
+                              whileHover={{ scale: 1.05, boxShadow: "0 4px 12px rgba(37, 99, 235, 0.3)" }}
+                              whileTap={{ scale: 0.95 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              Edit
+                            </motion.button>
+                            <motion.button
+                              type="button"
+                              onClick={() => handleDelete(it.id)}
+                              className="px-3 py-1 border border-red-500 text-red-600 dark:text-red-400 rounded hover:bg-red-600 hover:text-white transition-colors"
+                              whileHover={{ scale: 1.05, boxShadow: "0 4px 12px rgba(220, 38, 38, 0.3)" }}
+                              whileTap={{ scale: 0.95 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              Delete
+                            </motion.button>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </motion.div>
                 </div>
               </div>
             )}

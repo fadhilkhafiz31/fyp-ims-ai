@@ -5,7 +5,6 @@ import { useAuth } from "../contexts/AuthContext";
 import { useStore } from "../contexts/StoreContext";
 import { useSearch } from "../contexts/SearchContext";
 import { useToast } from "../contexts/ToastContext";
-import { useDarkMode } from "../contexts/DarkModeContext";
 import AnimatedLink from "./ui/AnimatedLink";
 
 export default function TopNavigation({ role = null, onToggleSidebar = null }) {
@@ -13,7 +12,6 @@ export default function TopNavigation({ role = null, onToggleSidebar = null }) {
   const { storeName, storeId } = useStore();
   const { searchQuery, updateSearch, clearSearch, hasSearch } = useSearch();
   const { toast } = useToast();
-  const { isDarkMode, toggleDarkMode } = useDarkMode();
   const location = useLocation();
   const [localSearch, setLocalSearch] = useState(searchQuery);
 
@@ -214,22 +212,6 @@ export default function TopNavigation({ role = null, onToggleSidebar = null }) {
                   d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
                 />
               </motion.svg>
-            </motion.button>
-
-            {/* Dark Mode Toggle */}
-            <motion.button
-              className="p-2 text-white hover:text-green-100 hover:bg-green-700/30 rounded-lg transition"
-              type="button"
-              aria-label="Toggle dark mode"
-              title={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
-              onClick={toggleDarkMode}
-              whileHover={{ scale: 1.1, rotate: 15 }}
-              whileTap={{ scale: 0.9 }}
-              transition={{ duration: 0.2 }}
-            >
-              <span className="text-xl">
-                {isDarkMode ? '☀️' : '🌙'}
-              </span>
             </motion.button>
 
             {/* Stock Notification */}
