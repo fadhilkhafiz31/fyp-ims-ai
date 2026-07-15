@@ -21,8 +21,6 @@ import { useStore } from "../contexts/StoreContext";
 import LocationSelector from "../components/LocationSelector";
 import TopNavigation from "../components/TopNavigation";
 import ChatbotPanel from "../components/ChatbotPanel";
-import AnimatedBadge from "../components/ui/AnimatedBadge";
-import AnimatedIcon from "../components/ui/AnimatedIcon";
 import { useToast } from "../contexts/ToastContext";
 import { useSearch } from "../contexts/SearchContext";
 
@@ -181,7 +179,6 @@ export default function Transactions() {
       return "—";
     }
 
-    // Check if date is valid
     if (isNaN(date.getTime())) return "—";
 
     // Format: HH:MM:SS AM/PM, MM/DD/YYYY
@@ -389,7 +386,6 @@ export default function Transactions() {
   const uploadReceiptImage = async (imageBlob) => {
     if (!imageBlob) return null;
 
-    // Check if user is authenticated
     if (!user) {
       toast.error("You must be logged in to upload images");
       return null;

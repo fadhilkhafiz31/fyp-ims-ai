@@ -1,10 +1,6 @@
-// Utility to populate sample store data if needed
-// This can be run once to create sample stores in the inventory collection
-
 import { collection, addDoc, getDocs } from "firebase/firestore";
 import { db } from "../lib/firebase";
 
-// Sample store data
 const sampleStores = [
   {
     storeId: "store-001",
@@ -20,7 +16,6 @@ const sampleStores = [
   },
 ];
 
-// Sample inventory items to populate stores
 const sampleInventoryItems = [
   {
     name: "Coca Cola 330ml",
@@ -64,10 +59,8 @@ const sampleInventoryItems = [
   },
 ];
 
-/**
- * Populate sample inventory items with store data
- * This will create the stores automatically when StoreContext reads from inventory
- */
+// Stores aren't created directly - StoreContext derives them from inventory items, so
+// adding inventory with a new storeId is enough to make that store show up everywhere.
 export async function populateSampleInventory() {
   try {
     console.log("Adding sample inventory items...");
@@ -85,9 +78,6 @@ export async function populateSampleInventory() {
   }
 }
 
-/**
- * Check if inventory collection has any items
- */
 export async function checkInventoryExists() {
   try {
     const inventoryRef = collection(db, "inventory");

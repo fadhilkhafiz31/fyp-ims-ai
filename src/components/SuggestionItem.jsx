@@ -1,19 +1,3 @@
-/**
- * SuggestionItem Component
- * 
- * Displays an individual product suggestion with proper formatting,
- * highlighting, and interaction states. Handles disabled states for
- * out-of-stock products and provides visual feedback for user interactions.
- * 
- * Props:
- * - product: Product object with id, name, price, qty properties
- * - isHighlighted: Whether this item is currently highlighted (keyboard navigation)
- * - isDisabled: Whether this item should be disabled (out of stock)
- * - onClick: Callback when item is clicked
- * - onMouseEnter: Callback when mouse enters item
- * - searchQuery: Current search query for text highlighting
- * - className: Additional CSS classes
- */
 export default function SuggestionItem({
   product,
   isHighlighted = false,
@@ -23,22 +7,19 @@ export default function SuggestionItem({
   searchQuery = "",
   className = ""
 }) {
-  // Handle click with disabled state check
   const handleClick = (e) => {
     e.preventDefault();
     if (isDisabled) {
-      return; // Don't allow selection of disabled items
+      return;
     }
     onClick?.(product);
   };
 
-  // Format price display
   const formatPrice = (price) => {
     const numPrice = Number(price || 0);
     return numPrice.toFixed(2);
   };
 
-  // Format stock display with status
   const formatStock = (qty) => {
     const numQty = Number(qty || 0);
     if (numQty <= 0) {
@@ -47,17 +28,14 @@ export default function SuggestionItem({
     return `Stock: ${numQty}`;
   };
 
-  // Highlight search terms in product name
   const highlightSearchTerms = (text, query) => {
     if (!query || !text) return text;
-    
+
     try {
-      // Create a case-insensitive regex for the search query
       const searchTerms = query.trim().split(/\s+/).filter(term => term.length > 0);
       if (searchTerms.length === 0) return text;
-      
-      // Create regex pattern for all search terms
-      const pattern = searchTerms.map(term => 
+
+      const pattern = searchTerms.map(term =>
         term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // Escape special regex characters
       ).join('|');
       
@@ -87,7 +65,6 @@ export default function SuggestionItem({
     }
   };
 
-  // Generate CSS classes based on state
   const getItemClasses = () => {
     const baseClasses = "p-3 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors duration-150";
     
@@ -104,7 +81,6 @@ export default function SuggestionItem({
     return `${baseClasses} ${stateClasses} ${className}`.trim();
   };
 
-  // Get stock status styling
   const getStockClasses = () => {
     if (isDisabled) {
       return "text-red-500 dark:text-red-400 font-medium";

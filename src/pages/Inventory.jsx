@@ -25,8 +25,6 @@ import { useRole } from "../hooks/useRole";
 import { useStore } from "../contexts/StoreContext";
 import { SkeletonTableRow, SkeletonKPI } from "../components/ui/SkeletonLoader";
 import { EnhancedSpinner } from "../components/ui/EnhancedSpinner";
-import AnimatedBadge from "../components/ui/AnimatedBadge";
-import AnimatedIcon from "../components/ui/AnimatedIcon";
 import { useToast } from "../contexts/ToastContext";
 import { useSearch } from "../contexts/SearchContext";
 import CopyInventory from "../components/CopyInventory";

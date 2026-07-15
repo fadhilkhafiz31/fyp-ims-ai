@@ -1,11 +1,7 @@
 import { collection, getDocs, addDoc, query, orderBy, serverTimestamp } from "firebase/firestore";
 import { db } from "./firebase";
 
-/**
- * Get all stores from Firestore, ordered by storeName
- * Uses "storeId" collection to match existing codebase and Firestore rules
- * @returns {Promise<Array>} Array of store documents
- */
+// Confusingly, stores live in the "storeId" collection, not "stores" - matches existing Firestore rules
 export async function getStores() {
   try {
     const storesRef = collection(db, "storeId");
@@ -42,15 +38,6 @@ export async function getStores() {
   }
 }
 
-/**
- * Create a contact message in Firestore
- * @param {Object} payload - Contact message data
- * @param {string} payload.name - Sender's name
- * @param {string} payload.email - Sender's email
- * @param {string} payload.message - Message content
- * @param {boolean} payload.includeStore - Whether to include store name
- * @returns {Promise<string>} Document ID of the created message
- */
 export async function createContactMessage(payload) {
   try {
     const contactRef = collection(db, "contact_messages");

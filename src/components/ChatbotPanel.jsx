@@ -3,13 +3,11 @@ import * as motion from "motion/react-client";
 import { useStore } from "../contexts/StoreContext";
 import { useRole } from "../hooks/useRole";
 
-// Helper function to get localStorage key for a specific role
 const getStorageKey = (role) => {
   if (!role) return null;
   return `messages_${role}`;
 };
 
-// Helper function to load messages for a specific role
 const loadMessages = (role) => {
   const storageKey = getStorageKey(role);
   if (!storageKey) {
@@ -33,7 +31,6 @@ const loadMessages = (role) => {
   return [{ role: "assistant", text: "Hi! I can help check item availability and stock levels." }];
 };
 
-// Helper function to save messages for a specific role
 const saveMessages = (role, messages) => {
   const storageKey = getStorageKey(role);
   if (!storageKey) {
@@ -82,7 +79,6 @@ export default function ChatbotPanel({ fullHeight = false }) {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Check if the message is asking about the current time
   function isTimeQuestion(text) {
     const normalized = text.toLowerCase().trim();
     const timeKeywords = [
@@ -102,7 +98,6 @@ export default function ChatbotPanel({ fullHeight = false }) {
     return timeKeywords.some((keyword) => normalized.includes(keyword));
   }
 
-  // Get formatted current time
   function getCurrentTime() {
     const now = new Date();
     const timeString = now.toLocaleTimeString("en-US", {
@@ -140,7 +135,6 @@ export default function ChatbotPanel({ fullHeight = false }) {
     setInput("");
     setMessages((m) => [...m, { role: "user", text }]);
 
-    // Check if it's a time question and handle it directly
     if (isTimeQuestion(text)) {
       const timeResponse = getCurrentTime();
       setMessages((m) => [...m, { role: "assistant", text: timeResponse }]);

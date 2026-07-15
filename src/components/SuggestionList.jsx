@@ -1,22 +1,6 @@
 import { forwardRef } from "react";
 import SuggestionItem from "./SuggestionItem";
 
-/**
- * SuggestionList Component
- * 
- * Displays a dropdown list of product suggestions with proper positioning,
- * styling, and empty state handling. Supports keyboard navigation and
- * accessibility features.
- * 
- * Props:
- * - products: Array of filtered product objects to display
- * - isOpen: Whether the suggestion list should be visible
- * - highlightedIndex: Index of currently highlighted suggestion (-1 for none)
- * - onProductSelect: Callback when a product is selected
- * - onProductHover: Callback when a product is hovered (for keyboard navigation)
- * - searchQuery: Current search query for highlighting
- * - emptyMessage: Message to show when no products found
- */
 const SuggestionList = forwardRef(({
   products = [],
   isOpen = false,
@@ -27,7 +11,6 @@ const SuggestionList = forwardRef(({
   emptyMessage = "No products found",
   className = ""
 }, ref) => {
-  // Don't render if not open
   if (!isOpen) {
     return null;
   }
@@ -58,11 +41,6 @@ const SuggestionList = forwardRef(({
   );
 });
 
-/**
- * EmptyState Component
- * 
- * Displays appropriate message when no products are found
- */
 const EmptyState = ({ message, searchQuery }) => {
   const getEmptyMessage = () => {
     if (!searchQuery || searchQuery.length < 2) {

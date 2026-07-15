@@ -21,7 +21,6 @@ export function SearchProvider({ children }) {
     setSearchQuery("");
   }, []);
 
-  // Helper function to filter items based on search query
   const filterItems = useCallback((items, searchFields = ["name", "sku", "category", "Keywords"]) => {
     if (!searchQuery.trim()) {
       return items;
@@ -31,7 +30,6 @@ export function SearchProvider({ children }) {
     const queryWords = query.split(/\s+/).filter(word => word.length > 0);
 
     return items.filter((item) => {
-      // Check each search field
       return searchFields.some((field) => {
         const fieldValue = item[field];
         

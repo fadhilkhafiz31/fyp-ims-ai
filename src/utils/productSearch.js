@@ -1,16 +1,3 @@
-/**
- * Product Search Utilities
- * 
- * This module provides comprehensive search and filtering functionality
- * for product catalogs with support for various search patterns and
- * performance optimizations.
- */
-
-/**
- * Sanitizes and validates a search query
- * @param {string} query - Raw search query
- * @returns {string} - Sanitized query
- */
 export const sanitizeSearchQuery = (query) => {
   if (!query || typeof query !== 'string') {
     return '';
@@ -20,11 +7,6 @@ export const sanitizeSearchQuery = (query) => {
   return query.trim().slice(0, 100);
 };
 
-/**
- * Splits a search query into individual search terms
- * @param {string} query - Search query
- * @returns {string[]} - Array of search terms
- */
 export const parseSearchTerms = (query) => {
   const sanitized = sanitizeSearchQuery(query);
   if (!sanitized) return [];
@@ -36,12 +18,6 @@ export const parseSearchTerms = (query) => {
     .slice(0, 10); // Limit to 10 terms for performance
 };
 
-/**
- * Checks if a product matches the search criteria
- * @param {Object} product - Product object with name, price, qty properties
- * @param {string[]} searchTerms - Array of search terms
- * @returns {boolean} - Whether the product matches
- */
 export const productMatchesSearch = (product, searchTerms) => {
   if (!product || !product.name || !Array.isArray(searchTerms)) {
     return false;
@@ -53,13 +29,6 @@ export const productMatchesSearch = (product, searchTerms) => {
   return searchTerms.every(term => productName.includes(term));
 };
 
-/**
- * Calculates a relevance score for search result ranking
- * @param {Object} product - Product object
- * @param {string} originalQuery - Original search query
- * @param {string[]} searchTerms - Parsed search terms
- * @returns {number} - Relevance score (higher is better)
- */
 export const calculateRelevanceScore = (product, originalQuery, searchTerms) => {
   if (!product || !product.name) return 0;
   
@@ -98,13 +67,6 @@ export const calculateRelevanceScore = (product, originalQuery, searchTerms) => 
   return score;
 };
 
-/**
- * Comprehensive product search and filtering function
- * @param {Array} products - Array of product objects
- * @param {string} query - Search query
- * @param {Object} options - Search options
- * @returns {Array} - Filtered and sorted products
- */
 export const filterProducts = (products, query, options = {}) => {
   const {
     maxResults = 10,
@@ -175,14 +137,6 @@ export const filterProducts = (products, query, options = {}) => {
   return filteredProducts.slice(0, maxResults);
 };
 
-/**
- * Multi-word search with AND logic
- * All words must be present in the product name
- * @param {Array} products - Array of product objects
- * @param {string} query - Multi-word search query
- * @param {Object} options - Search options
- * @returns {Array} - Filtered products
- */
 export const multiWordSearch = (products, query, options = {}) => {
   return filterProducts(products, query, {
     ...options,
@@ -191,18 +145,10 @@ export const multiWordSearch = (products, query, options = {}) => {
   });
 };
 
-/**
- * Fuzzy search with tolerance for typos (basic implementation)
- * @param {Array} products - Array of product objects
- * @param {string} query - Search query
- * @param {Object} options - Search options
- * @returns {Array} - Filtered products with fuzzy matching
- */
+// Basic fuzzy search: falls back to dropping the last character if there's no exact match.
+// Could be upgraded to Levenshtein distance if typo tolerance needs to be smarter.
 export const fuzzySearch = (products, query, options = {}) => {
   const { tolerance = 1, ...otherOptions } = options;
-  
-  // For now, implement basic fuzzy search by allowing partial matches
-  // This can be enhanced with more sophisticated algorithms like Levenshtein distance
   const sanitizedQuery = sanitizeSearchQuery(query);
   if (!sanitizedQuery) return [];
   
@@ -217,36 +163,6 @@ export const fuzzySearch = (products, query, options = {}) => {
   return results;
 };
 
-/**
- * Search with category/tag support (for future enhancement)
- * @param {Array} products - Array of product objects
- * @param {string} query - Search query
- * @param {string} category - Optional category filter
- * @param {Object} options - Search options
- * @returns {Array} - Filtered products
- */
-export const categorizedSearch = (products, query, category = null, options = {}) => {
-  let filteredProducts = products;
-  
-  // Filter by category first if provided
-  if (category && typeof category === 'string') {
-    filteredProducts = products.filter(product => 
-      product.category && 
-      product.category.toLowerCase().includes(category.toLowerCase())
-    );
-  }
-  
-  // Then apply text search
-  return filterProducts(filteredProducts, query, options);
-};
-
-/**
- * Get search suggestions based on partial input
- * @param {Array} products - Array of product objects
- * @param {string} partialQuery - Partial search query
- * @param {number} maxSuggestions - Maximum number of suggestions
- * @returns {Array} - Array of suggested search terms
- */
 export const getSearchSuggestions = (products, partialQuery, maxSuggestions = 5) => {
   const sanitized = sanitizeSearchQuery(partialQuery);
   if (!sanitized || sanitized.length < 1) return [];

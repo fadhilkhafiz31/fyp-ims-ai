@@ -1,9 +1,6 @@
 import { doc, getDoc, setDoc, updateDoc, collection, query, where, orderBy, getDocs, serverTimestamp } from "firebase/firestore";
 import { db } from "../lib/firebase";
 
-/**
- * Initialize user profile data when a new user signs up
- */
 export async function initializeUserProfile(userId, userData) {
   try {
     const userRef = doc(db, "users", userId);
@@ -35,9 +32,6 @@ export async function initializeUserProfile(userId, userData) {
   }
 }
 
-/**
- * Update user loyalty points and total spent after a purchase
- */
 export async function updateUserLoyalty(userId, orderData) {
   try {
     const userRef = doc(db, "users", userId);
@@ -69,9 +63,6 @@ export async function updateUserLoyalty(userId, orderData) {
   }
 }
 
-/**
- * Add a points history record
- */
 export async function addPointsHistory(userId, pointsData) {
   try {
     const pointsRef = collection(db, "pointsHistory");
@@ -90,9 +81,6 @@ export async function addPointsHistory(userId, pointsData) {
   }
 }
 
-/**
- * Redeem loyalty points
- */
 export async function redeemLoyaltyPoints(userId, pointsToRedeem, description) {
   try {
     const userRef = doc(db, "users", userId);
@@ -126,9 +114,6 @@ export async function redeemLoyaltyPoints(userId, pointsToRedeem, description) {
   }
 }
 
-/**
- * Get user's order history
- */
 export async function getUserOrderHistory(userId, limit = 50) {
   try {
     const ordersQuery = query(
@@ -149,9 +134,6 @@ export async function getUserOrderHistory(userId, limit = 50) {
   }
 }
 
-/**
- * Get user's points history
- */
 export async function getUserPointsHistory(userId, limit = 50) {
   try {
     const pointsQuery = query(
@@ -172,9 +154,6 @@ export async function getUserPointsHistory(userId, limit = 50) {
   }
 }
 
-/**
- * Add product to user's favorites
- */
 export async function addToFavorites(userId, productData) {
   try {
     const favoritesRef = collection(db, "userFavorites");
@@ -193,9 +172,6 @@ export async function addToFavorites(userId, productData) {
   }
 }
 
-/**
- * Remove product from user's favorites
- */
 export async function removeFromFavorites(userId, productId) {
   try {
     const favoritesQuery = query(
@@ -213,9 +189,6 @@ export async function removeFromFavorites(userId, productId) {
   }
 }
 
-/**
- * Get user's favorite products
- */
 export async function getUserFavorites(userId) {
   try {
     const favoritesQuery = query(
@@ -235,9 +208,6 @@ export async function getUserFavorites(userId) {
   }
 }
 
-/**
- * Calculate user's monthly spending analytics
- */
 export async function getUserSpendingAnalytics(userId, months = 6) {
   try {
     const endDate = new Date();
